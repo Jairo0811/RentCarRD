@@ -1,0 +1,90 @@
+<div class="container mt-4">
+  <h2 class="fw-bold text-secondary">Gestión de Empleados</h2>
+  <hr>
+  
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-body bg-light rounded-3 p-4">
+      <div class="row g-3 align-items-end">
+        
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-muted small">Nombre Completo</label>
+          <input type="text" class="form-control form-control-lg" [(ngModel)]="empleadoActual.nombre" placeholder="Ej. Juan Pérez">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-muted small">Usuario de Acceso</label>
+          <input type="text" class="form-control form-control-lg border-primary" [(ngModel)]="empleadoActual.usuario" placeholder="Ej. jperez">
+        </div>
+        
+        <div class="col-md-2">
+          <label class="form-label fw-bold text-muted small">Cédula</label>
+          <input type="text" class="form-control form-control-lg" [(ngModel)]="empleadoActual.cedula" placeholder="000-0000000-0">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-bold text-muted small">Tanda</label>
+          <select class="form-select form-select-lg" [(ngModel)]="empleadoActual.tandaLabor">
+            <option value="">Seleccione...</option>
+            <option value="Matutina">Matutina</option>
+            <option value="Vespertina">Vespertina</option>
+            <option value="Nocturna">Nocturna</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-bold text-muted small">% Comisión</label>
+          <input type="number" class="form-control form-control-lg" [(ngModel)]="empleadoActual.porcientoComision" placeholder="Ej. 10">
+        </div>
+
+        <div class="col-md-12 mt-4 text-end">
+          <button class="btn btn-primary btn-lg px-5 fw-bold shadow-sm" (click)="guardar()">
+            Guardar Empleado
+          </button>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped mb-0 align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th class="py-3 px-4">Nombre</th>
+            <th class="py-3">Usuario</th>
+            <th class="py-3">Cédula</th>
+            <th class="py-3">Tanda</th>
+            <th class="py-3">Comisión</th>
+            <th class="py-3">Estado</th>
+            <th class="py-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let emp of listaEmpleados">
+            <td class="px-4 fw-bold text-secondary">{{ emp.nombre }}</td>
+            <td class="fw-bold text-primary">{{ emp.usuario }}</td>
+            <td>{{ emp.cedula }}</td>
+            <td>{{ emp.tandaLabor }}</td>
+            <td><span class="badge bg-info text-dark">{{ emp.porcientoComision }}%</span></td>
+            <td>
+              <span class="badge rounded-pill" [ngClass]="emp.estado ? 'text-bg-success' : 'text-bg-danger'">
+                {{ emp.estado ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-outline-danger btn-sm" (click)="eliminar(emp.id)">
+                <i class="bi bi-trash"></i> Eliminar
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="listaEmpleados.length === 0">
+            <td colspan="7" class="text-center py-5 text-muted">
+              No hay empleados registrados.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

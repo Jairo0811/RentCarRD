@@ -1,0 +1,11 @@
+<nav style="background-color: #0ea5e9; padding: 15px; color: white; display: flex; gap: 20px;">
+  <h2 style="margin: 0; padding-right: 30px;">🚗 Rent-a-Car</h2>
+  <li class="nav-item" *ngIf="rolActual === 'admin'">
+  <a class="nav-link" routerLink="/inspeccion" routerLinkActive="active">
+    📋 Inspección de Flota
+  </a>
+</li>
+  <a routerLink="/vehiculos" style="color: white; text-decoration: none; font-weight: bold; align-content: center;">Vehículos</a>
+  <a routerLink="/clientes" style="color: white; text-decoration: none; font-weight: bold; align-content: center;">Clientes</a>
+  <a routerLink="/rentas" style="color: white; text-decoration: none; font-weight: bold; align-content: center;">Rentas</a>
+</nav>

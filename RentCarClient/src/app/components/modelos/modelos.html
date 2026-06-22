@@ -1,0 +1,64 @@
+<div class="container mt-4">
+  <h2>Gestión de Modelos</h2>
+  <hr>
+
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      Nuevo Modelo
+    </div>
+    <div class="card-body">
+      <div class="row">
+        
+        <div class="col-md-5">
+          <label class="form-label">Descripción del Modelo</label>
+          <input type="text" class="form-control" [(ngModel)]="modeloActual.descripcion" placeholder="Ej. Civic, Corolla...">
+        </div>
+
+        <div class="col-md-5">
+          <label class="form-label">Marca</label>
+          <select class="form-select" [(ngModel)]="modeloActual.idMarca">
+            <option value="0" disabled selected>Seleccione una marca...</option>
+            <option *ngFor="let marca of listaMarcas" [value]="marca.id">
+              {{ marca.descripcion }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-success w-100" (click)="guardarModelo()">Guardar</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <table class="table table-striped table-hover mt-3">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Descripción</th>
+        <th>Marca</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let modelo of listaModelos">
+        <td>{{ modelo.id }}</td>
+        <td>{{ modelo.descripcion }}</td>
+        <td>{{ obtenerNombreMarca(modelo.idMarca) }}</td>
+        <td>
+          <span class="badge" [ngClass]="modelo.estado ? 'bg-success' : 'bg-danger'">
+            {{ modelo.estado ? 'Activo' : 'Inactivo' }}
+          </span>
+        </td>
+        <td>
+          <button class="btn btn-danger btn-sm" (click)="eliminarModelo(modelo.id)">Eliminar</button>
+        </td>
+      </tr>
+      <tr *ngIf="listaModelos.length === 0">
+        <td colspan="5" class="text-center">No hay modelos registrados.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

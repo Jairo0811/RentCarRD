@@ -1,0 +1,117 @@
+<div class="container mt-4">
+  
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-secondary">Gestión de Vehículos</h2>
+    
+    <!-- BLOQUEO POR ROL: Solo el Administrador verá este botón -->
+    <button *ngIf="rolActual === 'admin'" 
+            class="btn fw-bold shadow-sm" 
+            [ngClass]="mostrarFormulario ? 'btn-outline-danger' : 'btn-success'" 
+            (click)="mostrarFormulario = !mostrarFormulario">
+      {{ mostrarFormulario ? 'Cancelar Operación' : '+ Nuevo Vehículo' }}
+    </button>
+  </div>
+
+  <div *ngIf="mostrarFormulario" class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+      <h5 class="text-primary fw-bold">Registrar Nuevo Vehículo</h5>
+    </div>
+    <div class="card-body p-4">
+      <div class="row g-3">
+        
+        <div class="col-md-12">
+          <label class="form-label text-muted small fw-bold">Descripción General</label>
+          <input [(ngModel)]="nuevoVehiculo.descripcion" placeholder="Ej. Toyota Corolla 1996" class="form-control form-control-lg">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label text-muted small fw-bold">Marca</label>
+          <input [(ngModel)]="nuevoVehiculo.marca" placeholder="Ej. Toyota" class="form-control form-control-lg">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label text-muted small fw-bold">Modelo</label>
+          <input [(ngModel)]="nuevoVehiculo.modelo" placeholder="Ej. Corolla" class="form-control form-control-lg">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label text-muted small fw-bold">Tipo de Vehículo</label>
+          <input [(ngModel)]="nuevoVehiculo.tipoVehiculo" placeholder="Ej. Sedán, SUV" class="form-control form-control-lg">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label text-muted small fw-bold">Número de Placa</label>
+          <input [(ngModel)]="nuevoVehiculo.noPlaca" placeholder="Placa" class="form-control form-control-lg">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label text-muted small fw-bold">Número de Chasis</label>
+          <input [(ngModel)]="nuevoVehiculo.noChasis" placeholder="Chasis" class="form-control form-control-lg">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label text-muted small fw-bold">Número de Motor</label>
+          <input [(ngModel)]="nuevoVehiculo.noMotor" placeholder="Motor" class="form-control form-control-lg">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label text-muted small fw-bold">Tipo de Combustible</label>
+          <select [(ngModel)]="nuevoVehiculo.tipoCombustible" class="form-select form-select-lg">
+            <option value="">Seleccione...</option>
+            <option value="Gasolina">Gasolina</option>
+            <option value="Gasoil">Gasoil</option>
+            <option value="GLP">GLP</option>
+            <option value="Eléctrico">Eléctrico</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="mt-4 text-end">
+        <button (click)="guardarVehiculo()" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">
+          Guardar Vehículo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4" *ngFor="let v of vehiculos">
+      <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden">
+        
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+          <h6 class="mb-0 text-truncate fw-bold" style="max-width: 70%;">{{ v.descripcion }}</h6>
+          <span class="badge rounded-pill" [ngClass]="v.estado ? 'bg-success' : 'bg-danger'">
+            {{ v.estado ? 'Disponible' : 'Rentado' }}
+          </span>
+        </div>
+
+        <div class="card-body bg-light p-0">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item bg-transparent py-3">
+              <span class="text-muted small fw-bold d-block">Placa</span>
+              <span class="fw-medium">{{ v.noPlaca || 'N/A' }}</span>
+            </li>
+            <li class="list-group-item bg-transparent py-3">
+              <span class="text-muted small fw-bold d-block">Chasis</span>
+              <span class="fw-medium">{{ v.noChasis || 'N/A' }}</span>
+            </li>
+            <li class="list-group-item bg-transparent py-3 border-bottom-0">
+              <span class="text-muted small fw-bold d-block">Combustible</span>
+              <span class="fw-medium">{{ v.tipoCombustible || 'N/A' }}</span>
+            </li>
+          </ul>
+        </div>
+        
+      </div>
+    </div>
+
+    <div class="col-12 text-center py-5" *ngIf="vehiculos.length === 0">
+      <div class="p-5 bg-white rounded-3 shadow-sm text-muted">
+        <h4 class="fw-bold">No hay vehículos registrados</h4>
+        <p>Haz clic en "+ Nuevo Vehículo" para empezar a llenar tu flota.</p>
+      </div>
+    </div>
+  </div>
+
+</div>

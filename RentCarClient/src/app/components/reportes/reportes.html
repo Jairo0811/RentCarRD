@@ -1,0 +1,107 @@
+<div class="container mt-4" *ngIf="rolActual === 'admin'">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-secondary">
+      <i class="bi bi-graph-up-arrow"></i> Reportes y Consultas
+    </h2>
+    <button class="btn btn-dark fw-bold shadow-sm no-print" (click)="imprimirReporte()">
+      🖨️ Imprimir / Exportar PDF
+    </button>
+  </div>
+  <hr class="no-print" />
+
+  <div class="card shadow-sm border-0 mb-4 no-print bg-light">
+    <div class="card-body p-4">
+      <h6 class="fw-bold text-primary mb-3">🔍 Criterios de Búsqueda</h6>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">Fecha Desde</label>
+          <input type="date" class="form-control" [(ngModel)]="filtroFechaDesde" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">Fecha Hasta</label>
+          <input type="date" class="form-control" [(ngModel)]="filtroFechaHasta" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">ID Cliente</label>
+          <input type="text" class="form-control" placeholder="Ej. 1" [(ngModel)]="filtroCliente" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">ID Vehículo</label>
+          <input type="text" class="form-control" placeholder="Ej. 5" [(ngModel)]="filtroVehiculo" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">Estado</label>
+          <select class="form-select" [(ngModel)]="filtroEstado">
+            <option value="">Todos</option>
+            <option value="Activa">Activa</option>
+            <option value="Devuelto">Devuelto</option>
+          </select>
+        </div>
+        <div class="col-12 text-end mt-3">
+          <button class="btn btn-outline-secondary btn-sm fw-bold" (click)="limpiarFiltros()">
+            Limpiar Filtros
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 bg-primary text-white shadow-sm">
+        <div class="card-body py-4 text-center">
+          <h6 class="text-uppercase fw-bold mb-1">Rentas Encontradas</h6>
+          <h2 class="display-5 fw-bold mb-0">{{ rentasFiltradas.length }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 bg-success text-white shadow-sm">
+        <div class="card-body py-4 text-center">
+          <h6 class="text-uppercase fw-bold mb-1">Proyección de Ingresos (RD$)</h6>
+          <h2 class="display-5 fw-bold mb-0">${{ totalMontoGenerado | number: '1.2-2' }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped mb-0 align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th class="py-3 px-4">No. Renta</th>
+            <th class="py-3">Fecha Salida</th>
+            <th class="py-3">Cliente (ID)</th>
+            <th class="py-3">Vehículo (ID)</th>
+            <th class="py-3">Días</th>
+            <th class="py-3">Monto Total</th>
+            <th class="py-3">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let renta of rentasFiltradas">
+            <td class="px-4 fw-bold">#{{ renta.noRenta || renta.id }}</td>
+            <td>{{ renta.fechaRenta | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ renta.idCliente }}</td>
+            <td>{{ renta.idVehiculo }}</td>
+            <td>{{ renta.cantidadDias || 0 }} días</td>
+<td class="fw-bold text-success">
+  ${{ ((renta.montoXDia || 0) * (renta.cantidadDias || 0)) | number:'1.2-2' }}
+</td>
+            <td>
+              <span class="badge" [ngClass]="renta.estado === 'Activa' ? 'bg-primary' : 'bg-secondary'">
+                {{ renta.estado }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="rentasFiltradas.length === 0">
+            <td colspan="7" class="text-center py-5 text-muted fw-bold">
+              No hay registros que coincidan con los filtros.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

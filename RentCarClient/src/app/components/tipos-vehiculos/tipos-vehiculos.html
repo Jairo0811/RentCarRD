@@ -1,0 +1,29 @@
+<div class="container mt-4">
+  <h2 class="fw-bold text-secondary">Tipos de Vehículos</h2>
+  <hr>
+  <div class="card mb-4 shadow-sm">
+    <div class="card-body row align-items-end">
+      <div class="col-md-9">
+        <label class="form-label">Descripción (Ej. Sedán, SUV)</label>
+        <input type="text" class="form-control" [(ngModel)]="tipoActual.descripcion">
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-primary w-100 fw-bold" (click)="guardar()">Guardar Tipo</button>
+      </div>
+    </div>
+  </div>
+  <table class="table table-striped table-hover mt-3">
+    <thead class="table-dark">
+      <tr><th>ID</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of listaTipos">
+        <td>{{ item.id }}</td>
+        <td><strong>{{ item.descripcion }}</strong></td>
+        <td><span class="badge" [ngClass]="item.estado ? 'bg-success' : 'bg-danger'">{{ item.estado ? 'Activo' : 'Inactivo' }}</span></td>
+        <td><button class="btn btn-danger btn-sm" (click)="eliminar(item.id)">Eliminar</button></td>
+      </tr>
+      <tr *ngIf="listaTipos.length === 0"><td colspan="4" class="text-center">No hay registros.</td></tr>
+    </tbody>
+  </table>
+</div>

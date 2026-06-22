@@ -1,0 +1,11 @@
+# Archivos de Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal

@@ -1,0 +1,40 @@
+<div class="container mt-4">
+  <h2 class="fw-bold text-secondary mb-4">Gestión de Marcas</h2>
+
+  <div class="card shadow-sm border-0 mb-4 bg-light">
+    <div class="card-body p-4">
+      <div class="row align-items-end">
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Descripción de la Marca</label>
+          <input type="text" class="form-control" [(ngModel)]="nuevaMarca.descripcion" placeholder="Ej. Toyota">
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary fw-bold w-100" (click)="guardarMarca()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th>
+          <th>Descripción</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of marcas">
+          <td>{{ m.id }}</td>
+          <td>{{ m.descripcion }}</td>
+          <td>
+            <span class="badge" [ngClass]="m.estado ? 'bg-success' : 'bg-danger'">
+              {{ m.estado ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

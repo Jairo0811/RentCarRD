@@ -1,0 +1,97 @@
+<div class="container mt-4" *ngIf="rolActual === 'admin'">
+  <h2 class="fw-bold text-secondary">Proceso de Inspección de Flota</h2>
+  <hr>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-dark text-white pt-3 pb-2">
+      <h5 class="fw-bold">Formulario de Inspección Física</h5>
+    </div>
+    <div class="card-body bg-light p-4">
+      <div class="row g-4">
+        
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-muted small">Vehículo</label>
+          <select class="form-select form-select-lg" [(ngModel)]="inspeccionActual.idVehiculo">
+            <option [value]="null">Seleccione Vehículo...</option>
+            </select>
+        </div>
+        
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-muted small">Cliente</label>
+          <select class="form-select form-select-lg" [(ngModel)]="inspeccionActual.idCliente">
+            <option [value]="null">Seleccione Cliente...</option>
+            </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-muted small">Nivel de Combustible</label>
+          <select class="form-select form-select-lg border-primary" [(ngModel)]="inspeccionActual.cantidadCombustible">
+            <option value="">Seleccione...</option>
+            <option value="1/4">1/4</option>
+            <option value="1/2">1/2</option>
+            <option value="3/4">3/4</option>
+            <option value="Lleno">Lleno</option>
+          </select>
+        </div>
+
+        <div class="col-md-12 mt-4">
+          <h6 class="fw-bold text-secondary mb-3">Estado Exterior y Equipamiento</h6>
+          <div class="d-flex flex-wrap gap-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneRalladuras">
+              <label class="form-check-label fw-medium text-danger">Tiene Ralladuras</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneRoturasCristal">
+              <label class="form-check-label fw-medium text-danger">Roturas en Cristal</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneGomaRespuesta">
+              <label class="form-check-label fw-medium text-success">Goma de Repuesto</label>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneGato">
+              <label class="form-check-label fw-medium text-success">Gato Hidráulico</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-12 mt-4">
+          <h6 class="fw-bold text-secondary mb-3">Estado de los Neumáticos (Marcar si están en buen estado)</h6>
+          <div class="d-flex flex-wrap gap-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.gomaDelanteraIzquierda">
+              <label class="form-check-label">Delantera Izquierda</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.gomaDelanteraDerecha">
+              <label class="form-check-label">Delantera Derecha</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.gomaTraseraIzquierda">
+              <label class="form-check-label">Trasera Izquierda</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.gomaTraseraDerecha">
+              <label class="form-check-label">Trasera Derecha</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-12 mt-5 text-end">
+          <button class="btn btn-success btn-lg px-5 fw-bold shadow-sm" (click)="guardarInspeccion()">
+            Registrar Inspección
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container mt-5 text-center" *ngIf="rolActual !== 'admin'">
+  <div class="alert alert-danger d-inline-block p-4 shadow-sm">
+    <h4 class="fw-bold mb-2">🚫 Acceso Restringido</h4>
+    <p class="mb-0">Tu rol de empleado no tiene permisos para auditar vehículos.</p>
+  </div>
+</div>

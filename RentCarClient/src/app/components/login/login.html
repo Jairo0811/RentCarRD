@@ -1,0 +1,27 @@
+<div class="vh-100 d-flex justify-content-center align-items-center bg-light" style="margin-top: -100px;">
+  <div class="card shadow-lg border-0 rounded-4" style="width: 400px;">
+    <div class="card-body p-5 text-center">
+      
+      <div class="mb-4">
+        <span class="fs-1">🚗</span>
+        <h3 class="fw-bold text-primary mt-2">Rent-a-Car Pro</h3>
+        <p class="text-muted small">Ingresa tus credenciales para continuar</p>
+      </div>
+      
+      <div class="mb-3 text-start">
+        <label class="form-label fw-bold text-muted small">Usuario</label>
+        <input type="text" [(ngModel)]="usuario" class="form-control form-control-lg bg-light border-0" placeholder="Ej: admin">
+      </div>
+      
+      <div class="mb-4 text-start">
+        <label class="form-label fw-bold text-muted small">Contraseña</label>
+        <input type="password" [(ngModel)]="password" (keyup.enter)="ingresar()" class="form-control form-control-lg bg-light border-0" placeholder="••••••••">
+      </div>
+      
+      <button (click)="ingresar()" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm rounded-pill">
+        Iniciar Sesión
+      </button>
+      
+    </div>
+  </div>
+</div>
