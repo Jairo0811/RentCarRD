@@ -7,11 +7,21 @@ public partial class Vehiculo
 {
     public int Id { get; set; }
 
-    public string Descripcion { get; set; } = null!;
+    public string? Descripcion { get; set; }
 
-    public string NoChasis { get; set; } = null!;
+    public string? NoChasis { get; set; }
 
-    public string NoPlaca { get; set; } = null!;
+    public string? NoMotor { get; set; }
 
-    public bool Estado { get; set; }
+    public string? NoPlaca { get; set; }
+
+    public int? IdTipoVehiculo { get; set; }
+
+    public int? IdMarca { get; set; }
+
+    public int? IdModelo { get; set; }
+
+    public int? IdTipoCombustible { get; set; }
+
+    public bool? Estado { get; set; }
 }

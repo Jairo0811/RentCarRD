@@ -1,45 +1,69 @@
-<div class="container mt-4">
+<<div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-secondary">Gestión de Clientes</h2>
-    <button class="btn fw-bold shadow-sm" [ngClass]="mostrarFormulario ? 'btn-outline-danger' : 'btn-success'"
-      (click)="mostrarFormulario = !mostrarFormulario">
+
+    <button
+      class="btn fw-bold shadow-sm"
+      [ngClass]="mostrarFormulario ? 'btn-outline-danger' : 'btn-success'"
+      (click)="mostrarFormulario ? cancelar() : mostrarFormulario = true">
       {{ mostrarFormulario ? 'Cancelar Operación' : '+ Nuevo Cliente' }}
     </button>
   </div>
 
   <div *ngIf="mostrarFormulario" class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
     <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-      <h5 class="text-primary fw-bold">Registrar Nuevo Cliente</h5>
+      <h5 class="text-primary fw-bold">
+        {{ modoEdicion ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}
+      </h5>
     </div>
+
     <div class="card-body p-4">
       <div class="row g-3">
         <div class="col-md-6">
           <label class="form-label text-muted small fw-bold">Nombre Completo</label>
-          <input [(ngModel)]="nuevoCliente.nombre" placeholder="Ej: Jairo Matías"
+          <input
+            [(ngModel)]="nuevoCliente.nombre"
+            placeholder="Ej: Jairo Matías"
             class="form-control form-control-lg" />
         </div>
+
         <div class="col-md-6">
           <label class="form-label text-muted small fw-bold">Cédula</label>
-          <input [(ngModel)]="nuevoCliente.cedula" placeholder="000-0000000-0" class="form-control form-control-lg"
+          <input
+            [(ngModel)]="nuevoCliente.cedula"
+            placeholder="000-0000000-0"
+            class="form-control form-control-lg"
             maxlength="13" />
           <small class="text-muted">Formato requerido: 000-0000000-0</small>
         </div>
+
         <div class="col-md-6">
           <label class="form-label text-muted small fw-bold">Límite de Crédito ($)</label>
-          <input type="number" [(ngModel)]="nuevoCliente.limiteCredito" placeholder="0.00"
+          <input
+            type="number"
+            [(ngModel)]="nuevoCliente.limiteCredito"
+            placeholder="0.00"
             class="form-control form-control-lg" />
         </div>
+
         <div class="col-md-6">
           <label class="form-label text-muted small fw-bold d-flex justify-content-between align-items-center">
             No. Tarjeta de Crédito
-            <span *ngIf="nuevoCliente.noTarjetaCr" class="badge"
+            <span
+              *ngIf="nuevoCliente.noTarjetaCr"
+              class="badge"
               [ngClass]="obtenerColorTarjeta(identificarTarjeta(nuevoCliente.noTarjetaCr))">
               {{ identificarTarjeta(nuevoCliente.noTarjetaCr) }}
             </span>
           </label>
-          <input [(ngModel)]="nuevoCliente.noTarjetaCr" placeholder="XXXX-XXXX-XXXX-XXXX"
-            class="form-control form-control-lg" maxlength="19" />
+
+          <input
+            [(ngModel)]="nuevoCliente.noTarjetaCr"
+            placeholder="XXXX-XXXX-XXXX-XXXX"
+            class="form-control form-control-lg"
+            maxlength="19" />
         </div>
+
         <div class="col-md-6">
           <label class="form-label text-muted small fw-bold">Estado en el Sistema</label>
           <select [(ngModel)]="nuevoCliente.estado" class="form-select form-select-lg">
@@ -48,9 +72,19 @@
           </select>
         </div>
       </div>
-      <div class="mt-4 text-end">
-        <button (click)="guardarCliente()" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">
-          Guardar Cliente
+
+      <div class="mt-4 d-flex justify-content-end gap-2">
+        <button
+          *ngIf="modoEdicion"
+          class="btn btn-secondary btn-lg"
+          (click)="cancelar()">
+          Cancelar
+        </button>
+
+        <button
+          (click)="guardarCliente()"
+          class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">
+          {{ modoEdicion ? 'Actualizar Cliente' : 'Guardar Cliente' }}
         </button>
       </div>
     </div>
@@ -66,21 +100,48 @@
               <th class="py-3">Cédula</th>
               <th class="py-3">Límite de Crédito</th>
               <th class="py-3">Estado</th>
+              <th class="py-3 text-center">Acciones</th>
             </tr>
           </thead>
+
           <tbody>
             <tr *ngFor="let c of clientes">
               <td class="px-4 fw-bold text-secondary">{{ c.nombre }}</td>
+
               <td>
                 <span class="text-muted">{{ c.cedula }}</span>
               </td>
+
               <td class="fw-bold text-success">
                 {{ c.limiteCredito | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
               </td>
+
               <td>
-                <span class="badge rounded-pill" [ngClass]="c.estado ? 'text-bg-success' : 'text-bg-danger'">
+                <span
+                  class="badge rounded-pill"
+                  [ngClass]="c.estado ? 'text-bg-success' : 'text-bg-danger'">
                   {{ c.estado ? 'Activo' : 'Inactivo' }}
                 </span>
+              </td>
+
+              <td class="text-center">
+                <button
+                  class="btn btn-warning btn-sm me-2"
+                  (click)="editar(c)">
+                  ✏️ Editar
+                </button>
+
+                <button
+                  class="btn btn-danger btn-sm"
+                  (click)="eliminar(c.id)">
+                  🗑 Eliminar
+                </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="clientes.length === 0">
+              <td colspan="5" class="text-center py-4 text-muted">
+                No hay clientes registrados.
               </td>
             </tr>
           </tbody>

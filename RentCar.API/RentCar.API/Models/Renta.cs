@@ -23,11 +23,9 @@ public partial class Renta
 
     public int CantidadDias { get; set; }
 
+    public decimal Total { get; set; }
+
     public string Comentario { get; set; } = null!;
 
     public string Estado { get; set; } = null!;
-
-
-
-
 }

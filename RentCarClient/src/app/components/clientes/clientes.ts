@@ -24,13 +24,14 @@ export class ClientesComponent implements OnInit {
   
   clientes: Cliente[] = [];
   mostrarFormulario = false;
+  modoEdicion = false;
   
   nuevoCliente: Cliente = { 
     nombre: '', 
     cedula: '', 
     limiteCredito: 0, 
     estado: true,
-    noTarjetaCr: '',       // En blanco para capturar el dato
+    noTarjetaCr: '',
     tipoPersona: 'Física' 
   };
 
@@ -53,30 +54,75 @@ export class ClientesComponent implements OnInit {
       return;
     }
 
-    this.clienteService.crearCliente(this.nuevoCliente).subscribe({
-      next: () => { 
-        alert('¡Cliente guardado con éxito!'); 
-        this.cargarClientes(); 
-        
-        // Limpiamos el formulario al guardar
-        this.nuevoCliente = { nombre: '', cedula: '', limiteCredito: 0, estado: true, noTarjetaCr: '', tipoPersona: 'Física' }; 
-        this.mostrarFormulario = false;
+    if (this.modoEdicion) {
+      this.clienteService.actualizarCliente(this.nuevoCliente).subscribe({
+        next: () => {
+          alert('Cliente actualizado correctamente');
+          this.cargarClientes();
+          this.cancelar();
+        },
+        error: (err) => {
+          console.error('Error al actualizar', err);
+          alert('Ocurrió un error al actualizar. Revisa la consola.');
+        }
+      });
+    } else {
+      this.clienteService.crearCliente(this.nuevoCliente).subscribe({
+        next: () => {
+          alert('Cliente guardado correctamente');
+          this.cargarClientes();
+          this.cancelar();
+        },
+        error: (err) => {
+          console.error('Error al guardar', err);
+          alert('Ocurrió un error al guardar. Revisa la consola.');
+        }
+      });
+    }
+  }
+
+  editar(cliente: Cliente): void {
+    this.nuevoCliente = { ...cliente };
+    this.modoEdicion = true;
+    this.mostrarFormulario = true;
+  }
+
+  eliminar(id?: number): void {
+    if (!id) return;
+
+    if (!confirm('¿Desea eliminar este cliente?')) {
+      return;
+    }
+
+    this.clienteService.eliminarCliente(id).subscribe({
+      next: () => {
+        alert('Cliente eliminado correctamente');
+        this.cargarClientes();
       },
       error: (err) => {
-        console.error('Error al guardar', err);
-        alert('Ocurrió un error al guardar. Revisa la consola para más detalles.');
+        console.error('Error al eliminar', err);
+        alert('No se pudo eliminar el cliente. Puede estar relacionado con una renta.');
       }
     });
   }
 
-  // =========================================================
-  // MÉTODOS PARA DETECTAR LA MARCA DE LA TARJETA DE CRÉDITO
-  // =========================================================
+  cancelar(): void {
+    this.nuevoCliente = {
+      nombre: '',
+      cedula: '',
+      limiteCredito: 0,
+      estado: true,
+      noTarjetaCr: '',
+      tipoPersona: 'Física'
+    };
+
+    this.modoEdicion = false;
+    this.mostrarFormulario = false;
+  }
 
   identificarTarjeta(numero: string | undefined): string {
     if (!numero) return '';
     
-    // Limpiamos los guiones o espacios que el usuario pueda escribir
     const numLimpio = numero.replace(/\D/g, ''); 
     
     if (numLimpio.startsWith('4')) return 'VISA';
@@ -89,11 +135,11 @@ export class ClientesComponent implements OnInit {
 
   obtenerColorTarjeta(marca: string): string {
     switch(marca) {
-      case 'VISA': return 'text-bg-primary';       // Azul
-      case 'MASTERCARD': return 'text-bg-warning'; // Amarillo/Naranja
-      case 'AMEX': return 'text-bg-success';       // Verde
-      case 'DISCOVER': return 'text-bg-info';      // Celeste
-      default: return 'text-bg-secondary';         // Gris
+      case 'VISA': return 'text-bg-primary';
+      case 'MASTERCARD': return 'text-bg-warning';
+      case 'AMEX': return 'text-bg-success';
+      case 'DISCOVER': return 'text-bg-info';
+      default: return 'text-bg-secondary';
     }
   }
 }
