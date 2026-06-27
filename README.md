@@ -9,7 +9,9 @@
 
 ## 📖 Descripción
 
-**RentCarRD** es un sistema web desarrollado para la administración y gestión de empresas de renta de vehículos. La aplicación permite administrar clientes, vehículos, inspecciones, contratos de renta, devoluciones y reportes, proporcionando una solución centralizada para las operaciones de un Rent Car.
+**RentCarRD** es un sistema web desarrollado para la administración y gestión de empresas de renta de vehículos. 
+
+La aplicación permite administrar clientes, vehículos, inspecciones, contratos de renta, devoluciones y reportes, proporcionando una solución centralizada para las operaciones de un Rent Car.
 
 RentCarRD forma parte de una colección de proyectos académicos desarrollados en la Universidad APEC (UNAPEC), tomando como referencia el listado de proyectos propuesto por el profesor **Juan Pablo Valdez Reyes**. 
 
