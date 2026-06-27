@@ -1,8 +1,8 @@
 🚗 RentCarRD - Sistema de Gestión de Rentas
 
 <p align="center"> <img src="https://skillicons.dev/icons?i=html,css,angular,ts,bootstrap&perline=5" /> </p>
-<p align="center"> <img src="https://skillicons.dev/icons?i=cs,dotnet,&perline=2" /> </p>
-<p align="center"> <img src="https://skillicons.dev/icons?i=visualstudio,vscode,git,github&perline=4" /> </p>
+<p align="center"> <img src="https://skillicons.dev/icons?i=cs,dotnet,visualstudio,vscode,git,github&perline=6" /> </p>
+
 
 
 <p align="center"> <strong>Sistema web para la administración de empresas de renta de vehículos.</strong><br> Desarrollado con Angular, .NET y Microsoft SQL Server. </p>
