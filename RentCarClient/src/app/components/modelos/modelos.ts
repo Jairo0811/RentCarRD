@@ -1,89 +1,128 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common'; 
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModeloService } from '../../services/modelo.service';
 import { MarcaService } from '../../services/marca.service';
-import { Modelo } from '../../interfaces/modelo';
-import { Marca } from '../../interfaces/marca';
+
+export interface Modelo {
+  id?: number;
+  idMarca: number;
+  descripcion: string;
+  estado: boolean;
+}
+
+export interface Marca {
+  id?: number;
+  descripcion: string;
+  estado: boolean;
+}
 
 @Component({
   selector: 'app-modelos',
-  standalone: true, 
-  imports: [CommonModule, FormsModule], 
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './modelos.html',
-  styleUrls: ['./modelos.css']
+  styleUrl: './modelos.css'
 })
 export class ModelosComponent implements OnInit {
-  
+
   listaModelos: Modelo[] = [];
   listaMarcas: Marca[] = [];
-  
-  // Molde vacío para el formulario
+
   modeloActual: Modelo = {
-    descripcion: '',
     idMarca: 0,
+    descripcion: '',
     estado: true
   };
 
   constructor(
     private modeloService: ModeloService,
-    private marcaService: MarcaService
+    private marcaService: MarcaService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.cargarModelos();
-    this.cargarMarcas();
+    setTimeout(() => {
+      this.cargarModelos();
+      this.cargarMarcas();
+    }, 0);
   }
 
   cargarModelos(): void {
     this.modeloService.getModelos().subscribe({
-      next: (data) => {
-        this.listaModelos = data;
-        // Eliminamos el detectChanges() forzado.
+      next: (data: Modelo[]) => {
+        this.listaModelos = [...data];
+        this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error al cargar modelos', err)
+      error: (err: any) => {
+        console.error('Error al cargar modelos', err);
+      }
     });
   }
 
   cargarMarcas(): void {
-    // Esto llena el menú desplegable (Select) del formulario
     this.marcaService.getMarcas().subscribe({
-      next: (data) => this.listaMarcas = data,
-      error: (err) => console.error('Error al cargar marcas', err)
+      next: (data: Marca[]) => {
+        this.listaMarcas = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al cargar marcas', err);
+      }
     });
   }
 
   guardarModelo(): void {
-    // Validación rápida
-    if (!this.modeloActual.descripcion || this.modeloActual.idMarca === 0) {
+    if (!this.modeloActual.descripcion || Number(this.modeloActual.idMarca) === 0) {
       alert('Por favor completa la descripción y selecciona una marca.');
       return;
     }
 
-    this.modeloService.createModelo(this.modeloActual).subscribe({
+    const modeloEnviar: Modelo = {
+      ...this.modeloActual,
+      idMarca: Number(this.modeloActual.idMarca),
+      estado: true
+    };
+
+    this.modeloService.createModelo(modeloEnviar).subscribe({
       next: () => {
         alert('Modelo guardado con éxito');
-        this.cargarModelos(); // Recarga la tabla
-        this.modeloActual = { descripcion: '', idMarca: 0, estado: true }; // Limpia el formulario
+
+        this.modeloActual = {
+          idMarca: 0,
+          descripcion: '',
+          estado: true
+        };
+
+        this.cargarModelos();
+        this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error al guardar', err)
+      error: (err: any) => {
+        console.error('Error al guardar', err);
+      }
     });
   }
 
   eliminarModelo(id: number | undefined): void {
-    if (id && confirm('¿Estás seguro de eliminar este modelo?')) {
-      this.modeloService.deleteModelo(id).subscribe({
-        next: () => {
-          this.cargarModelos();
-        },
-        error: (err) => console.error('Error al eliminar', err)
-      });
+    if (!id) return;
+
+    if (!confirm('¿Estás seguro de eliminar este modelo?')) {
+      return;
     }
+
+    this.modeloService.deleteModelo(id).subscribe({
+      next: () => {
+        this.cargarModelos();
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al eliminar', err);
+      }
+    });
   }
 
-  // Método auxiliar para mostrar el nombre de la marca en la tabla en vez del ID numérico
   obtenerNombreMarca(idMarca: number): string {
-    const marca = this.listaMarcas.find(m => m.id === idMarca);
-    return marca ? marca.descripcion : 'Desconocida';
+    const marca = this.listaMarcas.find(m => Number(m.id) === Number(idMarca));
+    return marca ? marca.descripcion : 'N/A';
   }
 }

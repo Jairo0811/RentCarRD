@@ -13,7 +13,8 @@ import { InspeccionComponent } from './components/inspeccion/inspeccion';
 import { ReportesComponent } from './components/reportes/reportes';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' }, // Entra directo al login
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+
   { path: 'login', component: LoginComponent },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'vehiculos', component: Vehiculos },
@@ -25,6 +26,5 @@ export const routes: Routes = [
   { path: 'tipos-combustibles', component: TiposCombustiblesComponent },
   { path: 'empleados', component: EmpleadosComponent },
   { path: 'inspeccion', component: InspeccionComponent },
-  { path: 'reportes', component: ReportesComponent },
-  { path: '', redirectTo: 'vehiculos', pathMatch: 'full' },
+  { path: 'reportes', component: ReportesComponent }
 ];

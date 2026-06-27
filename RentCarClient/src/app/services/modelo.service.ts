@@ -1,35 +1,32 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Modelo } from '../interfaces/modelo'; // Importamos tu nueva interfaz
 
 @Injectable({
   providedIn: 'root'
 })
-export class ModeloService { // Le agregamos 'Service' al nombre para no confundir
-
-  // Confirma que este puerto (7112) es el que dice tu PowerShell
-  private apiUrl = 'http://localhost:5266/api/Modelos'; 
+export class ModeloService {
+  private apiUrl = 'http://localhost:5266/api/Modelos';
 
   constructor(private http: HttpClient) { }
 
-  getModelos(): Observable<Modelo[]> {
-    return this.http.get<Modelo[]>(this.apiUrl);
+  getModelos(): Observable<any[]> {
+    return this.http.get<any[]>(this.apiUrl);
   }
 
-  getModelo(id: number): Observable<Modelo> {
-    return this.http.get<Modelo>(`${this.apiUrl}/${id}`);
+  crearModelo(modelo: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl, modelo);
   }
 
-  createModelo(modelo: Modelo): Observable<Modelo> {
-    return this.http.post<Modelo>(this.apiUrl, modelo);
+  createModelo(modelo: any): Observable<any> {
+    return this.crearModelo(modelo);
   }
 
-  updateModelo(id: number, modelo: Modelo): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}`, modelo);
+  eliminarModelo(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
 
   deleteModelo(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+    return this.eliminarModelo(id);
   }
 }

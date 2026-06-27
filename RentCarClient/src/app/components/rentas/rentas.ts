@@ -1,9 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
+
 import { RentaService } from '../../services/renta.service';
 import { VehiculoService } from '../../services/vehiculo.service';
 import { ClienteService } from '../../services/cliente.service';
+import { EmpleadoService } from '../../services/empleado.service';
+import { MarcaService } from '../../services/marca.service';
+import { ModeloService } from '../../services/modelo.service';
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -19,47 +25,71 @@ export class Rentas implements OnInit {
   vehiculos: any[] = [];
   vehiculosDisponibles: any[] = [];
   clientes: any[] = [];
+  empleados: any[] = [];
+  marcas: any[] = [];
+  modelos: any[] = [];
+
   mostrarFormulario = false;
 
-  nuevaRenta: any = {
-    idEmpleado: 1,
-    idVehiculo: 0,
-    idCliente: 0,
-    fechaRenta: new Date().toISOString().split('T')[0],
-    fechaDevolucion: null,
-    montoXDia: 0,
-    cantidadDias: 1,
-    comentario: '',
-    estado: 'Activa'
+  nuevaRenta: any = this.crearRentaVacia();
+
+  empresa = {
+    nombre: 'RentCarRD',
+    subtitulo: 'Alquiler de Vehículos',
+    rnc: '1-31-98765-4',
+    direccion: 'Av. Winston Churchill #45, Santo Domingo, República Dominicana',
+    telefono: '(809) 555-2026',
+    correo: 'info@rentcarrd.com'
   };
 
   constructor(
     private rentaService: RentaService,
     private vehiculoService: VehiculoService,
-    private clienteService: ClienteService
+    private clienteService: ClienteService,
+    private empleadoService: EmpleadoService,
+    private marcaService: MarcaService,
+    private modeloService: ModeloService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
-    this.cargarDatos();
+    setTimeout(() => this.cargarDatos(), 0);
+  }
+
+  crearRentaVacia(): any {
+    return {
+      idEmpleado: 1,
+      idVehiculo: 0,
+      idCliente: 0,
+      fechaRenta: new Date().toISOString().split('T')[0],
+      fechaDevolucion: null,
+      montoXDia: 0,
+      cantidadDias: 1,
+      comentario: '',
+      estado: 'Activa'
+    };
   }
 
   cargarDatos(): void {
-    this.rentaService.getRentas().subscribe({
-      next: (data) => this.rentas = data,
-      error: (err) => console.error('Error cargando rentas', err)
-    });
-
-    this.vehiculoService.getVehiculos().subscribe({
-      next: (data) => {
-        this.vehiculos = data;
+    forkJoin({
+      rentas: this.rentaService.getRentas(),
+      vehiculos: this.vehiculoService.getVehiculos(),
+      clientes: this.clienteService.getClientes(),
+      empleados: this.empleadoService.getEmpleados(),
+      marcas: this.marcaService.getMarcas(),
+      modelos: this.modeloService.getModelos()
+    }).subscribe({
+      next: ({ rentas, vehiculos, clientes, empleados, marcas, modelos }: any) => {
+        this.rentas = [...rentas];
+        this.vehiculos = [...vehiculos];
         this.vehiculosDisponibles = this.vehiculos.filter(v => v.estado === true);
+        this.clientes = [...clientes];
+        this.empleados = [...empleados];
+        this.marcas = [...marcas];
+        this.modelos = [...modelos];
+        this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error cargando vehículos', err)
-    });
-
-    this.clienteService.getClientes().subscribe({
-      next: (data) => this.clientes = data,
-      error: (err) => console.error('Error cargando clientes', err)
+      error: (err: any) => console.error('Error cargando datos de rentas', err)
     });
   }
 
@@ -92,7 +122,7 @@ export class Rentas implements OnInit {
         this.cancelarFormulario();
         this.cargarDatos();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error al rentar', err);
         alert('Ocurrió un error al guardar la renta.');
       }
@@ -100,33 +130,21 @@ export class Rentas implements OnInit {
   }
 
   devolverVehiculo(id: number): void {
-    if (!confirm('¿Deseas procesar la devolución de este vehículo?')) {
-      return;
-    }
+    if (!confirm('¿Deseas procesar la devolución de este vehículo?')) return;
 
     this.rentaService.devolverRenta(id).subscribe({
       next: () => {
         alert('Vehículo devuelto con éxito.');
         this.cargarDatos();
       },
-      error: (err) => console.error('Error al devolver', err)
+      error: (err: any) => console.error('Error al devolver', err)
     });
   }
 
   cancelarFormulario(): void {
     this.mostrarFormulario = false;
-
-    this.nuevaRenta = {
-      idEmpleado: 1,
-      idVehiculo: 0,
-      idCliente: 0,
-      fechaRenta: new Date().toISOString().split('T')[0],
-      fechaDevolucion: null,
-      montoXDia: 0,
-      cantidadDias: 1,
-      comentario: '',
-      estado: 'Activa'
-    };
+    this.nuevaRenta = this.crearRentaVacia();
+    this.cdr.detectChanges();
   }
 
   obtenerMontoDia(renta: any): number {
@@ -134,79 +152,195 @@ export class Rentas implements OnInit {
   }
 
   obtenerTotal(renta: any): number {
-    const monto = this.obtenerMontoDia(renta);
-    const dias = Number(renta.cantidadDias ?? 0);
-    return monto * dias;
+    return this.obtenerMontoDia(renta) * Number(renta.cantidadDias ?? 0);
+  }
+
+  formatoRD(valor: number): string {
+    return `RD$ ${Number(valor || 0).toLocaleString('es-DO', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  }
+
+  obtenerNombreMarca(idMarca: number): string {
+    const marca = this.marcas.find(m => Number(m.id) === Number(idMarca));
+    return marca ? marca.descripcion : 'N/A';
+  }
+
+  obtenerNombreModelo(idModelo: number): string {
+    const modelo = this.modelos.find(m => Number(m.id) === Number(idModelo));
+    return modelo ? modelo.descripcion : 'N/A';
+  }
+
+  cargarLogoBase64(): Promise<string | null> {
+    return fetch('images/logo-rentcarrd.png')
+      .then(response => response.blob())
+      .then(blob => new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      }))
+      .catch(() => null);
   }
 
   imprimirFactura(noRenta: number): void {
-    const renta = this.rentas.find(r => r.noRenta === noRenta);
-    if (!renta) return;
+    forkJoin({
+      rentas: this.rentaService.getRentas(),
+      vehiculos: this.vehiculoService.getVehiculos(),
+      clientes: this.clienteService.getClientes(),
+      empleados: this.empleadoService.getEmpleados(),
+      marcas: this.marcaService.getMarcas(),
+      modelos: this.modeloService.getModelos()
+    }).subscribe({
+      next: async ({ rentas, vehiculos, clientes, empleados, marcas, modelos }: any) => {
+        this.rentas = [...rentas];
+        this.vehiculos = [...vehiculos];
+        this.clientes = [...clientes];
+        this.empleados = [...empleados];
+        this.marcas = [...marcas];
+        this.modelos = [...modelos];
 
-    const cliente = this.clientes.find(c => c.id === renta.idCliente);
-    const vehiculo = this.vehiculos.find(v => v.id === renta.idVehiculo);
+        const renta = this.rentas.find(r => Number(r.noRenta) === Number(noRenta));
 
-    const montoDiario = this.obtenerMontoDia(renta);
-    const dias = Number(renta.cantidadDias ?? 0);
-    const total = montoDiario * dias;
+        if (!renta) {
+          alert('No se encontró la renta.');
+          return;
+        }
 
-    const doc = new jsPDF();
+        const cliente = this.clientes.find(c => Number(c.id) === Number(renta.idCliente));
+        const vehiculo = this.vehiculos.find(v => Number(v.id) === Number(renta.idVehiculo));
+        const empleado = this.empleados.find(e => Number(e.id) === Number(renta.idEmpleado));
 
-    doc.setFontSize(22);
-    doc.setTextColor(40, 116, 166);
-    doc.text('Rent-a-Car Pro', 105, 20, { align: 'center' });
+        const marca = vehiculo ? this.obtenerNombreMarca(vehiculo.idMarca) : 'N/A';
+        const modelo = vehiculo ? this.obtenerNombreModelo(vehiculo.idModelo) : 'N/A';
 
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.text('Contrato de Renta de Vehículo', 105, 30, { align: 'center' });
+        const montoDiario = this.obtenerMontoDia(renta);
+        const dias = Number(renta.cantidadDias ?? 0);
+        const total = montoDiario * dias;
 
-    doc.setFontSize(11);
-    doc.text(`No. de Factura: #${renta.noRenta}`, 14, 45);
-    doc.text(`Fecha de Emisión: ${new Date(renta.fechaRenta).toLocaleDateString()}`, 14, 52);
-    doc.text(`Estado de Renta: ${renta.estado}`, 14, 59);
+        const logoBase64 = await this.cargarLogoBase64();
 
-    autoTable(doc, {
-      startY: 65,
-      theme: 'grid',
-      head: [['Datos del Cliente', 'Datos del Vehículo']],
-      body: [
-        [
-          `Nombre: ${cliente ? cliente.nombre : 'N/A'}\nCédula: ${cliente ? cliente.cedula : 'N/A'}`,
-          `Vehículo: ${vehiculo ? vehiculo.descripcion : 'N/A'}\nPlaca: ${vehiculo ? vehiculo.noPlaca : 'N/A'}`
-        ]
-      ],
+        const doc = new jsPDF();
+
+        // Encabezado
+        if (logoBase64) {
+          doc.addImage(logoBase64, 'PNG', 14, 10, 28, 28);
+        }
+
+        doc.setFontSize(20);
+        doc.setTextColor(25, 66, 120);
+        doc.text(this.empresa.nombre, 48, 18);
+
+        doc.setFontSize(10);
+        doc.setTextColor(90, 90, 90);
+        doc.text(this.empresa.subtitulo, 48, 24);
+        doc.text(`RNC: ${this.empresa.rnc}`, 48, 30);
+        doc.text(this.empresa.direccion, 48, 36);
+
+        doc.setFontSize(9);
+        doc.text(`Tel.: ${this.empresa.telefono}`, 145, 24);
+        doc.text(`Correo: ${this.empresa.correo}`, 145, 30);
+
+        doc.setDrawColor(25, 66, 120);
+        doc.setLineWidth(0.8);
+        doc.line(14, 44, 196, 44);
+
+        // Título
+        doc.setFontSize(16);
+        doc.setTextColor(0, 0, 0);
+        doc.text('Contrato de Renta de Vehículo', 105, 55, { align: 'center' });
+
+        // Datos contrato
+        autoTable(doc, {
+          startY: 62,
+          theme: 'grid',
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [25, 66, 120], textColor: 255 },
+          head: [['No. Factura', 'Fecha Emisión', 'Estado', 'Empleado']],
+          body: [[
+            `#${renta.noRenta}`,
+            new Date(renta.fechaRenta).toLocaleDateString('es-DO'),
+            renta.estado,
+            empleado?.nombre ?? 'Administrador General'
+          ]]
+        });
+
+        // Cliente y vehículo
+        autoTable(doc, {
+          startY: (doc as any).lastAutoTable.finalY + 8,
+          theme: 'grid',
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [33, 37, 41], textColor: 255 },
+          head: [['Datos del Cliente', 'Datos del Vehículo']],
+          body: [
+            [
+              `Nombre: ${cliente?.nombre ?? 'N/A'}\nCédula: ${cliente?.cedula ?? 'N/A'}\nTipo Persona: ${cliente?.tipoPersona ?? 'Fisica'}`,
+              `Vehículo: ${vehiculo?.descripcion ?? 'N/A'}\nMarca: ${marca}\nModelo: ${modelo}\nPlaca: ${vehiculo?.noPlaca ?? 'N/A'}`
+            ]
+          ]
+        });
+
+        // Detalle económico
+        autoTable(doc, {
+          startY: (doc as any).lastAutoTable.finalY + 10,
+          theme: 'striped',
+          styles: { fontSize: 10 },
+          headStyles: { fillColor: [25, 66, 120], textColor: 255 },
+          head: [['Concepto', 'Cantidad', 'Tarifa por Día', 'Subtotal']],
+          body: [
+            [
+              'Renta de Vehículo',
+              `${dias} días`,
+              this.formatoRD(montoDiario),
+              this.formatoRD(total)
+            ]
+          ]
+        });
+
+        const yTotal = (doc as any).lastAutoTable.finalY + 12;
+
+        doc.setFontSize(15);
+        doc.setTextColor(39, 174, 96);
+        doc.text(`TOTAL FACTURADO: ${this.formatoRD(total)}`, 195, yTotal, { align: 'right' });
+
+        // Comentario
+        if (renta.comentario) {
+          doc.setFontSize(9);
+          doc.setTextColor(80, 80, 80);
+          doc.text('Comentario:', 14, yTotal + 12);
+          doc.text(String(renta.comentario), 14, yTotal + 18);
+        }
+
+        // Firmas
+        const yFirmas = yTotal + 45;
+
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+
+        doc.text('______________________________', 20, yFirmas);
+        doc.text('Firma del Cliente', 42, yFirmas + 6);
+        doc.text(cliente?.nombre ?? 'Cliente', 42, yFirmas + 12);
+
+        doc.text('______________________________', 120, yFirmas);
+        doc.text('Firma del Representante', 138, yFirmas + 6);
+        doc.text(empleado?.nombre ?? 'Administrador General', 137, yFirmas + 12);
+
+        // Pie
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text(
+          `Generado por Francis Jairo Matías Rosario - RentCarRD | ${new Date().toLocaleString('es-DO')}`,
+          105,
+          285,
+          { align: 'center' }
+        );
+
+        doc.save(`Contrato_Renta_00${renta.noRenta}.pdf`);
+      },
+      error: (err: any) => {
+        console.error('Error generando factura', err);
+        alert('No se pudo generar la factura.');
+      }
     });
-
-    autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 10,
-      theme: 'striped',
-      head: [['Concepto', 'Cantidad', 'Tarifa por Día', 'Subtotal']],
-      body: [
-        [
-          'Renta de Vehículo',
-          `${dias} días`,
-          `RD$ ${montoDiario.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
-          `RD$ ${total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
-        ]
-      ],
-    });
-
-    doc.setFontSize(14);
-    doc.setTextColor(39, 174, 96);
-    doc.text(
-      `TOTAL FACTURADO: RD$ ${total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
-      195,
-      (doc as any).lastAutoTable.finalY + 15,
-      { align: 'right' }
-    );
-
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Firma del Cliente: ___________________________', 14, (doc as any).lastAutoTable.finalY + 45);
-    doc.text('Firma Autorizada: ___________________________', 110, (doc as any).lastAutoTable.finalY + 45);
-
-    doc.text('Generado por Jairo Matías - Sistema Rent-a-Car Pro', 105, 280, { align: 'center' });
-
-    doc.save(`Contrato_Renta_00${renta.noRenta}.pdf`);
   }
 }

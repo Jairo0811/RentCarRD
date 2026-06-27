@@ -1,28 +1,242 @@
-<div class="container mt-5">
-  <h2 class="fw-bold mb-4">📊 Panel de Control - Rent-a-Car Pro</h2>
-  
-  <div class="row">
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 p-4">
-        <h5 class="text-center fw-bold text-muted">Estado de las Rentas</h5>
-        <canvas baseChart 
-          [datasets]="pieChartDatasets" 
-          [labels]="pieChartLabels" 
-          [options]="pieChartOptions" 
-          [legend]="true" 
-          type="pie">
-        </canvas>
-      </div>
-    </div>
+<div class="dashboard-wrapper">
 
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 p-4 h-100 d-flex justify-content-center">
-        <h4 class="fw-bold">Resumen de Flota</h4>
-        <p class="text-muted">Visualización en tiempo real del desempeño de tus operaciones.</p>
-        <div class="alert alert-primary">
-          <strong>Total de operaciones:</strong> {{ pieChartDatasets[0].data[0] + pieChartDatasets[0].data[1] }}
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="hero-left">
+        <div class="hero-badge">
+          <i class="bi bi-speedometer2"></i>
+          Panel Ejecutivo
+        </div>
+
+        <h1>Bienvenido</h1>
+
+        <p class="hero-subtitle">
+          Sistema de Gestión de Rentas de Vehículos
+        </p>
+
+        <h2>
+          <span class="brand-blue">RentCar</span><span class="brand-red">RD</span>
+        </h2>
+
+        <p class="hero-date">
+          {{ fechaActual() }}
+        </p>
+      </div>
+
+      <div class="hero-right">
+        <div class="hero-circle">
+          <i class="bi bi-car-front-fill"></i>
         </div>
       </div>
     </div>
-  </div>
+  </section>
+
+  <section class="stats-grid">
+
+    <div class="stat-card primary">
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="bi bi-car-front-fill"></i>
+        </div>
+        <span>Flota</span>
+      </div>
+      <h3>{{ totalVehiculos }}</h3>
+      <p>Vehículos registrados</p>
+      <a routerLink="/vehiculos">Ver vehículos <i class="bi bi-arrow-right"></i></a>
+    </div>
+
+    <div class="stat-card success">
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <span>Disponibilidad</span>
+      </div>
+      <h3>{{ vehiculosDisponibles }}</h3>
+      <p>Vehículos disponibles</p>
+      <div class="progress-line">
+        <div class="progress-fill success-fill" [style.width.%]="porcentajeDisponibles()"></div>
+      </div>
+      <small>{{ porcentajeDisponibles() }}% de la flota</small>
+    </div>
+
+    <div class="stat-card danger">
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="bi bi-key-fill"></i>
+        </div>
+        <span>Rentados</span>
+      </div>
+      <h3>{{ vehiculosRentados }}</h3>
+      <p>Vehículos en renta</p>
+      <div class="progress-line">
+        <div class="progress-fill danger-fill" [style.width.%]="porcentajeRentados()"></div>
+      </div>
+      <small>{{ porcentajeRentados() }}% de la flota</small>
+    </div>
+
+    <div class="stat-card info">
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="bi bi-people-fill"></i>
+        </div>
+        <span>Clientes</span>
+      </div>
+      <h3>{{ totalClientes }}</h3>
+      <p>Clientes registrados</p>
+      <a routerLink="/clientes">Ver clientes <i class="bi bi-arrow-right"></i></a>
+    </div>
+
+  </section>
+
+  <section class="content-grid">
+
+    <div class="panel-card">
+      <div class="panel-header">
+        <div>
+          <h4>Estado Operativo</h4>
+          <p>Resumen general de rentas e inspecciones</p>
+        </div>
+        <i class="bi bi-activity"></i>
+      </div>
+
+      <div class="mini-stats">
+        <div>
+          <span class="mini-number text-warning">{{ rentasActivas }}</span>
+          <p>Rentas activas</p>
+        </div>
+
+        <div>
+          <span class="mini-number text-success">{{ rentasConcluidas }}</span>
+          <p>Rentas concluidas</p>
+        </div>
+
+        <div>
+          <span class="mini-number text-danger">{{ totalInspecciones }}</span>
+          <p>Inspecciones</p>
+        </div>
+      </div>
+
+      <div class="finance-box">
+        <span>Ingresos acumulados</span>
+        <h3>{{ formatoRD(ingresosTotales) }}</h3>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-header">
+        <div>
+          <h4>Accesos Rápidos</h4>
+          <p>Operaciones frecuentes del sistema</p>
+        </div>
+        <i class="bi bi-lightning-charge-fill"></i>
+      </div>
+
+      <div class="quick-actions">
+        <a routerLink="/vehiculos">
+          <i class="bi bi-plus-circle-fill"></i>
+          Registrar vehículo
+        </a>
+
+        <a routerLink="/clientes">
+          <i class="bi bi-person-plus-fill"></i>
+          Registrar cliente
+        </a>
+
+        <a routerLink="/rentas">
+          <i class="bi bi-file-earmark-plus-fill"></i>
+          Nueva renta
+        </a>
+
+        <a routerLink="/reportes">
+          <i class="bi bi-printer-fill"></i>
+          Reportes
+        </a>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="bottom-grid">
+
+    <div class="panel-card large-panel">
+      <div class="panel-header">
+        <div>
+          <h4>Últimas Rentas</h4>
+          <p>Contratos recientes registrados en el sistema</p>
+        </div>
+        <a routerLink="/rentas" class="small-link">Ver todas</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table dashboard-table align-middle">
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Cliente</th>
+              <th>Vehículo</th>
+              <th>Estado</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let renta of ultimasRentas">
+              <td class="fw-bold">#{{ renta.noRenta }}</td>
+              <td>{{ obtenerCliente(renta.idCliente) }}</td>
+              <td>{{ obtenerVehiculo(renta.idVehiculo) }}</td>
+              <td>
+                <span class="badge rounded-pill"
+                  [ngClass]="renta.estado === 'Activa' || renta.estado === 'Abierta' ? 'text-bg-warning' : 'text-bg-success'">
+                  {{ renta.estado }}
+                </span>
+              </td>
+              <td class="fw-bold text-success">{{ formatoRD(obtenerTotal(renta)) }}</td>
+            </tr>
+
+            <tr *ngIf="ultimasRentas.length === 0">
+              <td colspan="5" class="text-center text-muted py-4">
+                No hay rentas registradas.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-header">
+        <div>
+          <h4>Vehículos Recientes</h4>
+          <p>Últimos vehículos agregados</p>
+        </div>
+      </div>
+
+      <div class="recent-cars">
+        <div class="recent-car" *ngFor="let v of vehiculosRecientes">
+          <div class="car-thumb">
+            <img *ngIf="v.imagenUrl" [src]="'http://localhost:5266' + v.imagenUrl" alt="Vehículo">
+            <span *ngIf="!v.imagenUrl">
+              <i class="bi bi-car-front-fill"></i>
+            </span>
+          </div>
+
+          <div class="car-info">
+            <h6>{{ v.descripcion }}</h6>
+            <p>{{ v.noPlaca || 'Sin placa' }}</p>
+          </div>
+
+          <span class="badge rounded-pill" [ngClass]="v.estado ? 'text-bg-success' : 'text-bg-danger'">
+            {{ v.estado ? 'Disponible' : 'Rentado' }}
+          </span>
+        </div>
+
+        <div *ngIf="vehiculosRecientes.length === 0" class="text-center text-muted py-4">
+          No hay vehículos registrados.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
 </div>

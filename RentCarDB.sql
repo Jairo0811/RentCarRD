@@ -102,3 +102,95 @@ VALUES ('Administrador General', '000-0000000-1', 'Matutina', 10, GETDATE(), 1);
 
 SELECT * FROM Empleados;
 
+
+IF NOT EXISTS (SELECT 1 FROM Marcas WHERE Id = 1)
+INSERT INTO Marcas (Descripcion, Estado) VALUES ('Toyota', 1);
+
+IF NOT EXISTS (SELECT 1 FROM Modelos WHERE Id = 1)
+INSERT INTO Modelos (IdMarca, Descripcion, Estado) VALUES (1, 'Corolla', 1);
+
+IF NOT EXISTS (SELECT 1 FROM TiposVehiculos WHERE Id = 1)
+INSERT INTO TiposVehiculos (Descripcion, Estado) VALUES ('Sedán', 1);
+
+IF NOT EXISTS (SELECT 1 FROM TiposCombustibles WHERE Id = 1)
+INSERT INTO TiposCombustibles (Descripcion, Estado) VALUES ('Gasolina', 1);
+
+SELECT TOP 1 * FROM Vehiculos;
+
+
+USE RentCarDB;
+GO
+
+SELECT 
+    COLUMN_NAME
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Vehiculos';
+
+
+USE RentCarDB;
+GO
+
+ALTER TABLE Vehiculos
+ADD IdTipoCombustible INT NULL;
+GO
+
+ALTER TABLE Vehiculos
+ADD CONSTRAINT FK_Vehiculos_TiposCombustibles
+FOREIGN KEY (IdTipoCombustible) REFERENCES TiposCombustibles(Id);
+GO
+
+USE RentCarDB;
+GO
+
+ALTER TABLE Vehiculos
+ADD IdTipoCombustible INT NULL;
+GO
+
+ALTER TABLE Vehiculos
+ADD CONSTRAINT FK_Vehiculos_TiposCombustibles
+FOREIGN KEY (IdTipoCombustible) REFERENCES TiposCombustibles(Id);
+GO
+
+
+
+USE RentCarDB;
+GO
+
+SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Vehiculos';
+
+
+USE RentCarDB;
+GO
+
+IF COL_LENGTH('Vehiculos', 'ImagenUrl') IS NULL
+BEGIN
+    ALTER TABLE Vehiculos
+    ADD ImagenUrl VARCHAR(300) NULL;
+END
+GO
+
+
+USE RentCarDB;
+GO
+
+IF COL_LENGTH('Vehiculos', 'ImagenUrl') IS NULL
+BEGIN
+    ALTER TABLE Vehiculos
+    ADD ImagenUrl VARCHAR(300) NULL;
+END
+GO
+
+SELECT Id, ImagenUrl
+FROM Vehiculos;
+
+
+USE RentCarDB;
+GO
+
+SELECT * FROM Rentas WHERE NoRenta = 2;
+
+SELECT * FROM Clientes;
+
+SELECT * FROM Vehiculos;

@@ -38,6 +38,7 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAngularApp");
 
 app.UseAuthorization();
+app.UseStaticFiles();
 
 // 7. Mapear los controladores
 app.MapControllers();

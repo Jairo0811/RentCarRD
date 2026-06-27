@@ -4,23 +4,32 @@
 
   <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-dark text-white pt-3 pb-2">
-      <h5 class="fw-bold">Formulario de Inspección Física</h5>
+      <h5 class="fw-bold">
+        {{ modoEdicion ? 'Editar Inspección' : 'Formulario de Inspección Física' }}
+      </h5>
     </div>
+
     <div class="card-body bg-light p-4">
       <div class="row g-4">
-        
+
         <div class="col-md-4">
           <label class="form-label fw-bold text-muted small">Vehículo</label>
           <select class="form-select form-select-lg" [(ngModel)]="inspeccionActual.idVehiculo">
-            <option [value]="null">Seleccione Vehículo...</option>
-            </select>
+            <option [ngValue]="null">Seleccione Vehículo...</option>
+            <option *ngFor="let v of vehiculos" [ngValue]="v.id">
+              {{ v.descripcion }} - {{ v.noPlaca }}
+            </option>
+          </select>
         </div>
-        
+
         <div class="col-md-4">
           <label class="form-label fw-bold text-muted small">Cliente</label>
           <select class="form-select form-select-lg" [(ngModel)]="inspeccionActual.idCliente">
-            <option [value]="null">Seleccione Cliente...</option>
-            </select>
+            <option [ngValue]="null">Seleccione Cliente...</option>
+            <option *ngFor="let c of clientes" [ngValue]="c.id">
+              {{ c.nombre }} - {{ c.cedula }}
+            </option>
+          </select>
         </div>
 
         <div class="col-md-4">
@@ -36,19 +45,23 @@
 
         <div class="col-md-12 mt-4">
           <h6 class="fw-bold text-secondary mb-3">Estado Exterior y Equipamiento</h6>
+
           <div class="d-flex flex-wrap gap-4">
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneRalladuras">
               <label class="form-check-label fw-medium text-danger">Tiene Ralladuras</label>
             </div>
+
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneRoturasCristal">
               <label class="form-check-label fw-medium text-danger">Roturas en Cristal</label>
             </div>
+
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneGomaRespuesta">
               <label class="form-check-label fw-medium text-success">Goma de Repuesto</label>
             </div>
+
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneGato">
               <label class="form-check-label fw-medium text-success">Gato Hidráulico</label>
@@ -57,34 +70,100 @@
         </div>
 
         <div class="col-md-12 mt-4">
-          <h6 class="fw-bold text-secondary mb-3">Estado de los Neumáticos (Marcar si están en buen estado)</h6>
+          <h6 class="fw-bold text-secondary mb-3">Estado de los Neumáticos</h6>
+
           <div class="d-flex flex-wrap gap-4">
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.gomaDelanteraIzquierda">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.estadoGomasDI">
               <label class="form-check-label">Delantera Izquierda</label>
             </div>
+
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.gomaDelanteraDerecha">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.estadoGomasDD">
               <label class="form-check-label">Delantera Derecha</label>
             </div>
+
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.gomaTraseraIzquierda">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.estadoGomasTI">
               <label class="form-check-label">Trasera Izquierda</label>
             </div>
+
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.gomaTraseraDerecha">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.estadoGomasTD">
               <label class="form-check-label">Trasera Derecha</label>
             </div>
           </div>
         </div>
 
         <div class="col-md-12 mt-5 text-end">
+          <button *ngIf="modoEdicion" class="btn btn-secondary btn-lg me-2" (click)="cancelar()">
+            Cancelar
+          </button>
+
           <button class="btn btn-success btn-lg px-5 fw-bold shadow-sm" (click)="guardarInspeccion()">
-            Registrar Inspección
+            {{ modoEdicion ? 'Actualizar Inspección' : 'Registrar Inspección' }}
           </button>
         </div>
 
       </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white">
+      <h5 class="fw-bold text-secondary mb-0">Historial de Inspecciones</h5>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Vehículo</th>
+            <th>Cliente</th>
+            <th>Combustible</th>
+            <th>Ralladuras</th>
+            <th>Cristal</th>
+            <th>Fecha</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let i of inspecciones">
+            <td class="fw-bold">#{{ i.idTransaccion || i.id }}</td>
+            <td>{{ obtenerVehiculo(i.idVehiculo) }}</td>
+            <td>{{ obtenerCliente(i.idCliente) }}</td>
+            <td>{{ i.cantidadCombustible }}</td>
+            <td>
+              <span class="badge" [ngClass]="i.tieneRalladuras ? 'text-bg-danger' : 'text-bg-success'">
+                {{ i.tieneRalladuras ? 'Sí' : 'No' }}
+              </span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="i.tieneRoturasCristal ? 'text-bg-danger' : 'text-bg-success'">
+                {{ i.tieneRoturasCristal ? 'Con rotura' : 'Bien' }}
+              </span>
+            </td>
+            <td>{{ i.fecha | date:'dd/MM/yyyy' }}</td>
+            <td class="text-center">
+              <button class="btn btn-warning btn-sm me-2" (click)="editar(i)">
+                ✏️ Editar
+              </button>
+
+              <button class="btn btn-danger btn-sm" (click)="eliminar(i)">
+                🗑 Eliminar
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="inspecciones.length === 0">
+            <td colspan="8" class="text-center py-4 text-muted">
+              No hay inspecciones registradas.
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

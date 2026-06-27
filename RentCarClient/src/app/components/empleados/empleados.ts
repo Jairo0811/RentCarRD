@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common'; 
 import { FormsModule } from '@angular/forms';
 import { EmpleadoService } from '../../services/empleado.service';
@@ -34,18 +34,22 @@ export class EmpleadosComponent implements OnInit {
     estado: true 
   };
 
-  constructor(private empleadoService: EmpleadoService) {}
+  constructor(private empleadoService: EmpleadoService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void { 
-    this.cargarDatos(); 
+   setTimeout(() => this.cargarDatos(), 0); 
   }
 
   cargarDatos(): void {
-    this.empleadoService.getEmpleados().subscribe({
-      next: (data) => this.listaEmpleados = data,
-      error: (err) => console.error('Error al cargar empleados', err)
-    });
-  }
+  this.empleadoService.getEmpleados().subscribe({
+    next: (data: Empleado[]) => {
+      this.listaEmpleados = [...data];
+      this.cdr.detectChanges();
+    },
+    error: (err: any) =>
+      console.error('Error al cargar empleados', err)
+  });
+}
 
 guardar(): void {
     // 1. Validar campos vacíos

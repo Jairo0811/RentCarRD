@@ -87,7 +87,7 @@
             <td>{{ renta.idVehiculo }}</td>
             <td>{{ renta.cantidadDias || 0 }} días</td>
 <td class="fw-bold text-success">
-  ${{ ((renta.montoXDia || 0) * (renta.cantidadDias || 0)) | number:'1.2-2' }}
+RD$ {{ obtenerTotal(renta) | number:'1.2-2' }}
 </td>
             <td>
               <span class="badge" [ngClass]="renta.estado === 'Activa' ? 'bg-primary' : 'bg-secondary'">

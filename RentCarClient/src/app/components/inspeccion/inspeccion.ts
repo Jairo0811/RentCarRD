@@ -2,8 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InspeccionService } from '../../services/inspeccion.service';
+import { VehiculoService } from '../../services/vehiculo.service';
+import { ClienteService } from '../../services/cliente.service';
 
 export interface Inspeccion {
+  id?: number;
   idTransaccion?: number;
   idVehiculo: number | null;
   idCliente: number | null;
@@ -12,10 +15,10 @@ export interface Inspeccion {
   tieneGomaRespuesta: boolean;
   tieneGato: boolean;
   tieneRoturasCristal: boolean;
-  gomaDelanteraDerecha: boolean;
-  gomaDelanteraIzquierda: boolean;
-  gomaTraseraDerecha: boolean;
-  gomaTraseraIzquierda: boolean;
+  estadoGomasDD: boolean;
+  estadoGomasDI: boolean;
+  estadoGomasTD: boolean;
+  estadoGomasTI: boolean;
   fecha: string;
   idEmpleadoInspeccion: number | null;
   estado: boolean;
@@ -28,23 +31,52 @@ export interface Inspeccion {
   templateUrl: './inspeccion.html'
 })
 export class InspeccionComponent implements OnInit {
-  
+
+  inspecciones: any[] = [];
+  vehiculos: any[] = [];
+  clientes: any[] = [];
+  modoEdicion = false;
+
   inspeccionActual: Inspeccion = this.resetForm();
 
-  constructor(private inspeccionService: InspeccionService) {}
+  constructor(
+    private inspeccionService: InspeccionService,
+    private vehiculoService: VehiculoService,
+    private clienteService: ClienteService
+  ) {}
 
-  // Escudo aplicado aquí
   get rolActual(): string | null {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       return localStorage.getItem('rolUsuario');
     }
+
     return null;
   }
 
   ngOnInit(): void {
     if (this.rolActual !== 'admin') {
-      alert('Acceso Denegado. Solo los administradores pueden realizar inspecciones.');
+      alert('Acceso denegado. Solo los administradores pueden realizar inspecciones.');
+      return;
     }
+
+    this.cargarDatos();
+  }
+
+  cargarDatos(): void {
+    this.inspeccionService.getInspecciones().subscribe({
+      next: (data) => this.inspecciones = data,
+      error: (err) => console.error('Error cargando inspecciones', err)
+    });
+
+    this.vehiculoService.getVehiculos().subscribe({
+      next: (data) => this.vehiculos = data,
+      error: (err) => console.error('Error cargando vehículos', err)
+    });
+
+    this.clienteService.getClientes().subscribe({
+      next: (data) => this.clientes = data,
+      error: (err) => console.error('Error cargando clientes', err)
+    });
   }
 
   resetForm(): Inspeccion {
@@ -56,32 +88,116 @@ export class InspeccionComponent implements OnInit {
       tieneGomaRespuesta: true,
       tieneGato: true,
       tieneRoturasCristal: false,
-      gomaDelanteraDerecha: true,
-      gomaDelanteraIzquierda: true,
-      gomaTraseraDerecha: true,
-      gomaTraseraIzquierda: true,
-      fecha: new Date().toISOString(), 
-      idEmpleadoInspeccion: 1, 
+      estadoGomasDD: true,
+      estadoGomasDI: true,
+      estadoGomasTD: true,
+      estadoGomasTI: true,
+      fecha: new Date().toISOString(),
+      idEmpleadoInspeccion: 1,
       estado: true
     };
   }
 
-  guardarInspeccion() {
+  guardarInspeccion(): void {
     if (this.rolActual !== 'admin') return;
 
     if (!this.inspeccionActual.idVehiculo || !this.inspeccionActual.idCliente || !this.inspeccionActual.cantidadCombustible) {
-      return alert('Por favor, selecciona el Vehículo, el Cliente y el Nivel de Combustible.');
+      alert('Selecciona el vehículo, el cliente y el nivel de combustible.');
+      return;
     }
-    
-    this.inspeccionService.crearInspeccion(this.inspeccionActual).subscribe({
+
+    const inspeccionEnviar = {
+      ...this.inspeccionActual,
+      idVehiculo: Number(this.inspeccionActual.idVehiculo),
+      idCliente: Number(this.inspeccionActual.idCliente),
+      idEmpleadoInspeccion: 1,
+      fecha: this.inspeccionActual.fecha || new Date().toISOString(),
+      estado: true
+    };
+
+    if (this.modoEdicion) {
+      this.inspeccionService.actualizarInspeccion(inspeccionEnviar).subscribe({
+        next: () => {
+          alert('Inspección actualizada correctamente.');
+          this.cancelar();
+          this.cargarDatos();
+        },
+        error: (err) => {
+          console.error('Error al actualizar inspección', err);
+          alert('Ocurrió un error al actualizar la inspección.');
+        }
+      });
+    } else {
+      this.inspeccionService.crearInspeccion(inspeccionEnviar).subscribe({
+        next: () => {
+          alert('Inspección registrada correctamente.');
+          this.cancelar();
+          this.cargarDatos();
+        },
+        error: (err) => {
+          console.error('Error al guardar inspección', err);
+          alert('Ocurrió un error al guardar la inspección.');
+        }
+      });
+    }
+  }
+
+  editar(inspeccion: any): void {
+    this.inspeccionActual = {
+      id: inspeccion.id,
+      idTransaccion: inspeccion.idTransaccion,
+      idVehiculo: inspeccion.idVehiculo,
+      idCliente: inspeccion.idCliente,
+      tieneRalladuras: inspeccion.tieneRalladuras,
+      cantidadCombustible: inspeccion.cantidadCombustible,
+      tieneGomaRespuesta: inspeccion.tieneGomaRespuesta,
+      tieneGato: inspeccion.tieneGato,
+      tieneRoturasCristal: inspeccion.tieneRoturasCristal,
+      estadoGomasDD: inspeccion.estadoGomasDD,
+      estadoGomasDI: inspeccion.estadoGomasDI,
+      estadoGomasTD: inspeccion.estadoGomasTD,
+      estadoGomasTI: inspeccion.estadoGomasTI,
+      fecha: inspeccion.fecha,
+      idEmpleadoInspeccion: inspeccion.idEmpleadoInspeccion,
+      estado: inspeccion.estado
+    };
+
+    this.modoEdicion = true;
+  }
+
+  eliminar(inspeccion: any): void {
+    const id = inspeccion.idTransaccion ?? inspeccion.id;
+
+    if (!id) return;
+
+    if (!confirm('¿Deseas eliminar esta inspección?')) {
+      return;
+    }
+
+    this.inspeccionService.eliminarInspeccion(id).subscribe({
       next: () => {
-        alert('¡Inspección registrada con éxito en la base de datos!');
-        this.inspeccionActual = this.resetForm(); 
+        alert('Inspección eliminada correctamente.');
+        this.cargarDatos();
       },
       error: (err) => {
-        console.error('Error al guardar inspección', err);
-        alert('Ocurrió un error al guardar. Revisa la consola.');
+        console.error('Error al eliminar inspección', err);
+        alert('No se pudo eliminar la inspección.');
       }
     });
+  }
+
+  cancelar(): void {
+    this.inspeccionActual = this.resetForm();
+    this.modoEdicion = false;
+  }
+
+  obtenerVehiculo(idVehiculo: number): string {
+    const vehiculo = this.vehiculos.find(v => v.id === idVehiculo);
+    return vehiculo ? `${vehiculo.descripcion} - ${vehiculo.noPlaca}` : 'N/A';
+  }
+
+  obtenerCliente(idCliente: number): string {
+    const cliente = this.clientes.find(c => c.id === idCliente);
+    return cliente ? cliente.nombre : 'N/A';
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common'; 
 import { FormsModule } from '@angular/forms';
 import { ClienteService } from '../../services/cliente.service';
@@ -21,30 +21,39 @@ export interface Cliente {
   styleUrls: ['./clientes.css']
 })
 export class ClientesComponent implements OnInit {
-  
   clientes: Cliente[] = [];
   mostrarFormulario = false;
   modoEdicion = false;
   
-  nuevoCliente: Cliente = { 
-    nombre: '', 
-    cedula: '', 
-    limiteCredito: 0, 
-    estado: true,
-    noTarjetaCr: '',
-    tipoPersona: 'Física' 
-  };
+  nuevoCliente: Cliente = this.crearClienteVacio();
 
-  constructor(private clienteService: ClienteService) {}
+  constructor(
+    private clienteService: ClienteService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void { 
-    this.cargarClientes(); 
+    setTimeout(() => this.cargarClientes(), 0);
+  }
+
+  crearClienteVacio(): Cliente {
+    return {
+      nombre: '',
+      cedula: '',
+      limiteCredito: 0,
+      estado: true,
+      noTarjetaCr: '',
+      tipoPersona: 'Física'
+    };
   }
 
   cargarClientes(): void {
     this.clienteService.getClientes().subscribe({
-      next: (data) => this.clientes = data,
-      error: (err) => console.error('Error al cargar clientes', err)
+      next: (data: Cliente[]) => {
+        this.clientes = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => console.error('Error al cargar clientes', err)
     });
   }
 
@@ -54,28 +63,40 @@ export class ClientesComponent implements OnInit {
       return;
     }
 
+    const cedulaLimpia = this.limpiarCedula(this.nuevoCliente.cedula);
+
+    if (!this.cedulaValida(cedulaLimpia)) {
+      alert('La cédula ingresada no es válida.');
+      return;
+    }
+
+    const clienteEnviar: Cliente = {
+      ...this.nuevoCliente,
+      cedula: cedulaLimpia
+    };
+
     if (this.modoEdicion) {
-      this.clienteService.actualizarCliente(this.nuevoCliente).subscribe({
+      this.clienteService.actualizarCliente(clienteEnviar).subscribe({
         next: () => {
           alert('Cliente actualizado correctamente');
-          this.cargarClientes();
           this.cancelar();
+          this.cargarClientes();
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Error al actualizar', err);
-          alert('Ocurrió un error al actualizar. Revisa la consola.');
+          alert(err.error || 'Ocurrió un error al actualizar. Revisa la consola.');
         }
       });
     } else {
-      this.clienteService.crearCliente(this.nuevoCliente).subscribe({
+      this.clienteService.crearCliente(clienteEnviar).subscribe({
         next: () => {
           alert('Cliente guardado correctamente');
-          this.cargarClientes();
           this.cancelar();
+          this.cargarClientes();
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Error al guardar', err);
-          alert('Ocurrió un error al guardar. Revisa la consola.');
+          alert(err.error || 'Ocurrió un error al guardar. Revisa la consola.');
         }
       });
     }
@@ -85,21 +106,20 @@ export class ClientesComponent implements OnInit {
     this.nuevoCliente = { ...cliente };
     this.modoEdicion = true;
     this.mostrarFormulario = true;
+    this.cdr.detectChanges();
   }
 
   eliminar(id?: number): void {
     if (!id) return;
 
-    if (!confirm('¿Desea eliminar este cliente?')) {
-      return;
-    }
+    if (!confirm('¿Desea eliminar este cliente?')) return;
 
     this.clienteService.eliminarCliente(id).subscribe({
       next: () => {
         alert('Cliente eliminado correctamente');
         this.cargarClientes();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error al eliminar', err);
         alert('No se pudo eliminar el cliente. Puede estar relacionado con una renta.');
       }
@@ -107,17 +127,39 @@ export class ClientesComponent implements OnInit {
   }
 
   cancelar(): void {
-    this.nuevoCliente = {
-      nombre: '',
-      cedula: '',
-      limiteCredito: 0,
-      estado: true,
-      noTarjetaCr: '',
-      tipoPersona: 'Física'
-    };
-
+    this.nuevoCliente = this.crearClienteVacio();
     this.modoEdicion = false;
     this.mostrarFormulario = false;
+    this.cdr.detectChanges();
+  }
+
+  limpiarCedula(cedula: string): string {
+    return (cedula || '').replace(/\D/g, '');
+  }
+
+  cedulaValida(cedula: string): boolean {
+    cedula = this.limpiarCedula(cedula);
+
+    if (cedula.length !== 11) return false;
+
+    if (/^(\d)\1{10}$/.test(cedula)) return false;
+
+    const pesos = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2];
+    let suma = 0;
+
+    for (let i = 0; i < 10; i++) {
+      let valor = Number(cedula[i]) * pesos[i];
+
+      if (valor >= 10) {
+        valor = Math.floor(valor / 10) + (valor % 10);
+      }
+
+      suma += valor;
+    }
+
+    const digitoVerificador = (10 - (suma % 10)) % 10;
+
+    return digitoVerificador === Number(cedula[10]);
   }
 
   identificarTarjeta(numero: string | undefined): string {
@@ -134,7 +176,7 @@ export class ClientesComponent implements OnInit {
   }
 
   obtenerColorTarjeta(marca: string): string {
-    switch(marca) {
+    switch (marca) {
       case 'VISA': return 'text-bg-primary';
       case 'MASTERCARD': return 'text-bg-warning';
       case 'AMEX': return 'text-bg-success';
