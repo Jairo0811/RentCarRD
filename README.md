@@ -1,29 +1,27 @@
-# 🚗 RentCarRD - Sistema de Gestión de Rentas
+## 🚗 RentCarRD - Sistema de Gestión de Rentas
 
-<p align="center">
-  <img src="https://skillicons.dev/icons?i=angular,ts,html,css,bootstrap,dotnet,cs,visualstudio,vscode,git,github" />
-</p>
+<p align="center"> <img src="https://skillicons.dev/icons?i=html,css,angular,ts,bootstrap&perline=5" /> </p>
+<p align="center"> <img src="https://skillicons.dev/icons?i=cs,dotnet,visualstudio,vscode,git,github&perline=6" /> </p>
 
-<p align="center">
-  <strong>Sistema web para la administración de empresas de renta de vehículos.</strong><br>
-  Desarrollado con Angular, .NET y SQL Server siguiendo una arquitectura cliente-servidor.
-</p>
 
----
+
+<p align="center"> <strong>Sistema web para la administración de empresas de renta de vehículos.</strong><br> Desarrollado con Angular, .NET y Microsoft SQL Server. </p>
 
 ## 📖 Descripción
 
-**RentCarRD** es un sistema integral de gestión para empresas de renta de vehículos, diseñado para administrar clientes, vehículos, inspecciones, contratos de renta y devoluciones desde una plataforma web moderna.
+**RentCarRD** es un sistema web desarrollado para la administración y gestión de empresas de renta de vehículos. 
 
-El proyecto fue desarrollado como parte del **Proyecto Final** de la asignatura de programación en **Universidad APEC (UNAPEC)**.
+La aplicación permite administrar clientes, vehículos, inspecciones, contratos de renta, devoluciones y reportes, proporcionando una solución centralizada para las operaciones de un Rent Car.
 
----
+RentCarRD forma parte de una colección de proyectos académicos desarrollados en la Universidad APEC (UNAPEC), tomando como referencia el listado de proyectos propuesto por el profesor **Juan Pablo Valdez Reyes**. 
+
+Cada proyecto de esta colección puede ser desarrollado utilizando la tecnología, lenguaje de programación y arquitectura que el estudiante considere más adecuados. 
+
+En este caso, RentCarRD fue implementado con Angular, .NET y Microsoft SQL Server, aplicando una arquitectura cliente-servidor para la gestión de empresas de renta de vehículos.
 
 # 🛠️ Tecnologías Utilizadas
 
-<p align="center">
-<img src="https://skillicons.dev/icons?i=angular,ts,html,css,bootstrap,dotnet,cs,visualstudio,vscode,git,github" />
-</p>
+<p align="center"> <img src="https://skillicons.dev/icons?i=angular,ts,html,css,bootstrap,dotnet,cs,visualstudio,vscode,git,github" /> </p>
 
 | Tecnología         | Descripción                 |
 | ------------------ | --------------------------- |
@@ -38,8 +36,6 @@ El proyecto fue desarrollado como parte del **Proyecto Final** de la asignatura 
 | 📄 jsPDF           | Generación de contratos PDF |
 | 📑 jsPDF AutoTable | Tablas profesionales en PDF |
 
----
-
 # ✨ Funcionalidades
 
 ## 👤 Gestión de Clientes
@@ -47,57 +43,36 @@ El proyecto fue desarrollado como parte del **Proyecto Final** de la asignatura 
 * ✅ Registro de clientes
 * ✅ Edición de clientes
 * ✅ Eliminación de clientes
-* ✅ Límite de crédito
-* ✅ Tipo de persona
-* ✅ Estado del cliente
-
----
-
+* ✅ Administración del límite de crédito
+* ✅ Manejo del estado del cliente
 ## 🚗 Gestión de Vehículos
-
 * ✅ Registro de vehículos
-* ✅ Marcas
-* ✅ Modelos
+* ✅ Administración de marcas
+* ✅ Administración de modelos
 * ✅ Tipos de vehículos
 * ✅ Tipos de combustible
-* ✅ Edición
-* ✅ Eliminación
-
----
-
-## 🔍 Inspección de Vehículos
-
-* ✅ Inspección previa a la renta
+* ✅ Edición de vehículos
+* ✅ Eliminación de vehículos
+## 🔍 Inspecciones
+* ✅ Registro de inspecciones
 * ✅ Estado de gomas
-* ✅ Nivel de combustible
 * ✅ Cristales
+* ✅ Nivel de combustible
 * ✅ Ralladuras
 * ✅ Goma de respuesta
 * ✅ Gato hidráulico
-
----
-
 ## 🔑 Rentas y Devoluciones
-
-* ✅ Registro de contratos
-* ✅ Selección de cliente
-* ✅ Selección de vehículo
+* ✅ Registro de contratos de renta
+* ✅ Asociación entre cliente y vehículo
 * ✅ Cálculo automático del total
 * ✅ Cambio automático del estado del vehículo
-* ✅ Devolución de vehículos
-
----
-
+* ✅ Registro de devoluciones
 ## 📄 Reportes
-
 * ✅ Contrato de renta en PDF
-* ✅ Total calculado automáticamente
 * ✅ Información del cliente
 * ✅ Información del vehículo
-* ✅ Formato profesional
-
----
-
+* ✅ Total calculado automáticamente
+* ✅ Documento listo para impresión
 # 📂 Estructura del Proyecto
 
 ```text
@@ -107,50 +82,41 @@ RentCarRD
 │   ├── Controllers
 │   ├── Models
 │   ├── Properties
-│   └── Program.cs
+│   ├── Program.cs
+│   └── appsettings.json
 │
 ├── RentCarClient
 │   ├── src
 │   ├── public
-│   └── angular.json
+│   ├── angular.json
+│   └── package.json
 │
 ├── RentCarDB.sql
 │
 └── README.md
 ```
-
 ---
 
 # 🚀 Instalación
-
 ## 🗄️ 1. Base de Datos
 
 Ejecutar el archivo:
-
 ```sql
 RentCarDB.sql
 ```
 
 en **Microsoft SQL Server**.
 
-Este script crea:
-
-* Base de datos
-* Tablas
-* Relaciones
-* Datos iniciales
-
----
-
 ## ⚙️ 2. Backend (.NET)
 
-Entrar al proyecto:
+Entrar a la carpeta del proyecto:
 
 ```bash
 cd RentCar.API
 ```
 
 Restaurar paquetes:
+
 
 ```bash
 dotnet restore
@@ -173,13 +139,11 @@ Swagger:
 ```text
 http://localhost:5266/swagger
 ```
-
 ---
 
 ## 🌐 3. Frontend (Angular)
 
-Entrar al proyecto:
-
+Entrar a la carpeta:
 ```bash
 cd RentCarClient
 ```
@@ -190,22 +154,17 @@ Instalar dependencias:
 npm install
 ```
 
-Ejecutar el servidor:
-
+Ejecutar la aplicación:
 ```bash
+
 ng serve -o
 ```
 
-La aplicación abrirá automáticamente en:
-
+La aplicación estará disponible en:
 ```text
 http://localhost:4200
 ```
-
----
-
-# 📊 Estado del Proyecto
-
+## 📊 Estado del Proyecto
 | Módulo          | Estado |
 | --------------- | :----: |
 | 👤 Clientes     |    ✅   |
@@ -217,20 +176,13 @@ http://localhost:4200
 | 🗄️ SQL Server  |    ✅   |
 | 🌐 API REST     |    ✅   |
 
----
+
+
 
 # 👨‍💻 Autor
 
 **Francis Jairo Matías Rosario**
 
-A00115261
+Universidad APEC (UNAPEC)
 
-🎓 Universidad APEC (UNAPEC)
-
-💻 Ingeniero de Software
-
-
----
-
-## ⭐ Si este proyecto te resulta útil, no olvides darle una estrella al repositorio.
-
+Matricula: A00115261
