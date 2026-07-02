@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+
 import { InspeccionService } from '../../services/inspeccion.service';
 import { VehiculoService } from '../../services/vehiculo.service';
 import { ClienteService } from '../../services/cliente.service';
@@ -42,40 +43,51 @@ export class InspeccionComponent implements OnInit {
   constructor(
     private inspeccionService: InspeccionService,
     private vehiculoService: VehiculoService,
-    private clienteService: ClienteService
+    private clienteService: ClienteService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   get rolActual(): string | null {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      return localStorage.getItem('rolUsuario');
-    }
-
-    return null;
+    return localStorage.getItem('rolUsuario');
   }
 
   ngOnInit(): void {
     if (this.rolActual !== 'admin') {
-      alert('Acceso denegado. Solo los administradores pueden realizar inspecciones.');
       return;
     }
 
-    this.cargarDatos();
+    setTimeout(() => this.cargarDatos(), 0);
   }
 
   cargarDatos(): void {
     this.inspeccionService.getInspecciones().subscribe({
-      next: (data) => this.inspecciones = data,
-      error: (err) => console.error('Error cargando inspecciones', err)
+      next: (data: any[]) => {
+        this.inspecciones = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error cargando inspecciones', err);
+      }
     });
 
     this.vehiculoService.getVehiculos().subscribe({
-      next: (data) => this.vehiculos = data,
-      error: (err) => console.error('Error cargando vehículos', err)
+      next: (data: any[]) => {
+        this.vehiculos = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error cargando vehículos', err);
+      }
     });
 
     this.clienteService.getClientes().subscribe({
-      next: (data) => this.clientes = data,
-      error: (err) => console.error('Error cargando clientes', err)
+      next: (data: any[]) => {
+        this.clientes = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error cargando clientes', err);
+      }
     });
   }
 
@@ -99,9 +111,15 @@ export class InspeccionComponent implements OnInit {
   }
 
   guardarInspeccion(): void {
-    if (this.rolActual !== 'admin') return;
+    if (this.rolActual !== 'admin') {
+      return;
+    }
 
-    if (!this.inspeccionActual.idVehiculo || !this.inspeccionActual.idCliente || !this.inspeccionActual.cantidadCombustible) {
+    if (
+      !this.inspeccionActual.idVehiculo ||
+      !this.inspeccionActual.idCliente ||
+      !this.inspeccionActual.cantidadCombustible
+    ) {
       alert('Selecciona el vehículo, el cliente y el nivel de combustible.');
       return;
     }
@@ -122,7 +140,7 @@ export class InspeccionComponent implements OnInit {
           this.cancelar();
           this.cargarDatos();
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Error al actualizar inspección', err);
           alert('Ocurrió un error al actualizar la inspección.');
         }
@@ -134,7 +152,7 @@ export class InspeccionComponent implements OnInit {
           this.cancelar();
           this.cargarDatos();
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Error al guardar inspección', err);
           alert('Ocurrió un error al guardar la inspección.');
         }
@@ -163,12 +181,15 @@ export class InspeccionComponent implements OnInit {
     };
 
     this.modoEdicion = true;
+    this.cdr.detectChanges();
   }
 
   eliminar(inspeccion: any): void {
     const id = inspeccion.idTransaccion ?? inspeccion.id;
 
-    if (!id) return;
+    if (!id) {
+      return;
+    }
 
     if (!confirm('¿Deseas eliminar esta inspección?')) {
       return;
@@ -179,7 +200,7 @@ export class InspeccionComponent implements OnInit {
         alert('Inspección eliminada correctamente.');
         this.cargarDatos();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error al eliminar inspección', err);
         alert('No se pudo eliminar la inspección.');
       }
@@ -189,15 +210,16 @@ export class InspeccionComponent implements OnInit {
   cancelar(): void {
     this.inspeccionActual = this.resetForm();
     this.modoEdicion = false;
+    this.cdr.detectChanges();
   }
 
   obtenerVehiculo(idVehiculo: number): string {
-    const vehiculo = this.vehiculos.find(v => v.id === idVehiculo);
+    const vehiculo = this.vehiculos.find(v => Number(v.id) === Number(idVehiculo));
     return vehiculo ? `${vehiculo.descripcion} - ${vehiculo.noPlaca}` : 'N/A';
   }
 
   obtenerCliente(idCliente: number): string {
-    const cliente = this.clientes.find(c => c.id === idCliente);
+    const cliente = this.clientes.find(c => Number(c.id) === Number(idCliente));
     return cliente ? cliente.nombre : 'N/A';
   }
 }

@@ -25,9 +25,9 @@
         </li>
 
         <li class="nav-item dropdown" *ngIf="rolActual === 'admin'">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-            >Catálogos</a
-          >
+          <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">
+  Catálogos
+</a>
           <ul class="dropdown-menu dropdown-menu-dark">
             <li><a class="dropdown-item" routerLink="/marcas">Marcas</a></li>
             <li><a class="dropdown-item" routerLink="/modelos">Modelos</a></li>
@@ -49,9 +49,9 @@
         </li>
 
         <li class="nav-item dropdown" *ngIf="rolActual === 'admin' || rolActual === 'empleado'">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-            >Gestión</a
-          >
+        <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">
+  Gestión
+</a>
           <ul class="dropdown-menu dropdown-menu-dark">
             <li><a class="dropdown-item" routerLink="/vehiculos">Vehículos</a></li>
             <li><a class="dropdown-item" routerLink="/clientes">Clientes</a></li>
