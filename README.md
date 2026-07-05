@@ -186,3 +186,5 @@ http://localhost:4200
 Universidad APEC (UNAPEC)
 
 Matricula: A00115261
+
+Carrera: Ingenieria de Software
