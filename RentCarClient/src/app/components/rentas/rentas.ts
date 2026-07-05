@@ -56,9 +56,17 @@ export class Rentas implements OnInit {
     setTimeout(() => this.cargarDatos(), 0);
   }
 
+  obtenerIdEmpleadoActual(): number {
+    return Number(localStorage.getItem('idEmpleado') || 1);
+  }
+
+  obtenerNombreUsuarioActual(): string {
+    return localStorage.getItem('nombreUsuario') || 'Administrador General';
+  }
+
   crearRentaVacia(): any {
     return {
-      idEmpleado: 1,
+      idEmpleado: this.obtenerIdEmpleadoActual(),
       idVehiculo: 0,
       idCliente: 0,
       fechaRenta: new Date().toISOString().split('T')[0],
@@ -105,7 +113,7 @@ export class Rentas implements OnInit {
     }
 
     const rentaEnviar = {
-      idEmpleado: 1,
+      idEmpleado: this.obtenerIdEmpleadoActual(),
       idVehiculo: Number(this.nuevaRenta.idVehiculo),
       idCliente: Number(this.nuevaRenta.idCliente),
       fechaRenta: this.nuevaRenta.fechaRenta,
@@ -172,6 +180,28 @@ export class Rentas implements OnInit {
     return modelo ? modelo.descripcion : 'N/A';
   }
 
+  obtenerEmpleadoDeRenta(renta: any): string {
+    const idEmpleadoRenta = Number(
+      renta.idEmpleado ??
+      renta.idempleado ??
+      renta.idEmpleadoNavigation?.id ??
+      renta.empleado?.id ??
+      0
+    );
+
+    const empleado = this.empleados.find(e =>
+      Number(e.id) === idEmpleadoRenta ||
+      Number(e.idEmpleado) === idEmpleadoRenta
+    );
+
+    return (
+      empleado?.nombre ||
+      renta.empleado?.nombre ||
+      renta.idEmpleadoNavigation?.nombre ||
+      this.obtenerNombreUsuarioActual()
+    );
+  }
+
   cargarLogoBase64(): Promise<string | null> {
     return fetch('images/logo-rentcarrd.png')
       .then(response => response.blob())
@@ -209,7 +239,8 @@ export class Rentas implements OnInit {
 
         const cliente = this.clientes.find(c => Number(c.id) === Number(renta.idCliente));
         const vehiculo = this.vehiculos.find(v => Number(v.id) === Number(renta.idVehiculo));
-        const empleado = this.empleados.find(e => Number(e.id) === Number(renta.idEmpleado));
+
+        const nombreRepresentante = this.obtenerEmpleadoDeRenta(renta);
 
         const marca = vehiculo ? this.obtenerNombreMarca(vehiculo.idMarca) : 'N/A';
         const modelo = vehiculo ? this.obtenerNombreModelo(vehiculo.idModelo) : 'N/A';
@@ -222,7 +253,6 @@ export class Rentas implements OnInit {
 
         const doc = new jsPDF();
 
-        // Encabezado
         if (logoBase64) {
           doc.addImage(logoBase64, 'PNG', 14, 10, 28, 28);
         }
@@ -245,12 +275,10 @@ export class Rentas implements OnInit {
         doc.setLineWidth(0.8);
         doc.line(14, 44, 196, 44);
 
-        // Título
         doc.setFontSize(16);
         doc.setTextColor(0, 0, 0);
         doc.text('Contrato de Renta de Vehículo', 105, 55, { align: 'center' });
 
-        // Datos contrato
         autoTable(doc, {
           startY: 62,
           theme: 'grid',
@@ -261,11 +289,10 @@ export class Rentas implements OnInit {
             `#${renta.noRenta}`,
             new Date(renta.fechaRenta).toLocaleDateString('es-DO'),
             renta.estado,
-            empleado?.nombre ?? 'Administrador General'
+            nombreRepresentante
           ]]
         });
 
-        // Cliente y vehículo
         autoTable(doc, {
           startY: (doc as any).lastAutoTable.finalY + 8,
           theme: 'grid',
@@ -274,13 +301,12 @@ export class Rentas implements OnInit {
           head: [['Datos del Cliente', 'Datos del Vehículo']],
           body: [
             [
-              `Nombre: ${cliente?.nombre ?? 'N/A'}\nCédula: ${cliente?.cedula ?? 'N/A'}\nTipo Persona: ${cliente?.tipoPersona ?? 'Fisica'}`,
+              `Nombre: ${cliente?.nombre ?? 'N/A'}\nCédula: ${cliente?.cedula ?? 'N/A'}\nTipo Persona: ${cliente?.tipoPersona ?? cliente?.TipoPersona ?? 'Fisica'}`,
               `Vehículo: ${vehiculo?.descripcion ?? 'N/A'}\nMarca: ${marca}\nModelo: ${modelo}\nPlaca: ${vehiculo?.noPlaca ?? 'N/A'}`
             ]
           ]
         });
 
-        // Detalle económico
         autoTable(doc, {
           startY: (doc as any).lastAutoTable.finalY + 10,
           theme: 'striped',
@@ -303,7 +329,6 @@ export class Rentas implements OnInit {
         doc.setTextColor(39, 174, 96);
         doc.text(`TOTAL FACTURADO: ${this.formatoRD(total)}`, 195, yTotal, { align: 'right' });
 
-        // Comentario
         if (renta.comentario) {
           doc.setFontSize(9);
           doc.setTextColor(80, 80, 80);
@@ -311,7 +336,6 @@ export class Rentas implements OnInit {
           doc.text(String(renta.comentario), 14, yTotal + 18);
         }
 
-        // Firmas
         const yFirmas = yTotal + 45;
 
         doc.setTextColor(0, 0, 0);
@@ -323,9 +347,8 @@ export class Rentas implements OnInit {
 
         doc.text('______________________________', 120, yFirmas);
         doc.text('Firma del Representante', 138, yFirmas + 6);
-        doc.text(empleado?.nombre ?? 'Administrador General', 137, yFirmas + 12);
+        doc.text(nombreRepresentante, 137, yFirmas + 12);
 
-        // Pie
         doc.setFontSize(8);
         doc.setTextColor(120, 120, 120);
         doc.text(

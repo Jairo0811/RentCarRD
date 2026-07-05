@@ -19,38 +19,44 @@ export class LoginComponent {
     private empleadoService: EmpleadoService
   ) {}
 
-  ingresar() {
-    // 1. Acceso del Administrador
-    if (this.usuario === 'admin' && this.password === '1234') {
+  ingresar(): void {
+    const usuarioNormalizado = this.usuario.trim().toLowerCase();
+    const passwordNormalizado = this.password.trim();
+
+    if (usuarioNormalizado === 'admin' && passwordNormalizado === '1234') {
       localStorage.setItem('rolUsuario', 'admin');
+      localStorage.setItem('idEmpleado', '1');
       localStorage.setItem('nombreUsuario', 'Administrador General');
+
       this.router.navigate(['/dashboard']);
-      return; 
+      return;
     }
 
-    // 2. Validación dinámica de Empleados
     this.empleadoService.getEmpleados().subscribe({
       next: (empleados: any[]) => {
-        
-        const empleadoValido = empleados.find(emp => {
-          // Quitamos todos los guiones de la cédula de la base de datos
-          const cedulaLimpia = emp.cedula.replace(/-/g, '');
-          
-          return emp.usuario && 
-                 emp.usuario.toLowerCase() === this.usuario.toLowerCase() && 
-                 cedulaLimpia === this.password;
+        const empleadoValido = empleados.find((emp: any) => {
+          const usuarioEmpleado = String(emp.usuario ?? '').trim().toLowerCase();
+          const cedulaLimpia = String(emp.cedula ?? '').replace(/\D/g, '');
+
+          return (
+            emp.estado === true &&
+            usuarioEmpleado === usuarioNormalizado &&
+            cedulaLimpia === passwordNormalizado.replace(/\D/g, '')
+          );
         });
 
         if (empleadoValido) {
           localStorage.setItem('rolUsuario', 'empleado');
+          localStorage.setItem('idEmpleado', String(empleadoValido.id));
           localStorage.setItem('nombreUsuario', empleadoValido.nombre);
-          
-          this.router.navigate(['/rentas']); 
-        } else {
-          alert('Credenciales incorrectas.\nContraseña debe ser tu cédula SIN guiones.');
+
+          this.router.navigate(['/rentas']);
+          return;
         }
+
+        alert('Credenciales incorrectas.\nContraseña debe ser tu cédula SIN guiones.');
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error al verificar credenciales', err);
         alert('No se pudo conectar con la base de datos.');
       }
