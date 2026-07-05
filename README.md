@@ -13,7 +13,7 @@
 
 La aplicación permite administrar clientes, vehículos, inspecciones, contratos de renta, devoluciones y reportes, proporcionando una solución centralizada para las operaciones de un Rent Car.
 
-RentCarRD forma parte de una colección de proyectos académicos desarrollados en la Universidad APEC (UNAPEC), tomando como referencia el listado de proyectos propuesto por el profesor **Juan Pablo Valdez Reyes**. 
+**RentCarRD** forma parte de una colección de proyectos académicos desarrollados en la Universidad APEC (UNAPEC), tomando como referencia el listado de proyectos propuesto por el profesor **Juan Pablo Valdez Reyes**. 
 
 Cada proyecto de esta colección puede ser desarrollado utilizando la tecnología, lenguaje de programación y arquitectura que el estudiante considere más adecuados. 
 
