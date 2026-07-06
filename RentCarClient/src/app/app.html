@@ -1,73 +1,80 @@
-<nav
-  *ngIf="router.url !== '/login'"
-  class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow"
->
+<nav *ngIf="router.url !== '/login'" class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow">
   <div class="container">
-    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" routerLink="/dashboard">
-      
-     <span class="text-primary">RentCar</span><span class="text-danger">RD</span>
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-1" routerLink="/dashboard">
+      <span class="text-primary">RentCar</span><span class="text-danger">RD</span>
     </a>
-    <button
-      class="navbar-toggler"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#navbarNav"
-    >
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto align-items-center">
+
         <li class="nav-item" *ngIf="rolActual === 'admin'">
-          <a class="nav-link" routerLink="/dashboard" routerLinkActive="text-primary fw-bold"
-            >Dashboard</a
-          >
+          <a class="nav-link" routerLink="/dashboard" routerLinkActive="text-primary fw-bold">
+            Dashboard
+          </a>
         </li>
 
-        <li class="nav-item dropdown" *ngIf="rolActual === 'admin'">
+        <li class="nav-item dropdown" *ngIf="rolActual === 'admin' || rolActual === 'empleado'" >
           <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">
-  Catálogos
-</a>
+            Catálogos
+          </a>
           <ul class="dropdown-menu dropdown-menu-dark">
             <li><a class="dropdown-item" routerLink="/marcas">Marcas</a></li>
             <li><a class="dropdown-item" routerLink="/modelos">Modelos</a></li>
-            <li><a class="dropdown-item" routerLink="/tipos-vehiculos">Tipos Vehículos</a></li>
-            <li><a class="dropdown-item" routerLink="/tipos-combustibles">Combustibles</a></li>
+            <li><a class="dropdown-item" routerLink="/tipos-vehiculos">Tipos de Vehículos</a></li>
+            <li><a class="dropdown-item" routerLink="/tipos-combustibles">Tipos de Combustibles</a></li>
           </ul>
-        </li>
-
-        <li class="nav-item" *ngIf="rolActual === 'admin'">
-          <a class="nav-link" routerLink="/empleados" routerLinkActive="text-primary fw-bold"
-            >Empleados</a
-          >
-        </li>
-
-        <li class="nav-item" *ngIf="rolActual === 'admin'">
-          <a class="nav-link" routerLink="/inspeccion" routerLinkActive="text-primary fw-bold"
-            >Inspección</a
-          >
         </li>
 
         <li class="nav-item dropdown" *ngIf="rolActual === 'admin' || rolActual === 'empleado'">
-        <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">
-  Gestión
-</a>
+          <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">
+            Gestión
+          </a>
           <ul class="dropdown-menu dropdown-menu-dark">
-            <li><a class="dropdown-item" routerLink="/vehiculos">Vehículos</a></li>
-            <li><a class="dropdown-item" routerLink="/clientes">Clientes</a></li>
-            <li><a class="dropdown-item" routerLink="/rentas">Rentas</a></li>
+            <li *ngIf="rolActual === 'admin'">
+              <a class="dropdown-item" routerLink="/empleados">Empleados</a>
+            </li>
+
+            <li>
+              <a class="dropdown-item" routerLink="/clientes">Clientes</a>
+            </li>
+
+            <li *ngIf="rolActual === 'admin'">
+              <a class="dropdown-item" routerLink="/vehiculos">Vehículos</a>
+            </li>
+          </ul>
+        </li>
+
+        <li class="nav-item dropdown" *ngIf="rolActual === 'admin' || rolActual === 'empleado'">
+          <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">
+            Operaciones
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark">
+            <li *ngIf="rolActual === 'admin'">
+              <a class="dropdown-item" routerLink="/inspeccion">Inspección de Flota</a>
+            </li>
+
+            <li>
+              <a class="dropdown-item" routerLink="/rentas">Rentas y Devoluciones</a>
+            </li>
           </ul>
         </li>
 
         <li class="nav-item" *ngIf="rolActual === 'admin'">
-          <a class="nav-link" routerLink="/reportes" routerLinkActive="text-primary fw-bold"
-            >Reportes</a
-          >
+          <a class="nav-link" routerLink="/reportes" routerLinkActive="text-primary fw-bold">
+            Reportes
+          </a>
         </li>
 
         <li class="nav-item ms-lg-3">
-          <button class="btn btn-outline-danger btn-sm" (click)="cerrarSesion()">🚪 Salir</button>
+          <button class="btn btn-outline-danger btn-sm" (click)="cerrarSesion()">
+            🚪 Salir
+          </button>
         </li>
+
       </ul>
     </div>
   </div>
@@ -77,10 +84,7 @@
   <router-outlet></router-outlet>
 </main>
 
-<footer
-  *ngIf="router.url !== '/login'"
-  class="bg-dark text-white py-4 mt-auto border-top border-secondary"
->
+<footer *ngIf="router.url !== '/login'" class="bg-dark text-white py-4 mt-auto border-top border-secondary">
   <div class="container">
     <div class="row align-items-center">
       <div class="col-md-6">

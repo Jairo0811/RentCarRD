@@ -6,7 +6,6 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class ClienteService {
-
   private apiUrl = 'http://localhost:5266/api/Clientes';
 
   constructor(private http: HttpClient) {}
@@ -29,5 +28,9 @@ export class ClienteService {
 
   eliminarCliente(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
+  }
+
+  validarCedula(cedula: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/validar-cedula/${cedula}`);
   }
 }

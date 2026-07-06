@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common'; 
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService } from '../../services/cliente.service';
 
@@ -24,7 +24,11 @@ export class ClientesComponent implements OnInit {
   clientes: Cliente[] = [];
   mostrarFormulario = false;
   modoEdicion = false;
-  
+
+  mensajeCedula = '';
+  cedulaEsValida = false;
+  validandoCedula = false;
+
   nuevoCliente: Cliente = this.crearClienteVacio();
 
   constructor(
@@ -32,7 +36,7 @@ export class ClientesComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {}
 
-  ngOnInit(): void { 
+  ngOnInit(): void {
     setTimeout(() => this.cargarClientes(), 0);
   }
 
@@ -43,7 +47,7 @@ export class ClientesComponent implements OnInit {
       limiteCredito: 0,
       estado: true,
       noTarjetaCr: '',
-      tipoPersona: 'Física'
+      tipoPersona: 'Fisica'
     };
   }
 
@@ -72,13 +76,14 @@ export class ClientesComponent implements OnInit {
 
     const clienteEnviar: Cliente = {
       ...this.nuevoCliente,
-      cedula: cedulaLimpia
+      cedula: cedulaLimpia,
+      tipoPersona: this.nuevoCliente.tipoPersona || 'Fisica'
     };
 
     if (this.modoEdicion) {
       this.clienteService.actualizarCliente(clienteEnviar).subscribe({
         next: () => {
-          alert('Cliente actualizado correctamente');
+          alert('Cliente actualizado correctamente.');
           this.cancelar();
           this.cargarClientes();
         },
@@ -90,7 +95,7 @@ export class ClientesComponent implements OnInit {
     } else {
       this.clienteService.crearCliente(clienteEnviar).subscribe({
         next: () => {
-          alert('Cliente guardado correctamente');
+          alert('Cliente guardado correctamente.');
           this.cancelar();
           this.cargarClientes();
         },
@@ -103,9 +108,15 @@ export class ClientesComponent implements OnInit {
   }
 
   editar(cliente: Cliente): void {
-    this.nuevoCliente = { ...cliente };
+    this.nuevoCliente = {
+      ...cliente,
+      cedula: this.formatearCedula(cliente.cedula),
+      tipoPersona: cliente.tipoPersona || 'Fisica'
+    };
+
     this.modoEdicion = true;
     this.mostrarFormulario = true;
+    this.validarCedulaApi();
     this.cdr.detectChanges();
   }
 
@@ -116,7 +127,7 @@ export class ClientesComponent implements OnInit {
 
     this.clienteService.eliminarCliente(id).subscribe({
       next: () => {
-        alert('Cliente eliminado correctamente');
+        alert('Cliente eliminado correctamente.');
         this.cargarClientes();
       },
       error: (err: any) => {
@@ -130,11 +141,78 @@ export class ClientesComponent implements OnInit {
     this.nuevoCliente = this.crearClienteVacio();
     this.modoEdicion = false;
     this.mostrarFormulario = false;
+    this.mensajeCedula = '';
+    this.cedulaEsValida = false;
+    this.validandoCedula = false;
     this.cdr.detectChanges();
   }
 
   limpiarCedula(cedula: string): string {
-    return (cedula || '').replace(/\D/g, '');
+    return (cedula || '').replace(/\D/g, '').slice(0, 11);
+  }
+
+  formatearCedula(cedula: string): string {
+    const limpia = this.limpiarCedula(cedula);
+
+    if (limpia.length <= 3) {
+      return limpia;
+    }
+
+    if (limpia.length <= 10) {
+      return `${limpia.slice(0, 3)}-${limpia.slice(3)}`;
+    }
+
+    return `${limpia.slice(0, 3)}-${limpia.slice(3, 10)}-${limpia.slice(10, 11)}`;
+  }
+
+  onCedulaInput(): void {
+    this.nuevoCliente.cedula = this.formatearCedula(this.nuevoCliente.cedula);
+
+    const cedulaLimpia = this.limpiarCedula(this.nuevoCliente.cedula);
+
+    this.mensajeCedula = '';
+    this.cedulaEsValida = false;
+
+    if (cedulaLimpia.length === 0) {
+      return;
+    }
+
+    if (cedulaLimpia.length < 11) {
+      this.mensajeCedula = 'La cédula debe tener 11 dígitos.';
+      return;
+    }
+
+    this.validarCedulaApi();
+  }
+
+  validarCedulaApi(): void {
+    const cedula = this.limpiarCedula(this.nuevoCliente.cedula);
+
+    this.mensajeCedula = '';
+    this.cedulaEsValida = false;
+
+    if (cedula.length !== 11) {
+      this.mensajeCedula = 'La cédula debe tener 11 dígitos.';
+      return;
+    }
+
+    this.validandoCedula = true;
+
+    this.clienteService.validarCedula(cedula).subscribe({
+      next: (respuesta: any) => {
+        this.cedulaEsValida = respuesta.esValida;
+        this.mensajeCedula = respuesta.mensaje;
+        this.validandoCedula = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error validando cédula', err);
+        this.mensajeCedula = 'No se pudo validar la cédula.';
+        this.cedulaEsValida = false;
+        this.validandoCedula = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   cedulaValida(cedula: string): boolean {
@@ -162,16 +240,20 @@ export class ClientesComponent implements OnInit {
     return digitoVerificador === Number(cedula[10]);
   }
 
+  formatearCedulaListado(cedula: string): string {
+    return this.formatearCedula(cedula);
+  }
+
   identificarTarjeta(numero: string | undefined): string {
     if (!numero) return '';
-    
-    const numLimpio = numero.replace(/\D/g, ''); 
-    
+
+    const numLimpio = numero.replace(/\D/g, '');
+
     if (numLimpio.startsWith('4')) return 'VISA';
     if (/^5[1-5]/.test(numLimpio) || /^2[2-7]/.test(numLimpio)) return 'MASTERCARD';
     if (/^3[47]/.test(numLimpio)) return 'AMEX';
     if (/^6/.test(numLimpio)) return 'DISCOVER';
-    
+
     return numLimpio.length > 0 ? 'Desconocida' : '';
   }
 

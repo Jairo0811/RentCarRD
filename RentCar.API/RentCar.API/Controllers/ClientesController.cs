@@ -32,6 +32,24 @@ namespace RentCar.API.Controllers
             return cliente;
         }
 
+        [HttpGet("validar-cedula/{cedula}")]
+        public IActionResult ValidarCedula(string cedula)
+        {
+            var cedulaLimpia = LimpiarCedula(cedula);
+            var esValida = CedulaValida(cedulaLimpia);
+
+            return Ok(new
+            {
+                cedula = cedulaLimpia,
+                cedulaFormateada = FormatearCedula(cedulaLimpia),
+                esValida,
+                fuente = "Validador local",
+                mensaje = esValida
+                    ? "Cédula válida matemáticamente. Consulta JCE no configurada."
+                    : "La cédula ingresada no es válida."
+            });
+        }
+
         [HttpPost]
         public async Task<ActionResult<Cliente>> PostCliente(Cliente cliente)
         {
@@ -98,6 +116,16 @@ namespace RentCar.API.Controllers
                 return string.Empty;
 
             return new string(cedula.Where(char.IsDigit).ToArray());
+        }
+
+        private string FormatearCedula(string cedula)
+        {
+            cedula = LimpiarCedula(cedula);
+
+            if (cedula.Length != 11)
+                return cedula;
+
+            return $"{cedula[..3]}-{cedula.Substring(3, 7)}-{cedula[10]}";
         }
 
         private bool CedulaValida(string cedula)
