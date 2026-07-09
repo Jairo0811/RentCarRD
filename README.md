@@ -23,7 +23,7 @@ La aplicación permite administrar clientes, empleados, vehículos, inspecciones
 
 El proyecto fue desarrollado siguiendo una arquitectura Cliente-Servidor, implementando una API REST en ASP.NET Core y un frontend moderno con Angular.
 
-**RentCarRD** forma parte de una colección de proyectos académicos desarrollados en la **Universidad APEC (UNAPEC)**, tomando como referencia el listado de proyectos propuesto por el profesor **Juan Pablo Valdez Reyes**.
+**RentCarRD** forma parte de una colección de proyectos académicos desarrollados en la **Universidad APEC (UNAPEC)**, tomando como referencia el listado de proyectos propuestos por el profesor **Juan Pablo Valdez Reyes**.
 
 ---
 
