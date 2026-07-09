@@ -15,53 +15,183 @@ namespace RentCar.API.Controllers
             _context = context;
         }
 
-        // Método para OBTENER la lista (GET)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Empleado>>> GetEmpleados()
         {
             return await _context.Empleados.ToListAsync();
         }
 
-        // Método para CREAR (POST) CON VALIDACIÓN DE CÉDULA
-        [HttpPost]
-        public async Task<ActionResult<Empleado>> PostEmpleado(Empleado empleado)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Empleado>> GetEmpleado(int id)
         {
-            // 1. Validar que la cédula no se repita en la base de datos
-            var cedulaExiste = await _context.Empleados.AnyAsync(e => e.Cedula == empleado.Cedula);
-
-            if (cedulaExiste)
-            {
-                // Si ya existe, rechazamos la petición con un error 400
-                return BadRequest("Ya existe un empleado registrado con esta cédula.");
-            }
-
-            // 2. Si la cédula es nueva, guardamos el empleado normalmente
-            _context.Empleados.Add(empleado);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction("GetEmpleados", new { id = empleado.Id }, empleado);
-        }
-
-        // Método para ELIMINAR (DELETE)
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteEmpleado(int id)
-        {
-            // 1. Busca si el empleado existe en la base de datos
             var empleado = await _context.Empleados.FindAsync(id);
 
             if (empleado == null)
-            {
-                // Si alguien intenta borrar un ID que no existe, devuelve 404
                 return NotFound();
-            }
 
-            // 2. Si lo encuentra, lo elimina de la memoria
-            _context.Empleados.Remove(empleado);
+            return empleado;
+        }
 
-            // 3. Guarda los cambios permanentemente en la base de datos
+        [HttpGet("validar-cedula/{cedula}")]
+        public async Task<IActionResult> ValidarCedula(string cedula, int? idEmpleado = null)
+        {
+            var cedulaLimpia = LimpiarCedula(cedula);
+            var esValida = CedulaValida(cedulaLimpia);
+
+            var empleadoExistente = await _context.Empleados.FirstOrDefaultAsync(e =>
+                e.Cedula == cedulaLimpia &&
+                (!idEmpleado.HasValue || e.Id != idEmpleado.Value)
+            );
+
+            var existe = empleadoExistente != null;
+
+            return Ok(new
+            {
+                cedula = cedulaLimpia,
+                cedulaFormateada = FormatearCedula(cedulaLimpia),
+                esValida = esValida && !existe,
+                existe,
+                nombreEmpleado = empleadoExistente?.Nombre,
+                fuente = "Validador local",
+                mensaje = !esValida
+                    ? "La cédula ingresada no es válida."
+                    : existe
+                        ? $"Esta cédula ya pertenece al empleado {empleadoExistente!.Nombre}."
+                        : "Cédula válida y disponible para registrar."
+            });
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<Empleado>> PostEmpleado(Empleado empleado)
+        {
+            empleado.Cedula = LimpiarCedula(empleado.Cedula);
+
+            if (!CedulaValida(empleado.Cedula))
+                return BadRequest("La cédula ingresada no es válida.");
+
+            var cedulaExiste = await _context.Empleados.AnyAsync(e => e.Cedula == empleado.Cedula);
+
+            if (cedulaExiste)
+                return BadRequest("Ya existe un empleado registrado con esta cédula.");
+
+            if (string.IsNullOrWhiteSpace(empleado.Nombre))
+                return BadRequest("El nombre del empleado es obligatorio.");
+
+            if (string.IsNullOrWhiteSpace(empleado.Usuario))
+                return BadRequest("El usuario de acceso es obligatorio.");
+
+            if (empleado.PorcientoComision < 0)
+                return BadRequest("El porcentaje de comisión no puede ser negativo.");
+
+            _context.Empleados.Add(empleado);
             await _context.SaveChangesAsync();
 
-            // 4. Le responde a Angular que todo salió perfecto (204)
+            return CreatedAtAction(nameof(GetEmpleado), new { id = empleado.Id }, empleado);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutEmpleado(int id, Empleado empleado)
+        {
+            if (id != empleado.Id)
+                return BadRequest("El ID del empleado no coincide.");
+
+            empleado.Cedula = LimpiarCedula(empleado.Cedula);
+
+            if (!CedulaValida(empleado.Cedula))
+                return BadRequest("La cédula ingresada no es válida.");
+
+            if (string.IsNullOrWhiteSpace(empleado.Nombre))
+                return BadRequest("El nombre del empleado es obligatorio.");
+
+            if (string.IsNullOrWhiteSpace(empleado.Usuario))
+                return BadRequest("El usuario de acceso es obligatorio.");
+
+            if (empleado.PorcientoComision < 0)
+                return BadRequest("El porcentaje de comisión no puede ser negativo.");
+
+            var existeEmpleado = await _context.Empleados.AnyAsync(e => e.Id == id);
+
+            if (!existeEmpleado)
+                return NotFound();
+
+            var cedulaDuplicada = await _context.Empleados.AnyAsync(e =>
+                e.Cedula == empleado.Cedula && e.Id != id
+            );
+
+            if (cedulaDuplicada)
+                return BadRequest("Ya existe otro empleado registrado con esta cédula.");
+
+            var usuarioDuplicado = await _context.Empleados.AnyAsync(e =>
+                e.Usuario == empleado.Usuario && e.Id != id
+            );
+
+            if (usuarioDuplicado)
+                return BadRequest("Ya existe otro empleado registrado con este usuario.");
+
+            _context.Entry(empleado).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
             return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteEmpleado(int id)
+        {
+            var empleado = await _context.Empleados.FindAsync(id);
+
+            if (empleado == null)
+                return NotFound();
+
+            _context.Empleados.Remove(empleado);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        private string LimpiarCedula(string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+                return string.Empty;
+
+            return new string(cedula.Where(char.IsDigit).ToArray());
+        }
+
+        private string FormatearCedula(string cedula)
+        {
+            cedula = LimpiarCedula(cedula);
+
+            if (cedula.Length != 11)
+                return cedula;
+
+            return $"{cedula[..3]}-{cedula.Substring(3, 7)}-{cedula[10]}";
+        }
+
+        private bool CedulaValida(string cedula)
+        {
+            cedula = LimpiarCedula(cedula);
+
+            if (cedula.Length != 11)
+                return false;
+
+            if (cedula.All(c => c == cedula[0]))
+                return false;
+
+            int[] pesos = { 1, 2, 1, 2, 1, 2, 1, 2, 1, 2 };
+            int suma = 0;
+
+            for (int i = 0; i < 10; i++)
+            {
+                int valor = (cedula[i] - '0') * pesos[i];
+
+                if (valor >= 10)
+                    valor = (valor / 10) + (valor % 10);
+
+                suma += valor;
+            }
+
+            int digitoVerificador = (10 - (suma % 10)) % 10;
+
+            return digitoVerificador == (cedula[10] - '0');
         }
     }
 }

@@ -5,7 +5,7 @@
     </h2>
 
     <button
-      class="btn btn-lg fw-bold shadow-sm transition-all"
+      class="btn btn-lg fw-bold shadow-sm"
       [ngClass]="mostrarFormulario ? 'btn-danger' : 'btn-primary'"
       (click)="mostrarFormulario ? cancelarFormulario() : mostrarFormulario = true">
       {{ mostrarFormulario ? '✖ Cancelar Operación' : '+ Registrar Nueva Renta' }}
@@ -21,11 +21,11 @@
       <div class="row g-4 align-items-center">
 
         <div class="col-md-6">
-          <label class="form-label fw-bold text-muted small">Vehículo (Solo Disponibles)</label>
+          <label class="form-label fw-bold text-muted small">Vehículo Disponible</label>
           <select [(ngModel)]="nuevaRenta.idVehiculo" class="form-select form-select-lg bg-light border-0 shadow-sm">
-            <option [ngValue]="0">🚗 Elige un vehículo de la flota...</option>
+            <option [ngValue]="0">🚗 Elige un vehículo disponible...</option>
             <option *ngFor="let v of vehiculosDisponibles" [ngValue]="v.id">
-              {{ v.descripcion }} (Placa: {{ v.noPlaca }})
+              {{ v.descripcion }} - Placa: {{ v.noPlaca }}
             </option>
           </select>
         </div>
@@ -42,30 +42,19 @@
 
         <div class="col-md-3">
           <label class="form-label fw-bold text-muted small">Fecha de Renta</label>
-          <input
-            type="date"
-            [(ngModel)]="nuevaRenta.fechaRenta"
-            class="form-control form-control-lg shadow-sm">
+          <input type="date" [(ngModel)]="nuevaRenta.fechaRenta" class="form-control form-control-lg shadow-sm">
         </div>
 
         <div class="col-md-3">
           <label class="form-label fw-bold text-muted small">Días a Rentar</label>
-          <input
-            type="number"
-            [(ngModel)]="nuevaRenta.cantidadDias"
-            placeholder="Ej: 3"
-            class="form-control form-control-lg shadow-sm">
+          <input type="number" min="1" [(ngModel)]="nuevaRenta.cantidadDias" class="form-control form-control-lg shadow-sm">
         </div>
 
         <div class="col-md-3">
           <label class="form-label fw-bold text-muted small">Tarifa por Día</label>
           <div class="input-group input-group-lg shadow-sm">
             <span class="input-group-text bg-white border-end-0">RD$</span>
-            <input
-              type="number"
-              [(ngModel)]="nuevaRenta.montoXDia"
-              class="form-control border-start-0"
-              placeholder="0.00">
+            <input type="number" min="1" [(ngModel)]="nuevaRenta.montoXDia" class="form-control border-start-0">
           </div>
         </div>
 
@@ -113,40 +102,22 @@
           </tr>
         </thead>
 
-        <tbody class="border-top-0">
+        <tbody>
           <tr *ngFor="let r of rentas">
             <td class="px-4 fw-bold text-secondary">#{{ r.noRenta }}</td>
-
             <td>{{ r.fechaRenta | date:'dd/MM/yyyy' }}</td>
-
-            <td class="text-muted">
-              {{ obtenerMontoDia(r) | currency:'DOP':'RD$ ':'1.2-2' }}
-            </td>
-
+            <td>{{ obtenerMontoDia(r) | currency:'DOP':'RD$ ':'1.2-2' }}</td>
+            <td><span class="badge bg-light text-dark border">{{ r.cantidadDias }} días</span></td>
+            <td class="fw-bolder text-success">{{ obtenerTotal(r) | currency:'DOP':'RD$ ':'1.2-2' }}</td>
             <td>
-              <span class="badge bg-light text-dark border">
-                {{ r.cantidadDias }} días
-              </span>
-            </td>
-
-            <td class="fw-bolder text-success">
-              {{ obtenerTotal(r) | currency:'DOP':'RD$ ':'1.2-2' }}
-            </td>
-
-            <td>
-              <span
-                class="badge rounded-pill px-3 py-2"
+              <span class="badge rounded-pill px-3 py-2"
                 [ngClass]="r.estado === 'Activa' ? 'text-bg-warning shadow-sm' : 'text-bg-success shadow-sm'">
                 {{ r.estado === 'Activa' ? '🚗 En Ruta' : '✅ Concluida' }}
               </span>
             </td>
-
             <td>
               <div class="d-flex gap-2 justify-content-center">
-                <button
-                  class="btn btn-sm btn-outline-secondary fw-bold"
-                  (click)="imprimirFactura(r.noRenta)"
-                  title="Imprimir Contrato">
+                <button class="btn btn-sm btn-outline-secondary fw-bold" (click)="imprimirFactura(r.noRenta)">
                   🖨️ Imprimir
                 </button>
 

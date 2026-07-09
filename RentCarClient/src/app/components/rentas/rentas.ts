@@ -101,59 +101,126 @@ export class Rentas implements OnInit {
     });
   }
 
-  guardarRenta(): void {
-    if (Number(this.nuevaRenta.idVehiculo) === 0 || Number(this.nuevaRenta.idCliente) === 0) {
-      alert('Selecciona un vehículo y un cliente válidos.');
-      return;
-    }
+ guardarRenta(): void {
 
-    if (Number(this.nuevaRenta.montoXDia) <= 0 || Number(this.nuevaRenta.cantidadDias) <= 0) {
-      alert('El monto por día y la cantidad de días deben ser mayores que cero.');
-      return;
-    }
+  if (Number(this.nuevaRenta.idVehiculo) === 0 || Number(this.nuevaRenta.idCliente) === 0) {
+    alert('Selecciona un vehículo y un cliente válidos.');
+    return;
+  }
 
-    const rentaEnviar = {
-      idEmpleado: this.obtenerIdEmpleadoActual(),
-      idVehiculo: Number(this.nuevaRenta.idVehiculo),
-      idCliente: Number(this.nuevaRenta.idCliente),
-      fechaRenta: this.nuevaRenta.fechaRenta,
-      fechaDevolucion: null,
-      montoXDia: Number(this.nuevaRenta.montoXDia),
-      cantidadDias: Number(this.nuevaRenta.cantidadDias),
-      comentario: this.nuevaRenta.comentario || '',
-      estado: 'Activa'
-    };
+  if (Number(this.nuevaRenta.montoXDia) <= 0 || Number(this.nuevaRenta.cantidadDias) <= 0) {
+    alert('El monto por día y la cantidad de días deben ser mayores que cero.');
+    return;
+  }
 
-    this.rentaService.crearRenta(rentaEnviar).subscribe({
-      next: () => {
-        alert('Renta registrada con éxito.');
-        this.cancelarFormulario();
-        this.cargarDatos();
-      },
-      error: (err: any) => {
-        console.error('Error al rentar', err);
-        alert('Ocurrió un error al guardar la renta.');
+  // Verificar que el vehículo siga disponible
+  const vehiculoSeleccionado = this.vehiculos.find(v =>
+    Number(v.id) === Number(this.nuevaRenta.idVehiculo)
+  );
+
+  if (!vehiculoSeleccionado) {
+    alert('No se encontró el vehículo seleccionado.');
+    return;
+  }
+
+  if (!vehiculoSeleccionado.estado) {
+    alert('Este vehículo ya se encuentra rentado.');
+    return;
+  }
+
+  // Evitar doble renta activa
+  const tieneRentaActiva = this.rentas.some(r =>
+    Number(r.idVehiculo) === Number(this.nuevaRenta.idVehiculo) &&
+    r.estado === 'Activa'
+  );
+
+  if (tieneRentaActiva) {
+    alert('Este vehículo ya posee una renta activa.');
+    return;
+  }
+
+  const rentaEnviar = {
+    idEmpleado: this.obtenerIdEmpleadoActual(),
+    idVehiculo: Number(this.nuevaRenta.idVehiculo),
+    idCliente: Number(this.nuevaRenta.idCliente),
+    fechaRenta: this.nuevaRenta.fechaRenta,
+    fechaDevolucion: null,
+    montoXDia: Number(this.nuevaRenta.montoXDia),
+    cantidadDias: Number(this.nuevaRenta.cantidadDias),
+    comentario: this.nuevaRenta.comentario || '',
+    estado: 'Activa'
+  };
+
+  this.rentaService.crearRenta(rentaEnviar).subscribe({
+    next: () => {
+      alert('Renta registrada con éxito.');
+      this.cancelarFormulario();
+      this.cargarDatos();
+    },
+    error: (err: any) => {
+
+      console.error(err);
+
+      if (err.error) {
+        alert(err.error);
+      } else {
+        alert('Ocurrió un error al registrar la renta.');
       }
-    });
+
+    }
+  });
+
+}
+
+ devolverVehiculo(id: number): void {
+
+  const renta = this.rentas.find(r => Number(r.noRenta) === Number(id));
+
+  if (!renta) {
+    alert('No se encontró la renta.');
+    return;
   }
 
-  devolverVehiculo(id: number): void {
-    if (!confirm('¿Deseas procesar la devolución de este vehículo?')) return;
-
-    this.rentaService.devolverRenta(id).subscribe({
-      next: () => {
-        alert('Vehículo devuelto con éxito.');
-        this.cargarDatos();
-      },
-      error: (err: any) => console.error('Error al devolver', err)
-    });
+  if (renta.estado === 'Concluida') {
+    alert('Esta renta ya fue concluida.');
+    return;
   }
+
+  if (!confirm('¿Deseas procesar la devolución de este vehículo?')) {
+    return;
+  }
+
+  this.rentaService.devolverRenta(id).subscribe({
+
+    next: () => {
+      alert('Vehículo devuelto correctamente.');
+      this.cargarDatos();
+    },
+
+    error: (err: any) => {
+      console.error(err);
+      alert('No fue posible procesar la devolución.');
+    }
+
+  });
+
+}
 
   cancelarFormulario(): void {
     this.mostrarFormulario = false;
     this.nuevaRenta = this.crearRentaVacia();
     this.cdr.detectChanges();
   }
+
+  vehiculoDisponible(idVehiculo: number): boolean {
+
+  const vehiculo = this.vehiculos.find(v =>
+    Number(v.id) === Number(idVehiculo)
+  );
+
+  return vehiculo?.estado === true;
+
+}
 
   obtenerMontoDia(renta: any): number {
     return Number(renta.montoXDia ?? renta.montoXdia ?? 0);

@@ -35,14 +35,54 @@ namespace RentCar.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Renta>> PostRenta(Renta renta)
         {
+            if (renta.IdVehiculo <= 0)
+                return BadRequest("Debe seleccionar un vehículo válido.");
+
+            if (renta.IdCliente <= 0)
+                return BadRequest("Debe seleccionar un cliente válido.");
+
+            if (renta.IdEmpleado <= 0)
+                return BadRequest("Debe seleccionar un empleado válido.");
+
+            if (renta.MontoXdia <= 0)
+                return BadRequest("El monto por día debe ser mayor que cero.");
+
+            if (renta.CantidadDias <= 0)
+                return BadRequest("La cantidad de días debe ser mayor que cero.");
+
+            var vehiculo = await _context.Vehiculos.FindAsync(renta.IdVehiculo);
+
+            if (vehiculo == null)
+                return BadRequest("El vehículo seleccionado no existe.");
+
+            if (vehiculo.Estado == false)
+                return BadRequest("Este vehículo ya se encuentra rentado.");
+
+            var tieneRentaActiva = await _context.Rentas.AnyAsync(r =>
+                r.IdVehiculo == renta.IdVehiculo &&
+                (r.Estado == "Activa" || r.Estado == "Abierta")
+            );
+
+            if (tieneRentaActiva)
+                return BadRequest("Este vehículo ya tiene una renta activa.");
+
+            var clienteExiste = await _context.Clientes.AnyAsync(c => c.Id == renta.IdCliente);
+
+            if (!clienteExiste)
+                return BadRequest("El cliente seleccionado no existe.");
+
+            var empleadoExiste = await _context.Empleados.AnyAsync(e => e.Id == renta.IdEmpleado);
+
+            if (!empleadoExiste)
+                return BadRequest("El empleado seleccionado no existe.");
+
             renta.Total = renta.MontoXdia * renta.CantidadDias;
             renta.Estado = "Activa";
+            renta.FechaDevolucion = null;
 
             _context.Rentas.Add(renta);
 
-            var vehiculo = await _context.Vehiculos.FindAsync(renta.IdVehiculo);
-            if (vehiculo != null)
-                vehiculo.Estado = false;
+            vehiculo.Estado = false;
 
             await _context.SaveChangesAsync();
 
@@ -54,6 +94,12 @@ namespace RentCar.API.Controllers
         {
             if (id != renta.NoRenta)
                 return BadRequest("El ID de la renta no coincide.");
+
+            if (renta.MontoXdia <= 0)
+                return BadRequest("El monto por día debe ser mayor que cero.");
+
+            if (renta.CantidadDias <= 0)
+                return BadRequest("La cantidad de días debe ser mayor que cero.");
 
             var existeRenta = await _context.Rentas.AnyAsync(r => r.NoRenta == id);
 
@@ -76,11 +122,12 @@ namespace RentCar.API.Controllers
             if (renta == null)
                 return NotFound();
 
+            if (renta.Estado == "Concluida")
+                return BadRequest("Esta renta ya fue concluida anteriormente.");
+
             renta.Estado = "Concluida";
             renta.FechaDevolucion = DateTime.Now;
-
-            if (renta.MontoXdia != null && renta.CantidadDias != null)
-                renta.Total = renta.MontoXdia * renta.CantidadDias;
+            renta.Total = renta.MontoXdia * renta.CantidadDias;
 
             var vehiculo = await _context.Vehiculos.FindAsync(renta.IdVehiculo);
 
@@ -102,7 +149,7 @@ namespace RentCar.API.Controllers
 
             var vehiculo = await _context.Vehiculos.FindAsync(renta.IdVehiculo);
 
-            if (vehiculo != null)
+            if (vehiculo != null && renta.Estado != "Concluida")
                 vehiculo.Estado = true;
 
             _context.Rentas.Remove(renta);

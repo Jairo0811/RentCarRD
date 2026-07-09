@@ -30,7 +30,6 @@
 
         <div class="col-md-6">
           <label class="form-label text-muted small fw-bold">Cédula</label>
-
           <input
             [(ngModel)]="nuevoCliente.cedula"
             (input)="onCedulaInput()"
@@ -43,9 +42,7 @@
             }"
             maxlength="13" />
 
-          <small class="text-muted d-block mt-1">
-            Formato requerido: 000-0000000-0
-          </small>
+          <small class="text-muted d-block mt-1">Formato requerido: 000-0000000-0</small>
 
           <small *ngIf="validandoCedula" class="text-primary fw-bold d-block mt-1">
             Validando cédula...
@@ -71,21 +68,29 @@
           <label class="form-label text-muted small fw-bold">Límite de Crédito (RD$)</label>
           <input
             type="number"
+            min="0"
             [(ngModel)]="nuevoCliente.limiteCredito"
             placeholder="0.00"
             class="form-control form-control-lg" />
         </div>
 
         <div class="col-md-6">
-          <label class="form-label text-muted small fw-bold d-flex justify-content-between align-items-center">
-            No. Tarjeta de Crédito
+          <label class="form-label text-muted small fw-bold">Método de Pago</label>
+
+          <div class="d-flex align-items-center mb-2" *ngIf="nuevoCliente.noTarjetaCr">
+            <img
+              *ngIf="obtenerLogoTarjeta(identificarTarjeta(nuevoCliente.noTarjetaCr))"
+              [src]="obtenerLogoTarjeta(identificarTarjeta(nuevoCliente.noTarjetaCr))"
+              alt="Logo tarjeta"
+              style="height: 32px; width: auto;"
+              class="me-2">
+
             <span
-              *ngIf="nuevoCliente.noTarjetaCr"
-              class="badge"
+              class="badge fs-6"
               [ngClass]="obtenerColorTarjeta(identificarTarjeta(nuevoCliente.noTarjetaCr))">
               {{ identificarTarjeta(nuevoCliente.noTarjetaCr) }}
             </span>
-          </label>
+          </div>
 
           <input
             [(ngModel)]="nuevoCliente.noTarjetaCr"
@@ -105,10 +110,7 @@
       </div>
 
       <div class="mt-4 d-flex justify-content-end gap-2">
-        <button
-          *ngIf="modoEdicion"
-          class="btn btn-secondary btn-lg"
-          (click)="cancelar()">
+        <button *ngIf="modoEdicion" class="btn btn-secondary btn-lg" (click)="cancelar()">
           Cancelar
         </button>
 
@@ -139,48 +141,24 @@
           <tbody>
             <tr *ngFor="let c of clientes">
               <td class="px-4 fw-bold text-secondary">{{ c.nombre }}</td>
-
-              <td>
-                <span class="text-muted">{{ formatearCedulaListado(c.cedula) }}</span>
-              </td>
-
-              <td>
-                <span class="badge text-bg-secondary">
-                  {{ c.tipoPersona || 'Fisica' }}
-                </span>
-              </td>
-
+              <td><span class="text-muted">{{ formatearCedulaListado(c.cedula) }}</span></td>
+              <td><span class="badge text-bg-secondary">{{ c.tipoPersona || 'Fisica' }}</span></td>
               <td class="fw-bold text-success">
                 {{ c.limiteCredito | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
               </td>
-
               <td>
-                <span
-                  class="badge rounded-pill"
-                  [ngClass]="c.estado ? 'text-bg-success' : 'text-bg-danger'">
+                <span class="badge rounded-pill" [ngClass]="c.estado ? 'text-bg-success' : 'text-bg-danger'">
                   {{ c.estado ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
-
               <td class="text-center">
-                <button
-                  class="btn btn-warning btn-sm me-2"
-                  (click)="editar(c)">
-                  ✏️ Editar
-                </button>
-
-                <button
-                  class="btn btn-danger btn-sm"
-                  (click)="eliminar(c.id)">
-                  🗑 Eliminar
-                </button>
+                <button class="btn btn-warning btn-sm me-2" (click)="editar(c)">✏️ Editar</button>
+                <button class="btn btn-danger btn-sm" (click)="eliminar(c.id)">🗑 Eliminar</button>
               </td>
             </tr>
 
             <tr *ngIf="clientes.length === 0">
-              <td colspan="6" class="text-center py-4 text-muted">
-                No hay clientes registrados.
-              </td>
+              <td colspan="6" class="text-center py-4 text-muted">No hay clientes registrados.</td>
             </tr>
           </tbody>
         </table>

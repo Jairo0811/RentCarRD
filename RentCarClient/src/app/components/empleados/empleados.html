@@ -1,27 +1,59 @@
 <div class="container mt-4">
   <h2 class="fw-bold text-secondary">Gestión de Empleados</h2>
   <hr>
-  
+
   <div class="card mb-4 shadow-sm border-0">
     <div class="card-body bg-light rounded-3 p-4">
       <div class="row g-3 align-items-end">
-        
-        <div class="col-md-3">
+
+        <div class="col-md-4">
           <label class="form-label fw-bold text-muted small">Nombre Completo</label>
-          <input type="text" class="form-control form-control-lg" [(ngModel)]="empleadoActual.nombre" placeholder="Ej. Juan Pérez">
+          <input
+            type="text"
+            class="form-control form-control-lg"
+            [(ngModel)]="empleadoActual.nombre"
+            placeholder="Ej. Juan Pérez">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-muted small">Usuario de Acceso</label>
+          <input
+            type="text"
+            class="form-control form-control-lg border-primary"
+            [(ngModel)]="empleadoActual.usuario"
+            placeholder="Ej. jperez">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-muted small">Cédula</label>
+          <input
+            type="text"
+            class="form-control form-control-lg"
+            [(ngModel)]="empleadoActual.cedula"
+            (input)="onCedulaInput()"
+            (blur)="validarCedulaApi()"
+            [ngClass]="{
+              'is-valid': cedulaEsValida,
+              'is-invalid': mensajeCedula && !cedulaEsValida
+            }"
+            maxlength="13"
+            placeholder="000-0000000-0">
+
+          <small class="text-muted d-block mt-1">Formato requerido: 000-0000000-0</small>
+
+          <small *ngIf="validandoCedula" class="text-primary fw-bold d-block mt-1">
+            Validando cédula...
+          </small>
+
+          <small
+            *ngIf="mensajeCedula"
+            class="fw-bold d-block mt-1"
+            [ngClass]="cedulaEsValida ? 'text-success' : 'text-danger'">
+            {{ cedulaEsValida ? '✔' : '✖' }} {{ mensajeCedula }}
+          </small>
         </div>
 
         <div class="col-md-3">
-          <label class="form-label fw-bold text-muted small">Usuario de Acceso</label>
-          <input type="text" class="form-control form-control-lg border-primary" [(ngModel)]="empleadoActual.usuario" placeholder="Ej. jperez">
-        </div>
-        
-        <div class="col-md-2">
-          <label class="form-label fw-bold text-muted small">Cédula</label>
-          <input type="text" class="form-control form-control-lg" [(ngModel)]="empleadoActual.cedula" placeholder="000-0000000-0">
-        </div>
-
-        <div class="col-md-2">
           <label class="form-label fw-bold text-muted small">Tanda</label>
           <select class="form-select form-select-lg" [(ngModel)]="empleadoActual.tandaLabor">
             <option value="">Seleccione...</option>
@@ -31,17 +63,34 @@
           </select>
         </div>
 
-        <div class="col-md-2">
+        <div class="col-md-3">
           <label class="form-label fw-bold text-muted small">% Comisión</label>
-          <input type="number" class="form-control form-control-lg" [(ngModel)]="empleadoActual.porcientoComision" placeholder="Ej. 10">
+          <input
+            type="number"
+            min="0"
+            class="form-control form-control-lg"
+            [(ngModel)]="empleadoActual.porcientoComision"
+            placeholder="Ej. 10">
         </div>
 
-        <div class="col-md-12 mt-4 text-end">
-          <button class="btn btn-primary btn-lg px-5 fw-bold shadow-sm" (click)="guardar()">
-            Guardar Empleado
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-muted small">Estado</label>
+          <select class="form-select form-select-lg" [(ngModel)]="empleadoActual.estado">
+            <option [ngValue]="true">Activo</option>
+            <option [ngValue]="false">Inactivo</option>
+          </select>
+        </div>
+
+        <div class="col-md-3 text-end">
+          <button *ngIf="modoEdicion" class="btn btn-secondary btn-lg me-2" (click)="cancelar()">
+            Cancelar
+          </button>
+
+          <button class="btn btn-primary btn-lg fw-bold shadow-sm" (click)="guardar()">
+            {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
           </button>
         </div>
-        
+
       </div>
     </div>
   </div>
@@ -57,14 +106,15 @@
             <th class="py-3">Tanda</th>
             <th class="py-3">Comisión</th>
             <th class="py-3">Estado</th>
-            <th class="py-3">Acciones</th>
+            <th class="py-3 text-center">Acciones</th>
           </tr>
         </thead>
+
         <tbody>
           <tr *ngFor="let emp of listaEmpleados">
             <td class="px-4 fw-bold text-secondary">{{ emp.nombre }}</td>
             <td class="fw-bold text-primary">{{ emp.usuario }}</td>
-            <td>{{ emp.cedula }}</td>
+            <td>{{ formatearCedulaListado(emp.cedula) }}</td>
             <td>{{ emp.tandaLabor }}</td>
             <td><span class="badge bg-info text-dark">{{ emp.porcientoComision }}%</span></td>
             <td>
@@ -72,12 +122,17 @@
                 {{ emp.estado ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
-            <td>
+            <td class="text-center">
+              <button class="btn btn-warning btn-sm me-2" (click)="editar(emp)">
+                ✏️ Editar
+              </button>
+
               <button class="btn btn-outline-danger btn-sm" (click)="eliminar(emp.id)">
-                <i class="bi bi-trash"></i> Eliminar
+                🗑 Eliminar
               </button>
             </td>
           </tr>
+
           <tr *ngIf="listaEmpleados.length === 0">
             <td colspan="7" class="text-center py-5 text-muted">
               No hay empleados registrados.

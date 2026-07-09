@@ -67,6 +67,11 @@ export class ClientesComponent implements OnInit {
       return;
     }
 
+    if (Number(this.nuevoCliente.limiteCredito) < 0) {
+      alert('El límite de crédito no puede ser negativo.');
+      return;
+    }
+
     const cedulaLimpia = this.limpiarCedula(this.nuevoCliente.cedula);
 
     if (!this.cedulaValida(cedulaLimpia)) {
@@ -74,9 +79,15 @@ export class ClientesComponent implements OnInit {
       return;
     }
 
+    if (!this.cedulaEsValida) {
+      alert(this.mensajeCedula || 'Debes validar una cédula válida y disponible.');
+      return;
+    }
+
     const clienteEnviar: Cliente = {
       ...this.nuevoCliente,
       cedula: cedulaLimpia,
+      limiteCredito: Number(this.nuevoCliente.limiteCredito),
       tipoPersona: this.nuevoCliente.tipoPersona || 'Fisica'
     };
 
@@ -173,9 +184,7 @@ export class ClientesComponent implements OnInit {
     this.mensajeCedula = '';
     this.cedulaEsValida = false;
 
-    if (cedulaLimpia.length === 0) {
-      return;
-    }
+    if (cedulaLimpia.length === 0) return;
 
     if (cedulaLimpia.length < 11) {
       this.mensajeCedula = 'La cédula debe tener 11 dígitos.';
@@ -198,7 +207,7 @@ export class ClientesComponent implements OnInit {
 
     this.validandoCedula = true;
 
-    this.clienteService.validarCedula(cedula).subscribe({
+    this.clienteService.validarCedula(cedula, this.nuevoCliente.id).subscribe({
       next: (respuesta: any) => {
         this.cedulaEsValida = respuesta.esValida;
         this.mensajeCedula = respuesta.mensaje;
@@ -219,7 +228,6 @@ export class ClientesComponent implements OnInit {
     cedula = this.limpiarCedula(cedula);
 
     if (cedula.length !== 11) return false;
-
     if (/^(\d)\1{10}$/.test(cedula)) return false;
 
     const pesos = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2];
@@ -255,6 +263,16 @@ export class ClientesComponent implements OnInit {
     if (/^6/.test(numLimpio)) return 'DISCOVER';
 
     return numLimpio.length > 0 ? 'Desconocida' : '';
+  }
+
+  obtenerLogoTarjeta(marca: string): string {
+    switch (marca) {
+      case 'VISA': return 'images/cards/visa.png';
+      case 'MASTERCARD': return 'images/cards/mastercard.svg';
+      case 'AMEX': return 'images/cards/amex.png';
+      case 'DISCOVER': return 'images/cards/discover.png';
+      default: return '';
+    }
   }
 
   obtenerColorTarjeta(marca: string): string {

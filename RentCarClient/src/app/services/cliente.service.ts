@@ -30,7 +30,13 @@ export class ClienteService {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
-  validarCedula(cedula: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/validar-cedula/${cedula}`);
+  validarCedula(cedula: string, idCliente?: number): Observable<any> {
+    let url = `${this.apiUrl}/validar-cedula/${cedula}`;
+
+    if (idCliente) {
+      url += `?idCliente=${idCliente}`;
+    }
+
+    return this.http.get(url);
   }
 }

@@ -33,20 +33,31 @@ namespace RentCar.API.Controllers
         }
 
         [HttpGet("validar-cedula/{cedula}")]
-        public IActionResult ValidarCedula(string cedula)
+        public async Task<IActionResult> ValidarCedula(string cedula, int? idCliente = null)
         {
             var cedulaLimpia = LimpiarCedula(cedula);
             var esValida = CedulaValida(cedulaLimpia);
+
+            var clienteExistente = await _context.Clientes.FirstOrDefaultAsync(c =>
+                c.Cedula == cedulaLimpia &&
+                (!idCliente.HasValue || c.Id != idCliente.Value)
+            );
+
+            var existe = clienteExistente != null;
 
             return Ok(new
             {
                 cedula = cedulaLimpia,
                 cedulaFormateada = FormatearCedula(cedulaLimpia),
-                esValida,
+                esValida = esValida && !existe,
+                existe,
+                nombreCliente = clienteExistente?.Nombre,
                 fuente = "Validador local",
-                mensaje = esValida
-                    ? "Cédula válida matemáticamente. Consulta JCE no configurada."
-                    : "La cédula ingresada no es válida."
+                mensaje = !esValida
+                    ? "La cédula ingresada no es válida."
+                    : existe
+                        ? $"Esta cédula ya pertenece a {clienteExistente!.Nombre}."
+                        : "Cédula válida y disponible para registrar."
             });
         }
 
@@ -57,6 +68,9 @@ namespace RentCar.API.Controllers
 
             if (!CedulaValida(cliente.Cedula))
                 return BadRequest("La cédula ingresada no es válida.");
+
+            if (cliente.LimiteCredito < 0)
+                return BadRequest("El límite de crédito no puede ser negativo.");
 
             var existeCedula = await _context.Clientes.AnyAsync(c => c.Cedula == cliente.Cedula);
 
@@ -80,12 +94,17 @@ namespace RentCar.API.Controllers
             if (!CedulaValida(cliente.Cedula))
                 return BadRequest("La cédula ingresada no es válida.");
 
+            if (cliente.LimiteCredito < 0)
+                return BadRequest("El límite de crédito no puede ser negativo.");
+
             var existeCliente = await _context.Clientes.AnyAsync(c => c.Id == id);
 
             if (!existeCliente)
                 return NotFound();
 
-            var cedulaDuplicada = await _context.Clientes.AnyAsync(c => c.Cedula == cliente.Cedula && c.Id != id);
+            var cedulaDuplicada = await _context.Clientes.AnyAsync(c =>
+                c.Cedula == cliente.Cedula && c.Id != id
+            );
 
             if (cedulaDuplicada)
                 return BadRequest("Ya existe otro cliente registrado con esta cédula.");
