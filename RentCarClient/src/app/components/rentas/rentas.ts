@@ -79,43 +79,70 @@ export class Rentas implements OnInit {
   }
 
   cargarDatos(): void {
-    forkJoin({
-      rentas: this.rentaService.getRentas(),
-      vehiculos: this.vehiculoService.getVehiculos(),
-      clientes: this.clienteService.getClientes(),
-      empleados: this.empleadoService.getEmpleados(),
-      marcas: this.marcaService.getMarcas(),
-      modelos: this.modeloService.getModelos()
-    }).subscribe({
-      next: ({ rentas, vehiculos, clientes, empleados, marcas, modelos }: any) => {
-        this.rentas = [...rentas];
-        this.vehiculos = [...vehiculos];
-        this.vehiculosDisponibles = this.vehiculos.filter(v => v.estado === true);
-        this.clientes = [...clientes];
-        this.empleados = [...empleados];
-        this.marcas = [...marcas];
-        this.modelos = [...modelos];
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => console.error('Error cargando datos de rentas', err)
-    });
-  }
+  forkJoin({
+    rentas: this.rentaService.getRentas(),
+    vehiculos: this.vehiculoService.getVehiculos(),
+    clientes: this.clienteService.getClientes(),
+    empleados: this.empleadoService.getEmpleados(),
+    marcas: this.marcaService.getMarcas(),
+    modelos: this.modeloService.getModelos()
+  }).subscribe({
+    next: ({
+      rentas,
+      vehiculos,
+      clientes,
+      empleados,
+      marcas,
+      modelos
+    }: any) => {
+      this.rentas = [...rentas];
+      this.vehiculos = [...vehiculos];
 
- guardarRenta(): void {
+      const idsVehiculosRentados = new Set(
+        this.rentas.map((renta: any) => Number(renta.idVehiculo))
+      );
 
-  if (Number(this.nuevaRenta.idVehiculo) === 0 || Number(this.nuevaRenta.idCliente) === 0) {
+      /*
+       * Solo aparecen vehículos:
+       * 1. Marcados como disponibles.
+       * 2. Que nunca hayan sido incluidos en una renta.
+       */
+      this.vehiculosDisponibles = this.vehiculos.filter((vehiculo: any) =>
+        vehiculo.estado === true &&
+        !idsVehiculosRentados.has(Number(vehiculo.id))
+      );
+
+      this.clientes = [...clientes];
+      this.empleados = [...empleados];
+      this.marcas = [...marcas];
+      this.modelos = [...modelos];
+
+      this.cdr.detectChanges();
+    },
+    error: (err: any) => {
+      console.error('Error cargando datos de rentas', err);
+    }
+  });
+}
+
+guardarRenta(): void {
+  const idVehiculo = Number(this.nuevaRenta.idVehiculo);
+  const idCliente = Number(this.nuevaRenta.idCliente);
+  const montoPorDia = Number(this.nuevaRenta.montoXDia);
+  const cantidadDias = Number(this.nuevaRenta.cantidadDias);
+
+  if (idVehiculo <= 0 || idCliente <= 0) {
     alert('Selecciona un vehículo y un cliente válidos.');
     return;
   }
 
-  if (Number(this.nuevaRenta.montoXDia) <= 0 || Number(this.nuevaRenta.cantidadDias) <= 0) {
+  if (montoPorDia <= 0 || cantidadDias <= 0) {
     alert('El monto por día y la cantidad de días deben ser mayores que cero.');
     return;
   }
 
-  // Verificar que el vehículo siga disponible
-  const vehiculoSeleccionado = this.vehiculos.find(v =>
-    Number(v.id) === Number(this.nuevaRenta.idVehiculo)
+  const vehiculoSeleccionado = this.vehiculos.find((vehiculo: any) =>
+    Number(vehiculo.id) === idVehiculo
   );
 
   if (!vehiculoSeleccionado) {
@@ -123,87 +150,104 @@ export class Rentas implements OnInit {
     return;
   }
 
-  if (!vehiculoSeleccionado.estado) {
-    alert('Este vehículo ya se encuentra rentado.');
+  const fueRentadoAnteriormente = this.rentas.some((renta: any) =>
+    Number(renta.idVehiculo) === idVehiculo
+  );
+
+  if (fueRentadoAnteriormente) {
+    alert(
+      'Este vehículo ya fue rentado anteriormente y no puede volver a rentarse.'
+    );
+
+    this.nuevaRenta.idVehiculo = 0;
     return;
   }
 
-  // Evitar doble renta activa
-  const tieneRentaActiva = this.rentas.some(r =>
-    Number(r.idVehiculo) === Number(this.nuevaRenta.idVehiculo) &&
-    r.estado === 'Activa'
-  );
-
-  if (tieneRentaActiva) {
-    alert('Este vehículo ya posee una renta activa.');
+  if (vehiculoSeleccionado.estado !== true) {
+    alert('Este vehículo no está disponible para renta.');
     return;
   }
 
   const rentaEnviar = {
     idEmpleado: this.obtenerIdEmpleadoActual(),
-    idVehiculo: Number(this.nuevaRenta.idVehiculo),
-    idCliente: Number(this.nuevaRenta.idCliente),
+    idVehiculo,
+    idCliente,
     fechaRenta: this.nuevaRenta.fechaRenta,
     fechaDevolucion: null,
-    montoXDia: Number(this.nuevaRenta.montoXDia),
-    cantidadDias: Number(this.nuevaRenta.cantidadDias),
-    comentario: this.nuevaRenta.comentario || '',
+    montoXDia: montoPorDia,
+    cantidadDias,
+    comentario: this.nuevaRenta.comentario?.trim() || '',
     estado: 'Activa'
   };
 
   this.rentaService.crearRenta(rentaEnviar).subscribe({
     next: () => {
       alert('Renta registrada con éxito.');
+
       this.cancelarFormulario();
       this.cargarDatos();
     },
     error: (err: any) => {
+      console.error('Error al registrar la renta', err);
 
-      console.error(err);
+      const mensaje =
+        typeof err.error === 'string'
+          ? err.error
+          : err.error?.message ||
+            'Ocurrió un error al registrar la renta.';
 
-      if (err.error) {
-        alert(err.error);
-      } else {
-        alert('Ocurrió un error al registrar la renta.');
-      }
+      alert(mensaje);
 
+      this.cargarDatos();
     }
   });
-
 }
-
- devolverVehiculo(id: number): void {
-
-  const renta = this.rentas.find(r => Number(r.noRenta) === Number(id));
+devolverVehiculo(id: number): void {
+  const renta = this.rentas.find((item: any) =>
+    Number(item.noRenta) === Number(id)
+  );
 
   if (!renta) {
-    alert('No se encontró la renta.');
+    alert('No se encontró la renta seleccionada.');
     return;
   }
 
-  if (renta.estado === 'Concluida') {
+  if (
+    String(renta.estado).trim().toLowerCase() === 'concluida'
+  ) {
     alert('Esta renta ya fue concluida.');
     return;
   }
 
-  if (!confirm('¿Deseas procesar la devolución de este vehículo?')) {
+  const confirmar = confirm(
+    '¿Deseas procesar la devolución?\n\n' +
+    'El vehículo quedará fuera de futuras rentas.'
+  );
+
+  if (!confirmar) {
     return;
   }
 
   this.rentaService.devolverRenta(id).subscribe({
-
     next: () => {
-      alert('Vehículo devuelto correctamente.');
+      alert(
+        'Vehículo devuelto correctamente. La renta quedó concluida y el vehículo no podrá rentarse nuevamente.'
+      );
+
       this.cargarDatos();
     },
-
     error: (err: any) => {
-      console.error(err);
-      alert('No fue posible procesar la devolución.');
+      console.error('Error al procesar la devolución', err);
+
+      const mensaje =
+        typeof err.error === 'string'
+          ? err.error
+          : err.error?.message ||
+            'No fue posible procesar la devolución.';
+
+      alert(mensaje);
     }
-
   });
-
 }
 
   cancelarFormulario(): void {

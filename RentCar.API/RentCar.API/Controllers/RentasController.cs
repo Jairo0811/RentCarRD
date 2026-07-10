@@ -33,6 +33,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpPost]
+        [HttpPost]
         public async Task<ActionResult<Renta>> PostRenta(Renta renta)
         {
             if (renta.IdVehiculo <= 0)
@@ -55,23 +56,35 @@ namespace RentCar.API.Controllers
             if (vehiculo == null)
                 return BadRequest("El vehículo seleccionado no existe.");
 
-            if (vehiculo.Estado == false)
-                return BadRequest("Este vehículo ya se encuentra rentado.");
-
-            var tieneRentaActiva = await _context.Rentas.AnyAsync(r =>
-                r.IdVehiculo == renta.IdVehiculo &&
-                (r.Estado == "Activa" || r.Estado == "Abierta")
+            /*
+             * Regla del negocio:
+             * un vehículo que haya sido rentado anteriormente
+             * no puede volver a rentarse, aunque la renta esté concluida.
+             */
+            var vehiculoRentadoAnteriormente = await _context.Rentas.AnyAsync(r =>
+                r.IdVehiculo == renta.IdVehiculo
             );
 
-            if (tieneRentaActiva)
-                return BadRequest("Este vehículo ya tiene una renta activa.");
+            if (vehiculoRentadoAnteriormente)
+            {
+                return BadRequest(
+                    "Este vehículo ya fue rentado anteriormente y no puede volver a rentarse."
+                );
+            }
 
-            var clienteExiste = await _context.Clientes.AnyAsync(c => c.Id == renta.IdCliente);
+            if (vehiculo.Estado == false)
+                return BadRequest("Este vehículo no está disponible para renta.");
+
+            var clienteExiste = await _context.Clientes.AnyAsync(c =>
+                c.Id == renta.IdCliente
+            );
 
             if (!clienteExiste)
                 return BadRequest("El cliente seleccionado no existe.");
 
-            var empleadoExiste = await _context.Empleados.AnyAsync(e => e.Id == renta.IdEmpleado);
+            var empleadoExiste = await _context.Empleados.AnyAsync(e =>
+                e.Id == renta.IdEmpleado
+            );
 
             if (!empleadoExiste)
                 return BadRequest("El empleado seleccionado no existe.");
@@ -82,11 +95,16 @@ namespace RentCar.API.Controllers
 
             _context.Rentas.Add(renta);
 
+            // El vehículo deja de estar disponible definitivamente.
             vehiculo.Estado = false;
 
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetRenta), new { id = renta.NoRenta }, renta);
+            return CreatedAtAction(
+                nameof(GetRenta),
+                new { id = renta.NoRenta },
+                renta
+            );
         }
 
         [HttpPut("{id}")]
@@ -120,10 +138,15 @@ namespace RentCar.API.Controllers
             var renta = await _context.Rentas.FindAsync(id);
 
             if (renta == null)
-                return NotFound();
+                return NotFound("La renta seleccionada no existe.");
 
-            if (renta.Estado == "Concluida")
+            if (string.Equals(
+                renta.Estado,
+                "Concluida",
+                StringComparison.OrdinalIgnoreCase))
+            {
                 return BadRequest("Esta renta ya fue concluida anteriormente.");
+            }
 
             renta.Estado = "Concluida";
             renta.FechaDevolucion = DateTime.Now;
@@ -132,7 +155,13 @@ namespace RentCar.API.Controllers
             var vehiculo = await _context.Vehiculos.FindAsync(renta.IdVehiculo);
 
             if (vehiculo != null)
-                vehiculo.Estado = true;
+            {
+                /*
+                 * No vuelve a Disponible.
+                 * Como ya fue rentado una vez, queda fuera de futuras rentas.
+                 */
+                vehiculo.Estado = false;
+            }
 
             await _context.SaveChangesAsync();
 
@@ -145,17 +174,11 @@ namespace RentCar.API.Controllers
             var renta = await _context.Rentas.FindAsync(id);
 
             if (renta == null)
-                return NotFound();
+                return NotFound("La renta seleccionada no existe.");
 
-            var vehiculo = await _context.Vehiculos.FindAsync(renta.IdVehiculo);
-
-            if (vehiculo != null && renta.Estado != "Concluida")
-                vehiculo.Estado = true;
-
-            _context.Rentas.Remove(renta);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return BadRequest(
+                "Las rentas no pueden eliminarse porque forman parte del historial del vehículo."
+            );
         }
     }
 }
