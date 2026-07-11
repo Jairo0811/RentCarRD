@@ -194,3 +194,88 @@ SELECT * FROM Rentas WHERE NoRenta = 2;
 SELECT * FROM Clientes;
 
 SELECT * FROM Vehiculos;
+
+
+
+SELECT Id, Nombre, Cedula, Usuario
+FROM Empleados;
+
+
+
+USE RentCarDB;
+GO
+
+BEGIN TRANSACTION;
+
+BEGIN TRY
+
+    DELETE FROM Inspecciones;
+    DELETE FROM Rentas;
+    DELETE FROM Clientes;
+    DELETE FROM Empleados;
+    DELETE FROM Vehiculos;
+
+    DBCC CHECKIDENT ('Inspecciones', RESEED, 0);
+    DBCC CHECKIDENT ('Rentas', RESEED, 0);
+    DBCC CHECKIDENT ('Clientes', RESEED, 0);
+    DBCC CHECKIDENT ('Empleados', RESEED, 0);
+    DBCC CHECKIDENT ('Vehiculos', RESEED, 0);
+
+    COMMIT TRANSACTION;
+
+    PRINT 'Datos operativos eliminados correctamente.';
+
+END TRY
+BEGIN CATCH
+
+    ROLLBACK TRANSACTION;
+
+    PRINT ERROR_MESSAGE();
+
+END CATCH;
+GO
+
+
+
+
+USE RentCarDB;
+GO
+
+/* Nombre del titular */
+IF COL_LENGTH('Clientes', 'NombreTitularTarjeta') IS NULL
+BEGIN
+    ALTER TABLE Clientes
+    ADD NombreTitularTarjeta VARCHAR(120) NULL;
+END
+GO
+
+/* Fecha de expiración en formato MM/AA */
+IF COL_LENGTH('Clientes', 'FechaExpiracionTarjeta') IS NULL
+BEGIN
+    ALTER TABLE Clientes
+    ADD FechaExpiracionTarjeta VARCHAR(5) NULL;
+END
+GO
+
+/* Franquicia detectada: VISA, MASTERCARD, AMEX, DISCOVER */
+IF COL_LENGTH('Clientes', 'TipoTarjeta') IS NULL
+BEGIN
+    ALTER TABLE Clientes
+    ADD TipoTarjeta VARCHAR(20) NULL;
+END
+GO
+
+/* Ampliar el número para permitir formato con espacios */
+ALTER TABLE Clientes
+ALTER COLUMN NoTarjetaCR VARCHAR(19) NULL;
+GO
+
+SELECT
+    COLUMN_NAME,
+    DATA_TYPE,
+    CHARACTER_MAXIMUM_LENGTH,
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Clientes'
+ORDER BY ORDINAL_POSITION;
+GO
