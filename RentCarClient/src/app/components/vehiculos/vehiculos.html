@@ -1,21 +1,44 @@
 <div class="container mt-4">
 
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-secondary">Gestión de Vehículos</h2>
+    <h2 class="fw-bold text-secondary">
+      Gestión de Vehículos
+    </h2>
 
     <button
       *ngIf="rolActual === 'admin'"
       class="btn fw-bold shadow-sm"
-      [ngClass]="mostrarFormulario ? 'btn-outline-danger' : 'btn-success'"
-      (click)="mostrarFormulario ? cancelar() : mostrarFormulario = true">
-      {{ mostrarFormulario ? 'Cancelar Operación' : '+ Nuevo Vehículo' }}
+      [ngClass]="
+        mostrarFormulario
+          ? 'btn-outline-danger'
+          : 'btn-success'
+      "
+      (click)="
+        mostrarFormulario
+          ? cancelar()
+          : mostrarFormulario = true
+      "
+    >
+      {{
+        mostrarFormulario
+          ? 'Cancelar Operación'
+          : '+ Nuevo Vehículo'
+      }}
     </button>
   </div>
 
-  <div *ngIf="mostrarFormulario" class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+  <!-- Formulario -->
+  <div
+    *ngIf="mostrarFormulario"
+    class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn"
+  >
     <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
       <h5 class="text-primary fw-bold">
-        {{ modoEdicion ? 'Editar Vehículo' : 'Registrar Nuevo Vehículo' }}
+        {{
+          modoEdicion
+            ? 'Editar Vehículo'
+            : 'Registrar Nuevo Vehículo'
+        }}
       </h5>
     </div>
 
@@ -23,159 +46,381 @@
       <div class="row g-3">
 
         <div class="col-md-12">
-          <label class="form-label text-muted small fw-bold">Descripción General</label>
+          <label class="form-label text-muted small fw-bold">
+            Descripción General
+          </label>
+
           <input
             [(ngModel)]="nuevoVehiculo.descripcion"
             placeholder="Ej. Toyota Corolla 2024"
-            class="form-control form-control-lg">
+            class="form-control form-control-lg"
+          />
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Marca</label>
+          <label class="form-label text-muted small fw-bold">
+            Marca
+          </label>
+
           <select
             [(ngModel)]="nuevoVehiculo.idMarca"
             (change)="cambiarMarca()"
-            class="form-select form-select-lg">
-            <option [ngValue]="null">Seleccione...</option>
-            <option *ngFor="let m of marcas" [ngValue]="m.id">
+            class="form-select form-select-lg"
+          >
+            <option [ngValue]="null">
+              Seleccione...
+            </option>
+
+            <option
+              *ngFor="let m of marcas"
+              [ngValue]="m.id"
+            >
               {{ m.descripcion }}
             </option>
           </select>
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Modelo</label>
-          <select [(ngModel)]="nuevoVehiculo.idModelo" class="form-select form-select-lg">
-            <option [ngValue]="null">Seleccione...</option>
-            <option *ngFor="let mo of modelosFiltrados" [ngValue]="mo.id">
+          <label class="form-label text-muted small fw-bold">
+            Modelo
+          </label>
+
+          <select
+            [(ngModel)]="nuevoVehiculo.idModelo"
+            class="form-select form-select-lg"
+          >
+            <option [ngValue]="null">
+              Seleccione...
+            </option>
+
+            <option
+              *ngFor="let mo of modelosFiltrados"
+              [ngValue]="mo.id"
+            >
               {{ mo.descripcion }}
             </option>
           </select>
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Tipo de Vehículo</label>
-          <select [(ngModel)]="nuevoVehiculo.idTipoVehiculo" class="form-select form-select-lg">
-            <option [ngValue]="null">Seleccione...</option>
-            <option *ngFor="let t of tiposVehiculos" [ngValue]="t.id">
+          <label class="form-label text-muted small fw-bold">
+            Tipo de Vehículo
+          </label>
+
+          <select
+            [(ngModel)]="nuevoVehiculo.idTipoVehiculo"
+            class="form-select form-select-lg"
+          >
+            <option [ngValue]="null">
+              Seleccione...
+            </option>
+
+            <option
+              *ngFor="let t of tiposVehiculos"
+              [ngValue]="t.id"
+            >
               {{ t.descripcion }}
             </option>
           </select>
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Tipo de Combustible</label>
-          <select [(ngModel)]="nuevoVehiculo.idTipoCombustible" class="form-select form-select-lg">
-            <option [ngValue]="null">Seleccione...</option>
-            <option *ngFor="let c of tiposCombustibles" [ngValue]="c.id">
+          <label class="form-label text-muted small fw-bold">
+            Tipo de Combustible
+          </label>
+
+          <select
+            [(ngModel)]="nuevoVehiculo.idTipoCombustible"
+            class="form-select form-select-lg"
+          >
+            <option [ngValue]="null">
+              Seleccione...
+            </option>
+
+            <option
+              *ngFor="let c of tiposCombustibles"
+              [ngValue]="c.id"
+            >
               {{ c.descripcion }}
             </option>
           </select>
         </div>
 
         <div class="col-md-4">
-          <label class="form-label text-muted small fw-bold">Número de Placa</label>
+          <label class="form-label text-muted small fw-bold">
+            Número de Placa
+          </label>
+
           <input
             [(ngModel)]="nuevoVehiculo.noPlaca"
             placeholder="Placa"
-            class="form-control form-control-lg">
+            class="form-control form-control-lg"
+          />
         </div>
 
         <div class="col-md-4">
-          <label class="form-label text-muted small fw-bold">Número de Chasis</label>
+          <label class="form-label text-muted small fw-bold">
+            Número de Chasis
+          </label>
+
           <input
             [(ngModel)]="nuevoVehiculo.noChasis"
             placeholder="Chasis"
-            class="form-control form-control-lg">
+            class="form-control form-control-lg"
+          />
         </div>
 
         <div class="col-md-4">
-          <label class="form-label text-muted small fw-bold">Número de Motor</label>
+          <label class="form-label text-muted small fw-bold">
+            Número de Motor
+          </label>
+
           <input
             [(ngModel)]="nuevoVehiculo.noMotor"
             placeholder="Motor"
-            class="form-control form-control-lg">
+            class="form-control form-control-lg"
+          />
         </div>
 
         <div class="col-md-6">
-          <label class="form-label text-muted small fw-bold">Foto del Vehículo</label>
+          <label class="form-label text-muted small fw-bold">
+            Foto del Vehículo
+          </label>
+
           <input
             type="file"
             accept="image/png, image/jpeg, image/jpg, image/webp"
             class="form-control form-control-lg"
-            (change)="seleccionarImagen($event)">
+            (change)="seleccionarImagen($event)"
+          />
+
           <small class="text-muted">
             Formatos permitidos: JPG, PNG o WEBP.
           </small>
         </div>
 
-        <div class="col-md-6" *ngIf="imagenPreview || nuevoVehiculo.imagenUrl">
-          <label class="form-label text-muted small fw-bold">Vista Previa</label>
+        <div
+          class="col-md-6"
+          *ngIf="imagenPreview || nuevoVehiculo.imagenUrl"
+        >
+          <label class="form-label text-muted small fw-bold">
+            Vista Previa
+          </label>
+
           <div class="border rounded-3 p-2 bg-light text-center">
             <img
-              [src]="imagenPreview ? imagenPreview : 'http://localhost:5266' + nuevoVehiculo.imagenUrl"
+              [src]="
+                imagenPreview
+                  ? imagenPreview
+                  : 'http://localhost:5266' +
+                    nuevoVehiculo.imagenUrl
+              "
               alt="Vista previa del vehículo"
               class="img-fluid rounded-3"
-              style="max-height: 220px; object-fit: cover;">
+              style="
+                max-height: 220px;
+                object-fit: cover;
+              "
+            />
           </div>
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Estado</label>
-          <select [(ngModel)]="nuevoVehiculo.estado" class="form-select form-select-lg">
-            <option [ngValue]="true">Disponible</option>
-            <option [ngValue]="false">Rentado</option>
+          <label class="form-label text-muted small fw-bold">
+            Estado
+          </label>
+
+          <select
+            [(ngModel)]="nuevoVehiculo.estado"
+            class="form-select form-select-lg"
+          >
+            <option [ngValue]="true">
+              Disponible
+            </option>
+
+            <option [ngValue]="false">
+              Rentado
+            </option>
           </select>
         </div>
-
       </div>
 
       <div class="mt-4 d-flex justify-content-end gap-2">
         <button
           *ngIf="modoEdicion"
           class="btn btn-secondary btn-lg"
-          (click)="cancelar()">
+          (click)="cancelar()"
+        >
           Cancelar
         </button>
 
         <button
           (click)="guardarVehiculo()"
-          class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">
-          {{ modoEdicion ? 'Actualizar Vehículo' : 'Guardar Vehículo' }}
+          class="btn btn-primary btn-lg px-5 fw-bold shadow-sm"
+        >
+          {{
+            modoEdicion
+              ? 'Actualizar Vehículo'
+              : 'Guardar Vehículo'
+          }}
         </button>
       </div>
     </div>
   </div>
 
-  <div class="row g-4">
-    <div class="col-md-4" *ngFor="let v of vehiculos">
-      <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden">
+  <!-- Buscador y filtros -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+      <div class="row g-3 align-items-end">
 
-        <div class="bg-light text-center" style="height: 220px; overflow: hidden;">
+        <div class="col-md-7">
+          <label class="form-label fw-bold text-muted small">
+            Buscar vehículo
+          </label>
+
+          <div class="input-group input-group-lg">
+            <span class="input-group-text bg-white">
+              🔍
+            </span>
+
+            <input
+              type="text"
+              [(ngModel)]="terminoBusqueda"
+              class="form-control"
+              placeholder="Buscar por marca, modelo, placa, chasis, motor..."
+            />
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-muted small">
+            Estado
+          </label>
+
+          <select
+            [(ngModel)]="filtroEstado"
+            class="form-select form-select-lg"
+          >
+            <option value="todos">
+              Todos
+            </option>
+
+            <option value="disponibles">
+              Disponibles
+            </option>
+
+            <option value="rentados">
+              Rentados
+            </option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-lg w-100"
+            (click)="limpiarFiltros()"
+          >
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"
+      >
+        <div class="text-muted small">
+          Mostrando
+          <strong>
+            {{ vehiculosFiltrados.length }}
+          </strong>
+          de
+          <strong>
+            {{ vehiculos.length }}
+          </strong>
+          vehículos
+        </div>
+
+        <div class="d-flex gap-2">
+          <span class="badge text-bg-success">
+            Disponibles: {{ cantidadDisponibles }}
+          </span>
+
+          <span class="badge text-bg-danger">
+            Rentados: {{ cantidadRentados }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tarjetas -->
+  <div class="row g-4">
+
+    <div
+      class="col-md-6 col-xl-4"
+      *ngFor="let v of vehiculosFiltrados"
+    >
+      <div
+        class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden"
+      >
+        <div
+          class="bg-light text-center"
+          style="
+            height: 220px;
+            overflow: hidden;
+          "
+        >
           <img
             *ngIf="v.imagenUrl"
-            [src]="'http://localhost:5266' + v.imagenUrl"
+            [src]="
+              'http://localhost:5266' +
+              v.imagenUrl
+            "
             alt="Imagen del vehículo"
             class="w-100 h-100"
-            style="object-fit: cover;">
+            style="object-fit: cover;"
+          />
 
           <div
             *ngIf="!v.imagenUrl"
-            class="h-100 d-flex align-items-center justify-content-center text-muted">
+            class="h-100 d-flex align-items-center justify-content-center text-muted"
+          >
             <div>
-              <div style="font-size: 3rem;">🚗</div>
-              <p class="mb-0 fw-bold">Sin imagen</p>
+              <div style="font-size: 3rem;">
+                🚗
+              </div>
+
+              <p class="mb-0 fw-bold">
+                Sin imagen
+              </p>
             </div>
           </div>
         </div>
 
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
-          <h6 class="mb-0 text-truncate fw-bold" style="max-width: 70%;">
+        <div
+          class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3"
+        >
+          <h6
+            class="mb-0 text-truncate fw-bold"
+            style="max-width: 70%;"
+          >
             {{ v.descripcion }}
           </h6>
 
-          <span class="badge rounded-pill" [ngClass]="v.estado ? 'bg-success' : 'bg-danger'">
-            {{ v.estado ? 'Disponible' : 'Rentado' }}
+          <span
+            class="badge rounded-pill"
+            [ngClass]="
+              v.estado
+                ? 'bg-success'
+                : 'bg-danger'
+            "
+          >
+            {{
+              v.estado
+                ? 'Disponible'
+                : 'Rentado'
+            }}
           </span>
         </div>
 
@@ -183,67 +428,140 @@
           <ul class="list-group list-group-flush">
 
             <li class="list-group-item bg-transparent py-3">
-              <span class="text-muted small fw-bold d-block">Marca / Modelo</span>
+              <span class="text-muted small fw-bold d-block">
+                Marca / Modelo
+              </span>
+
               <span class="fw-medium">
-                {{ obtenerMarca(v.idMarca) }} {{ obtenerModelo(v.idModelo) }}
+                {{ obtenerMarca(v.idMarca) }}
+                {{ obtenerModelo(v.idModelo) }}
               </span>
             </li>
 
             <li class="list-group-item bg-transparent py-3">
-              <span class="text-muted small fw-bold d-block">Tipo</span>
-              <span class="fw-medium">{{ obtenerTipoVehiculo(v.idTipoVehiculo) }}</span>
+              <span class="text-muted small fw-bold d-block">
+                Tipo
+              </span>
+
+              <span class="fw-medium">
+                {{
+                  obtenerTipoVehiculo(
+                    v.idTipoVehiculo
+                  )
+                }}
+              </span>
             </li>
 
             <li class="list-group-item bg-transparent py-3">
-              <span class="text-muted small fw-bold d-block">Placa</span>
-              <span class="fw-medium">{{ v.noPlaca || 'N/A' }}</span>
+              <span class="text-muted small fw-bold d-block">
+                Placa
+              </span>
+
+              <span class="fw-medium">
+                {{ v.noPlaca || 'N/A' }}
+              </span>
             </li>
 
             <li class="list-group-item bg-transparent py-3">
-              <span class="text-muted small fw-bold d-block">Chasis</span>
-              <span class="fw-medium">{{ v.noChasis || 'N/A' }}</span>
+              <span class="text-muted small fw-bold d-block">
+                Chasis
+              </span>
+
+              <span class="fw-medium">
+                {{ v.noChasis || 'N/A' }}
+              </span>
             </li>
 
             <li class="list-group-item bg-transparent py-3">
-              <span class="text-muted small fw-bold d-block">Motor</span>
-              <span class="fw-medium">{{ v.noMotor || 'N/A' }}</span>
+              <span class="text-muted small fw-bold d-block">
+                Motor
+              </span>
+
+              <span class="fw-medium">
+                {{ v.noMotor || 'N/A' }}
+              </span>
             </li>
 
-            <li class="list-group-item bg-transparent py-3 border-bottom-0">
-              <span class="text-muted small fw-bold d-block">Combustible</span>
-              <span class="fw-medium">{{ obtenerCombustible(v) }}</span>
-            </li>
+            <li
+              class="list-group-item bg-transparent py-3 border-bottom-0"
+            >
+              <span class="text-muted small fw-bold d-block">
+                Combustible
+              </span>
 
+              <span class="fw-medium">
+                {{ obtenerCombustible(v) }}
+              </span>
+            </li>
           </ul>
         </div>
 
         <div
           class="card-footer bg-white d-flex justify-content-end gap-2"
-          *ngIf="rolActual === 'admin'">
-
+          *ngIf="rolActual === 'admin'"
+        >
           <button
             class="btn btn-warning btn-sm"
-            (click)="editar(v)">
+            (click)="editar(v)"
+          >
             ✏️ Editar
           </button>
 
           <button
             class="btn btn-danger btn-sm"
-            (click)="eliminar(v.id)">
+            (click)="eliminar(v.id)"
+          >
             🗑 Eliminar
           </button>
-
         </div>
-
       </div>
     </div>
 
-    <div class="col-12 text-center py-5" *ngIf="vehiculos.length === 0">
+    <!-- Sin coincidencias -->
+    <div
+      class="col-12 text-center py-5"
+      *ngIf="
+        vehiculos.length > 0 &&
+        vehiculosFiltrados.length === 0
+      "
+    >
       <div class="p-5 bg-white rounded-3 shadow-sm text-muted">
-        <h4 class="fw-bold">No hay vehículos registrados</h4>
-        <p>Haz clic en "+ Nuevo Vehículo" para empezar a llenar tu flota.</p>
+        <h4 class="fw-bold">
+          No se encontraron coincidencias
+        </h4>
+
+        <p>
+          Prueba con otro término de búsqueda o cambia el filtro de estado.
+        </p>
+
+        <button
+          class="btn btn-outline-primary"
+          (click)="limpiarFiltros()"
+        >
+          Limpiar filtros
+        </button>
       </div>
     </div>
-  </div>
 
+    <!-- Sin vehículos -->
+    <div
+      class="col-12 text-center py-5"
+      *ngIf="vehiculos.length === 0"
+    >
+      <div class="p-5 bg-white rounded-3 shadow-sm text-muted">
+        <h4 class="fw-bold">
+          No hay vehículos registrados
+        </h4>
+
+        <p *ngIf="rolActual === 'admin'">
+          Haz clic en "+ Nuevo Vehículo" para empezar a llenar tu flota.
+        </p>
+
+        <p *ngIf="rolActual !== 'admin'">
+          Actualmente no hay vehículos disponibles para consultar.
+        </p>
+      </div>
+    </div>
+
+  </div>
 </div>

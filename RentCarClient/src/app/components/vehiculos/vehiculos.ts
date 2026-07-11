@@ -28,6 +28,9 @@ export class Vehiculos implements OnInit {
   imagenSeleccionada: File | null = null;
   imagenPreview: string | null = null;
 
+  terminoBusqueda = '';
+  filtroEstado = 'todos';
+
   nuevoVehiculo: any = this.crearVehiculoVacio();
 
   constructor(
@@ -37,7 +40,7 @@ export class Vehiculos implements OnInit {
     private tipoVehiculoService: TipoVehiculoService,
     private tipoCombustibleService: TipoCombustibleService,
     private cdr: ChangeDetectorRef
-  ) { }
+  ) {}
 
   get rolActual(): string | null {
     return localStorage.getItem('rolUsuario');
@@ -73,7 +76,9 @@ export class Vehiculos implements OnInit {
         this.marcas = [...data];
         this.cdr.detectChanges();
       },
-      error: (err: any) => console.error('Error cargando marcas', err)
+      error: (err: any) => {
+        console.error('Error cargando marcas', err);
+      }
     });
 
     this.modeloService.getModelos().subscribe({
@@ -81,7 +86,9 @@ export class Vehiculos implements OnInit {
         this.modelos = [...data];
         this.cdr.detectChanges();
       },
-      error: (err: any) => console.error('Error cargando modelos', err)
+      error: (err: any) => {
+        console.error('Error cargando modelos', err);
+      }
     });
 
     this.tipoVehiculoService.getTipos().subscribe({
@@ -89,7 +96,9 @@ export class Vehiculos implements OnInit {
         this.tiposVehiculos = [...data];
         this.cdr.detectChanges();
       },
-      error: (err: any) => console.error('Error cargando tipos de vehículos', err)
+      error: (err: any) => {
+        console.error('Error cargando tipos de vehículos', err);
+      }
     });
 
     this.tipoCombustibleService.getCombustibles().subscribe({
@@ -97,7 +106,9 @@ export class Vehiculos implements OnInit {
         this.tiposCombustibles = [...data];
         this.cdr.detectChanges();
       },
-      error: (err: any) => console.error('Error cargando combustibles', err)
+      error: (err: any) => {
+        console.error('Error cargando combustibles', err);
+      }
     });
   }
 
@@ -107,8 +118,82 @@ export class Vehiculos implements OnInit {
         this.vehiculos = [...data];
         this.cdr.detectChanges();
       },
-      error: (err: any) => console.error('Error al cargar vehículos', err)
+      error: (err: any) => {
+        console.error('Error al cargar vehículos', err);
+      }
     });
+  }
+
+  get vehiculosFiltrados(): any[] {
+    const termino = this.normalizarTexto(this.terminoBusqueda);
+
+    return this.vehiculos.filter((vehiculo: any) => {
+      const coincideEstado = this.coincideConEstado(vehiculo);
+
+      if (!coincideEstado) {
+        return false;
+      }
+
+      if (!termino) {
+        return true;
+      }
+
+      const marca = this.obtenerMarca(vehiculo.idMarca);
+      const modelo = this.obtenerModelo(vehiculo.idModelo);
+      const tipo = this.obtenerTipoVehiculo(vehiculo.idTipoVehiculo);
+      const combustible = this.obtenerCombustible(vehiculo);
+      const estado = vehiculo.estado ? 'disponible' : 'rentado';
+
+      const contenidoBuscable = [
+        vehiculo.descripcion,
+        vehiculo.noPlaca,
+        vehiculo.noChasis,
+        vehiculo.noMotor,
+        marca,
+        modelo,
+        tipo,
+        combustible,
+        estado
+      ]
+        .map((valor: any) => this.normalizarTexto(valor))
+        .join(' ');
+
+      return contenidoBuscable.includes(termino);
+    });
+  }
+
+  get cantidadDisponibles(): number {
+    return this.vehiculos.filter((vehiculo: any) => vehiculo.estado === true).length;
+  }
+
+  get cantidadRentados(): number {
+    return this.vehiculos.filter((vehiculo: any) => vehiculo.estado === false).length;
+  }
+
+  limpiarFiltros(): void {
+    this.terminoBusqueda = '';
+    this.filtroEstado = 'todos';
+  }
+
+  private coincideConEstado(vehiculo: any): boolean {
+    switch (this.filtroEstado) {
+      case 'disponibles':
+        return vehiculo.estado === true;
+
+      case 'rentados':
+        return vehiculo.estado === false;
+
+      default:
+        return true;
+    }
+  }
+
+  private normalizarTexto(valor: any): string {
+    return String(valor ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
   }
 
   get modelosFiltrados(): any[] {
@@ -116,7 +201,10 @@ export class Vehiculos implements OnInit {
       return this.modelos;
     }
 
-    return this.modelos.filter(m => Number(m.idMarca) === Number(this.nuevoVehiculo.idMarca));
+    return this.modelos.filter(
+      (modelo: any) =>
+        Number(modelo.idMarca) === Number(this.nuevoVehiculo.idMarca)
+    );
   }
 
   cambiarMarca(): void {
@@ -136,6 +224,7 @@ export class Vehiculos implements OnInit {
     this.imagenSeleccionada = archivo;
 
     const reader = new FileReader();
+
     reader.onload = () => {
       this.imagenPreview = reader.result as string;
       this.cdr.detectChanges();
@@ -185,63 +274,86 @@ export class Vehiculos implements OnInit {
           alert('Error al actualizar. Revisa la consola.');
         }
       });
-    } else {
-      this.vehiculoService.crearVehiculo(vehiculoEnviar).subscribe({
-        next: (vehiculoCreado: any) => {
-          const idVehiculo = vehiculoCreado.id;
 
-          if (this.imagenSeleccionada && idVehiculo) {
-            this.subirImagenVehiculo(idVehiculo);
-          } else {
-            alert('Vehículo guardado correctamente.');
-            this.cancelar();
-            this.cargarVehiculos();
-          }
-        },
-        error: (err: any) => {
-          console.error('Error al guardar vehículo:', err);
-          alert('Error al guardar. Revisa la conexión.');
-        }
-      });
+      return;
     }
+
+    this.vehiculoService.crearVehiculo(vehiculoEnviar).subscribe({
+      next: (vehiculoCreado: any) => {
+        const idVehiculo = vehiculoCreado.id;
+
+        if (this.imagenSeleccionada && idVehiculo) {
+          this.subirImagenVehiculo(idVehiculo);
+        } else {
+          alert('Vehículo guardado correctamente.');
+          this.cancelar();
+          this.cargarVehiculos();
+        }
+      },
+      error: (err: any) => {
+        console.error('Error al guardar vehículo:', err);
+        alert('Error al guardar. Revisa la conexión.');
+      }
+    });
   }
 
   subirImagenVehiculo(idVehiculo: number): void {
-    if (!this.imagenSeleccionada) return;
+    if (!this.imagenSeleccionada) {
+      return;
+    }
 
-    this.vehiculoService.subirImagen(idVehiculo, this.imagenSeleccionada).subscribe({
-      next: () => {
-        alert('Vehículo e imagen guardados correctamente.');
-        this.cancelar();
-        this.cargarVehiculos();
-      },
-      error: (err: any) => {
-        console.error('Error al subir imagen:', err);
-        alert('El vehículo se guardó, pero ocurrió un error al subir la imagen.');
-        this.cancelar();
-        this.cargarVehiculos();
-      }
-    });
+    this.vehiculoService
+      .subirImagen(idVehiculo, this.imagenSeleccionada)
+      .subscribe({
+        next: () => {
+          alert('Vehículo e imagen guardados correctamente.');
+          this.cancelar();
+          this.cargarVehiculos();
+        },
+        error: (err: any) => {
+          console.error('Error al subir imagen:', err);
+          alert(
+            'El vehículo se guardó, pero ocurrió un error al subir la imagen.'
+          );
+
+          this.cancelar();
+          this.cargarVehiculos();
+        }
+      });
   }
 
   editar(vehiculo: any): void {
     this.nuevoVehiculo = { ...vehiculo };
 
-    if (!this.nuevoVehiculo.idTipoCombustible && this.nuevoVehiculo.idCombustible) {
-      this.nuevoVehiculo.idTipoCombustible = this.nuevoVehiculo.idCombustible;
+    if (
+      !this.nuevoVehiculo.idTipoCombustible &&
+      this.nuevoVehiculo.idCombustible
+    ) {
+      this.nuevoVehiculo.idTipoCombustible =
+        this.nuevoVehiculo.idCombustible;
     }
 
     this.modoEdicion = true;
     this.mostrarFormulario = true;
     this.imagenSeleccionada = null;
     this.imagenPreview = null;
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
     this.cdr.detectChanges();
   }
 
   eliminar(id?: number): void {
-    if (!id) return;
+    if (!id) {
+      return;
+    }
 
-    if (!confirm('¿Deseas eliminar este vehículo?')) return;
+    if (!confirm('¿Deseas eliminar este vehículo?')) {
+      return;
+    }
 
     this.vehiculoService.eliminarVehiculo(id).subscribe({
       next: () => {
@@ -250,7 +362,10 @@ export class Vehiculos implements OnInit {
       },
       error: (err: any) => {
         console.error('Error al eliminar vehículo:', err);
-        alert('No se pudo eliminar el vehículo. Puede estar relacionado con una renta o inspección.');
+
+        alert(
+          'No se pudo eliminar el vehículo. Puede estar relacionado con una renta o inspección.'
+        );
       }
     });
   }
@@ -265,23 +380,38 @@ export class Vehiculos implements OnInit {
   }
 
   obtenerMarca(idMarca: number): string {
-    const marca = this.marcas.find(m => Number(m.id) === Number(idMarca));
+    const marca = this.marcas.find(
+      (item: any) => Number(item.id) === Number(idMarca)
+    );
+
     return marca ? marca.descripcion : 'N/A';
   }
 
   obtenerModelo(idModelo: number): string {
-    const modelo = this.modelos.find(m => Number(m.id) === Number(idModelo));
+    const modelo = this.modelos.find(
+      (item: any) => Number(item.id) === Number(idModelo)
+    );
+
     return modelo ? modelo.descripcion : 'N/A';
   }
 
   obtenerTipoVehiculo(idTipoVehiculo: number): string {
-    const tipo = this.tiposVehiculos.find(t => Number(t.id) === Number(idTipoVehiculo));
+    const tipo = this.tiposVehiculos.find(
+      (item: any) => Number(item.id) === Number(idTipoVehiculo)
+    );
+
     return tipo ? tipo.descripcion : 'N/A';
   }
 
   obtenerCombustible(vehiculo: any): string {
-    const id = vehiculo.idTipoCombustible ?? vehiculo.idCombustible;
-    const combustible = this.tiposCombustibles.find(c => Number(c.id) === Number(id));
+    const id =
+      vehiculo.idTipoCombustible ??
+      vehiculo.idCombustible;
+
+    const combustible = this.tiposCombustibles.find(
+      (item: any) => Number(item.id) === Number(id)
+    );
+
     return combustible ? combustible.descripcion : 'N/A';
   }
 }
