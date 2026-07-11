@@ -279,3 +279,220 @@ FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_NAME = 'Clientes'
 ORDER BY ORDINAL_POSITION;
 GO
+
+
+SELECT TABLE_NAME
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE'
+ORDER BY TABLE_NAME;
+
+
+
+
+
+
+
+
+
+USE RentCarDB;
+GO
+
+SET XACT_ABORT ON;
+GO
+
+BEGIN TRANSACTION;
+
+BEGIN TRY
+    /* =====================================================
+       1. BORRAR DATOS TRANSACCIONALES
+       ===================================================== */
+
+    DELETE FROM Inspecciones;
+    DELETE FROM Rentas;
+
+    /* =====================================================
+       2. BORRAR DATOS PRINCIPALES
+       ===================================================== */
+
+    DELETE FROM Clientes;
+    DELETE FROM Vehiculos;
+    DELETE FROM Empleados;
+
+    /* =====================================================
+       3. REINICIAR IDENTIDADES
+       ===================================================== */
+
+    DBCC CHECKIDENT ('Inspecciones', RESEED, 0);
+    DBCC CHECKIDENT ('Rentas', RESEED, 0);
+    DBCC CHECKIDENT ('Clientes', RESEED, 0);
+    DBCC CHECKIDENT ('Vehiculos', RESEED, 0);
+    DBCC CHECKIDENT ('Empleados', RESEED, 0);
+
+    /* =====================================================
+       4. CREAR ADMINISTRADOR CON ID = 1
+       ===================================================== */
+
+    INSERT INTO Empleados
+    (
+        Nombre,
+        Cedula,
+        Usuario,
+        TandaLabor,
+        PorcientoComision,
+        FechaIngreso,
+        Estado
+    )
+    VALUES
+    (
+        'Administrador General',
+        '40212428508',
+        'admin',
+        'Matutina',
+        0,
+        GETDATE(),
+        1
+    );
+
+    COMMIT TRANSACTION;
+
+    PRINT 'Datos eliminados correctamente.';
+    PRINT 'Administrador General creado nuevamente con Id = 1.';
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0
+        ROLLBACK TRANSACTION;
+
+    PRINT 'No fue posible limpiar la base de datos.';
+    PRINT ERROR_MESSAGE();
+
+    THROW;
+END CATCH;
+GO
+
+
+
+
+USE RentCarDB;
+GO
+
+IF COL_LENGTH('Clientes', 'NoTarjetaCR') IS NULL
+BEGIN
+    ALTER TABLE Clientes
+    ADD NoTarjetaCR VARCHAR(19) NULL;
+END
+GO
+
+IF COL_LENGTH('Clientes', 'NombreTitularTarjeta') IS NULL
+BEGIN
+    ALTER TABLE Clientes
+    ADD NombreTitularTarjeta VARCHAR(120) NULL;
+END
+GO
+
+IF COL_LENGTH('Clientes', 'FechaExpiracionTarjeta') IS NULL
+BEGIN
+    ALTER TABLE Clientes
+    ADD FechaExpiracionTarjeta VARCHAR(5) NULL;
+END
+GO
+
+IF COL_LENGTH('Clientes', 'TipoTarjeta') IS NULL
+BEGIN
+    ALTER TABLE Clientes
+    ADD TipoTarjeta VARCHAR(20) NULL;
+END
+GO
+
+IF COL_LENGTH('Clientes', 'TipoPersona') IS NULL
+BEGIN
+    ALTER TABLE Clientes
+    ADD TipoPersona VARCHAR(20) NULL;
+END
+GO
+
+ALTER TABLE Clientes
+ALTER COLUMN NoTarjetaCR VARCHAR(19) NULL;
+GO
+
+SELECT
+    COLUMN_NAME,
+    DATA_TYPE,
+    CHARACTER_MAXIMUM_LENGTH,
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Clientes'
+ORDER BY ORDINAL_POSITION;
+GO
+
+SELECT
+    Id,
+    Nombre,
+    Cedula,
+    Usuario,
+    TandaLabor,
+    PorcientoComision,
+    FechaIngreso,
+    Estado
+FROM Empleados;
+
+
+
+SELECT COUNT(*) AS TotalClientes FROM Clientes;
+SELECT COUNT(*) AS TotalVehiculos FROM Vehiculos;
+SELECT COUNT(*) AS TotalRentas FROM Rentas;
+SELECT COUNT(*) AS TotalInspecciones FROM Inspecciones;
+
+USE RentCarDB;
+GO
+
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+GO
+
+BEGIN TRANSACTION;
+
+BEGIN TRY
+
+    /*==============================
+      ELIMINAR DATOS
+    ==============================*/
+
+    DELETE FROM Inspecciones;
+    DELETE FROM Rentas;
+    DELETE FROM Clientes;
+    DELETE FROM Vehiculos;
+    DELETE FROM Empleados;
+    DELETE FROM Modelos;
+    DELETE FROM Marcas;
+    DELETE FROM TiposVehiculos;
+    DELETE FROM TiposCombustibles;
+
+    /*==============================
+      REINICIAR IDENTIDADES
+    ==============================*/
+
+    DBCC CHECKIDENT ('Inspecciones', RESEED, 0);
+    DBCC CHECKIDENT ('Rentas', RESEED, 0);
+    DBCC CHECKIDENT ('Clientes', RESEED, 0);
+    DBCC CHECKIDENT ('Vehiculos', RESEED, 0);
+    DBCC CHECKIDENT ('Empleados', RESEED, 0);
+    DBCC CHECKIDENT ('Modelos', RESEED, 0);
+    DBCC CHECKIDENT ('Marcas', RESEED, 0);
+    DBCC CHECKIDENT ('TiposVehiculos', RESEED, 0);
+    DBCC CHECKIDENT ('TiposCombustibles', RESEED, 0);
+
+    COMMIT TRANSACTION;
+
+    PRINT 'Base de datos reiniciada correctamente.';
+    PRINT 'Todos los ID comenzarán nuevamente desde 1.';
+
+END TRY
+BEGIN CATCH
+
+    IF @@TRANCOUNT > 0
+        ROLLBACK TRANSACTION;
+
+    PRINT ERROR_MESSAGE();
+
+END CATCH;
+GO

@@ -13,6 +13,7 @@ import { EmpleadoService } from '../../services/empleado.service';
 export class LoginComponent {
   usuario = '';
   password = '';
+  procesandoLogin = false;
 
   constructor(
     private router: Router,
@@ -23,43 +24,106 @@ export class LoginComponent {
     const usuarioNormalizado = this.usuario.trim().toLowerCase();
     const passwordNormalizado = this.password.trim();
 
-    if (usuarioNormalizado === 'admin' && passwordNormalizado === '1234') {
-      localStorage.setItem('rolUsuario', 'admin');
-      localStorage.setItem('idEmpleado', '1');
-      localStorage.setItem('nombreUsuario', 'Administrador General');
-
-      this.router.navigate(['/dashboard']);
+    if (!usuarioNormalizado || !passwordNormalizado) {
+      alert('Ingresa el usuario y la contraseña.');
       return;
     }
 
+    if (this.procesandoLogin) {
+      return;
+    }
+
+    this.procesandoLogin = true;
+
+    // Administrador predeterminado
+    if (
+      usuarioNormalizado === 'admin' &&
+      passwordNormalizado === '1234'
+    ) {
+      this.limpiarSesion();
+
+      localStorage.setItem('rolUsuario', 'admin');
+      localStorage.setItem('idEmpleado', '1');
+      localStorage.setItem(
+        'nombreUsuario',
+        'Administrador General'
+      );
+
+      this.procesandoLogin = false;
+
+      this.router.navigateByUrl('/dashboard');
+      return;
+    }
+
+    // Inicio de sesión de empleados
     this.empleadoService.getEmpleados().subscribe({
       next: (empleados: any[]) => {
-        const empleadoValido = empleados.find((emp: any) => {
-          const usuarioEmpleado = String(emp.usuario ?? '').trim().toLowerCase();
-          const cedulaLimpia = String(emp.cedula ?? '').replace(/\D/g, '');
+        const passwordSinFormato =
+          passwordNormalizado.replace(/\D/g, '');
+
+        const empleadoValido = empleados.find((empleado: any) => {
+          const usuarioEmpleado = String(
+            empleado.usuario ?? ''
+          )
+            .trim()
+            .toLowerCase();
+
+          const cedulaEmpleado = String(
+            empleado.cedula ?? ''
+          ).replace(/\D/g, '');
 
           return (
-            emp.estado === true &&
+            empleado.estado === true &&
             usuarioEmpleado === usuarioNormalizado &&
-            cedulaLimpia === passwordNormalizado.replace(/\D/g, '')
+            cedulaEmpleado === passwordSinFormato
           );
         });
 
-        if (empleadoValido) {
-          localStorage.setItem('rolUsuario', 'empleado');
-          localStorage.setItem('idEmpleado', String(empleadoValido.id));
-          localStorage.setItem('nombreUsuario', empleadoValido.nombre);
+        if (!empleadoValido) {
+          this.procesandoLogin = false;
 
-          this.router.navigate(['/rentas']);
+          alert(
+            'Credenciales incorrectas.\n' +
+            'Para empleados, la contraseña es la cédula sin guiones.'
+          );
+
           return;
         }
 
-        alert('Credenciales incorrectas.\nContraseña debe ser tu cédula SIN guiones.');
+        this.limpiarSesion();
+
+        localStorage.setItem('rolUsuario', 'empleado');
+        localStorage.setItem(
+          'idEmpleado',
+          String(empleadoValido.id)
+        );
+        localStorage.setItem(
+          'nombreUsuario',
+          empleadoValido.nombre
+        );
+
+        this.procesandoLogin = false;
+
+        this.router.navigateByUrl('/rentas');
       },
       error: (err: any) => {
-        console.error('Error al verificar credenciales', err);
-        alert('No se pudo conectar con la base de datos.');
+        console.error(
+          'Error al verificar credenciales',
+          err
+        );
+
+        this.procesandoLogin = false;
+
+        alert(
+          'No se pudo conectar con la base de datos.'
+        );
       }
     });
+  }
+
+  private limpiarSesion(): void {
+    localStorage.removeItem('rolUsuario');
+    localStorage.removeItem('idEmpleado');
+    localStorage.removeItem('nombreUsuario');
   }
 }

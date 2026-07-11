@@ -531,7 +531,7 @@ export class ClientesComponent implements OnInit {
         return 'images/cards/visa.png';
 
       case 'MASTERCARD':
-        return 'images/cards/mastercard.svg';
+        return 'images/cards/mastercard.png';
 
       case 'AMEX':
         return 'images/cards/amex.png';
@@ -544,24 +544,7 @@ export class ClientesComponent implements OnInit {
     }
   }
 
-  obtenerColorTarjeta(marca: string): string {
-    switch (marca) {
-      case 'VISA':
-        return 'text-bg-primary';
-
-      case 'MASTERCARD':
-        return 'text-bg-warning';
-
-      case 'AMEX':
-        return 'text-bg-success';
-
-      case 'DISCOVER':
-        return 'text-bg-info';
-
-      default:
-        return 'text-bg-secondary';
-    }
-  }
+ 
 
   obtenerMensajeError(
     err: any,

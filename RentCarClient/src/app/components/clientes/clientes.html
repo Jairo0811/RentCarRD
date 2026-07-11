@@ -121,15 +121,8 @@
                     *ngIf="obtenerLogoTarjeta(identificarTarjeta(nuevoCliente.noTarjetaCr))"
                     [src]="obtenerLogoTarjeta(identificarTarjeta(nuevoCliente.noTarjetaCr))"
                     alt="Logo de tarjeta"
-                    style="height: 38px; width: auto; object-fit: contain"
+                    style="width: 52px; height: 28px; object-fit: contain; object-position: center"
                   />
-
-                  <span
-                    class="badge fs-6"
-                    [ngClass]="obtenerColorTarjeta(identificarTarjeta(nuevoCliente.noTarjetaCr))"
-                  >
-                    {{ identificarTarjeta(nuevoCliente.noTarjetaCr) }}
-                  </span>
                 </div>
               </div>
 
@@ -234,7 +227,7 @@
 
                 <!-- Resumen -->
                 <div class="col-md-6">
-                  <div class="border rounded-3 bg-white p-3 h-100" *ngIf="tieneDatosTarjeta()">
+                  <div *ngIf="tieneDatosTarjeta()" class="border rounded-3 bg-white p-3 h-100">
                     <small class="text-muted text-uppercase fw-bold"> Resumen de la tarjeta </small>
 
                     <div class="mt-2">
@@ -280,7 +273,7 @@
     </div>
   </div>
 
-  <!-- Tabla -->
+  <!-- Tabla de clientes -->
   <div class="card shadow-sm border-0">
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -320,21 +313,23 @@
               </td>
 
               <td>
-                <div *ngIf="c.noTarjetaCr; else sinTarjeta" class="d-flex align-items-center gap-2">
+                <div *ngIf="c.noTarjetaCr; else sinTarjeta" class="d-flex align-items-center gap-1">
                   <img
                     *ngIf="obtenerLogoTarjeta(c.tipoTarjeta || identificarTarjeta(c.noTarjetaCr))"
                     [src]="obtenerLogoTarjeta(c.tipoTarjeta || identificarTarjeta(c.noTarjetaCr))"
                     alt="Tarjeta"
-                    style="height: 24px; width: auto"
+                    class="flex-shrink-0"
+                    style="width: 34px; height: 18px; object-fit: contain; object-position: center"
                   />
 
-                  <span class="small fw-bold">
-                    •••• {{ limpiarNumeroTarjeta(c.noTarjetaCr).slice(-4) }}
+                  <span class="small fw-semibold">
+                    ••••
+                    {{ limpiarNumeroTarjeta(c.noTarjetaCr).slice(-4) }}
                   </span>
                 </div>
 
                 <ng-template #sinTarjeta>
-                  <span class="text-muted small">Sin tarjeta</span>
+                  <span class="text-muted small"> Sin tarjeta </span>
                 </ng-template>
               </td>
 

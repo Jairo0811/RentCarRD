@@ -1,28 +1,47 @@
 import { Component } from '@angular/core';
 import { RouterOutlet, RouterModule, Router } from '@angular/router';
-import { CommonModule } from '@angular/common'; 
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, RouterModule, CommonModule],
-  templateUrl: './app.html'
+  templateUrl: './app.html',
 })
-export class App {  // <-- ¡Aquí está el cambio clave! De AppComponent a App
-  
+export class App {
   constructor(public router: Router) {}
 
-  // Este método lee quién inició sesión
-get rolActual(): string | null {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      return localStorage.getItem('rolUsuario');
+  get rolActual(): string | null {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
     }
-    return null;
+
+    return localStorage.getItem('rolUsuario');
   }
 
-  // Método para el botón de "Salir"
-  cerrarSesion() {
+  get idEmpleadoActual(): number | null {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+
+    const valor = localStorage.getItem('idEmpleado');
+
+    return valor ? Number(valor) : null;
+  }
+
+  get nombreUsuarioActual(): string {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return '';
+    }
+
+    return localStorage.getItem('nombreUsuario') ?? '';
+  }
+
+  cerrarSesion(): void {
     localStorage.removeItem('rolUsuario');
-    this.router.navigate(['/login']);
+    localStorage.removeItem('idEmpleado');
+    localStorage.removeItem('nombreUsuario');
+
+    this.router.navigateByUrl('/login');
   }
 }
