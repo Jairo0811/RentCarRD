@@ -93,7 +93,8 @@
         <thead class="table-dark">
           <tr>
             <th class="py-3 px-4"># Renta</th>
-            <th>Fecha</th>
+            <th>Fecha de Renta</th>
+            <th>Fecha de Devolución</th>
             <th>Monto x Día</th>
             <th>Días</th>
             <th>Total Facturado</th>
@@ -106,6 +107,13 @@
           <tr *ngFor="let r of rentas">
             <td class="px-4 fw-bold text-secondary">#{{ r.noRenta }}</td>
             <td>{{ r.fechaRenta | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <span
+                [ngClass]="r.fechaDevolucion ? 'text-success fw-bold' : 'text-muted'"
+              >
+                {{ r.fechaDevolucion ? (r.fechaDevolucion | date:'dd/MM/yyyy') : 'Pendiente' }}
+              </span>
+            </td>
             <td>{{ obtenerMontoDia(r) | currency:'DOP':'RD$ ':'1.2-2' }}</td>
             <td><span class="badge bg-light text-dark border">{{ r.cantidadDias }} días</span></td>
             <td class="fw-bolder text-success">{{ obtenerTotal(r) | currency:'DOP':'RD$ ':'1.2-2' }}</td>
@@ -132,7 +140,7 @@
           </tr>
 
           <tr *ngIf="rentas.length === 0">
-            <td colspan="7" class="text-center py-5 text-muted">
+            <td colspan="8" class="text-center py-5 text-muted">
               No hay rentas registradas en el sistema.
             </td>
           </tr>

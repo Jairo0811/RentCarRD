@@ -108,7 +108,7 @@ export class Rentas implements OnInit {
        * 2. Que nunca hayan sido incluidos en una renta.
        */
       this.vehiculosDisponibles = this.vehiculos.filter((vehiculo: any) =>
-        vehiculo.estado === true &&
+        this.obtenerEstadoOperacionVehiculo(vehiculo) === 'Disponible' &&
         !idsVehiculosRentados.has(Number(vehiculo.id))
       );
 
@@ -163,7 +163,7 @@ guardarRenta(): void {
     return;
   }
 
-  if (vehiculoSeleccionado.estado !== true) {
+  if (this.obtenerEstadoOperacionVehiculo(vehiculoSeleccionado) !== 'Disponible') {
     alert('Este vehículo no está disponible para renta.');
     return;
   }
@@ -265,6 +265,30 @@ devolverVehiculo(id: number): void {
   return vehiculo?.estado === true;
 
 }
+
+  obtenerEstadoOperacionVehiculo(vehiculo: any): string {
+    const estado = String(vehiculo?.estadoOperacion ?? '').trim();
+
+    if (estado === 'Disponible' || estado === 'Rentado' || estado === 'NoDisponible') {
+      return estado;
+    }
+
+    return vehiculo?.estado === true ? 'Disponible' : 'Rentado';
+  }
+
+  formatearFecha(fecha: string | Date | null | undefined): string {
+    if (!fecha) {
+      return 'Pendiente';
+    }
+
+    const valor = new Date(fecha);
+
+    if (Number.isNaN(valor.getTime())) {
+      return 'Pendiente';
+    }
+
+    return valor.toLocaleDateString('es-DO');
+  }
 
   obtenerMontoDia(renta: any): number {
     return Number(renta.montoXDia ?? renta.montoXdia ?? 0);
@@ -395,10 +419,11 @@ devolverVehiculo(id: number): void {
           theme: 'grid',
           styles: { fontSize: 9 },
           headStyles: { fillColor: [25, 66, 120], textColor: 255 },
-          head: [['No. Factura', 'Fecha Emisión', 'Estado', 'Empleado']],
+          head: [['No. Factura', 'Fecha Renta', 'Fecha Devolución', 'Estado', 'Empleado']],
           body: [[
             `#${renta.noRenta}`,
-            new Date(renta.fechaRenta).toLocaleDateString('es-DO'),
+            this.formatearFecha(renta.fechaRenta),
+            this.formatearFecha(renta.fechaDevolucion),
             renta.estado,
             nombreRepresentante
           ]]

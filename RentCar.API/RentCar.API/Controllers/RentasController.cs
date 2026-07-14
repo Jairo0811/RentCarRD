@@ -8,6 +8,13 @@ namespace RentCar.API.Controllers
     [ApiController]
     public class RentasController : ControllerBase
     {
+        private const string EstadoRentaActiva = "Activa";
+        private const string EstadoRentaConcluida = "Concluida";
+
+        private const string VehiculoDisponible = "Disponible";
+        private const string VehiculoRentado = "Rentado";
+        private const string VehiculoNoDisponible = "NoDisponible";
+
         private readonly RentCarDbContext _context;
 
         public RentasController(RentCarDbContext context)
@@ -18,85 +25,93 @@ namespace RentCar.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Renta>>> GetRentas()
         {
-            return await _context.Rentas.ToListAsync();
+            var rentas = await _context.Rentas
+                .AsNoTracking()
+                .OrderByDescending(r => r.NoRenta)
+                .ToListAsync();
+
+            return Ok(rentas);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<Renta>> GetRenta(int id)
         {
-            var renta = await _context.Rentas.FindAsync(id);
+            var renta = await _context.Rentas
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.NoRenta == id);
 
             if (renta == null)
-                return NotFound();
+            {
+                return NotFound("La renta solicitada no existe.");
+            }
 
-            return renta;
+            return Ok(renta);
         }
 
-        [HttpPost]
         [HttpPost]
         public async Task<ActionResult<Renta>> PostRenta(Renta renta)
         {
-            if (renta.IdVehiculo <= 0)
-                return BadRequest("Debe seleccionar un vehículo válido.");
+            var errorValidacion = ValidarRenta(renta);
 
-            if (renta.IdCliente <= 0)
-                return BadRequest("Debe seleccionar un cliente válido.");
+            if (errorValidacion != null)
+            {
+                return BadRequest(errorValidacion);
+            }
 
-            if (renta.IdEmpleado <= 0)
-                return BadRequest("Debe seleccionar un empleado válido.");
-
-            if (renta.MontoXdia <= 0)
-                return BadRequest("El monto por día debe ser mayor que cero.");
-
-            if (renta.CantidadDias <= 0)
-                return BadRequest("La cantidad de días debe ser mayor que cero.");
-
-            var vehiculo = await _context.Vehiculos.FindAsync(renta.IdVehiculo);
+            var vehiculo = await _context.Vehiculos
+                .FirstOrDefaultAsync(v => v.Id == renta.IdVehiculo);
 
             if (vehiculo == null)
+            {
                 return BadRequest("El vehículo seleccionado no existe.");
+            }
 
-            /*
-             * Regla del negocio:
-             * un vehículo que haya sido rentado anteriormente
-             * no puede volver a rentarse, aunque la renta esté concluida.
-             */
-            var vehiculoRentadoAnteriormente = await _context.Rentas.AnyAsync(r =>
-                r.IdVehiculo == renta.IdVehiculo
-            );
+            var estadoOperacion = NormalizarEstadoOperacion(vehiculo);
 
-            if (vehiculoRentadoAnteriormente)
+            if (estadoOperacion != VehiculoDisponible)
+            {
+                return BadRequest(
+                    estadoOperacion == VehiculoNoDisponible
+                        ? "Este vehículo fue devuelto y está marcado como no disponible."
+                        : "Este vehículo se encuentra rentado actualmente."
+                );
+            }
+
+            var fueRentadoAnteriormente = await _context.Rentas
+                .AnyAsync(r => r.IdVehiculo == renta.IdVehiculo);
+
+            if (fueRentadoAnteriormente)
             {
                 return BadRequest(
                     "Este vehículo ya fue rentado anteriormente y no puede volver a rentarse."
                 );
             }
 
-            if (vehiculo.Estado == false)
-                return BadRequest("Este vehículo no está disponible para renta.");
-
-            var clienteExiste = await _context.Clientes.AnyAsync(c =>
-                c.Id == renta.IdCliente
-            );
+            var clienteExiste = await _context.Clientes
+                .AnyAsync(c => c.Id == renta.IdCliente);
 
             if (!clienteExiste)
+            {
                 return BadRequest("El cliente seleccionado no existe.");
+            }
 
-            var empleadoExiste = await _context.Empleados.AnyAsync(e =>
-                e.Id == renta.IdEmpleado
-            );
+            var empleadoExiste = await _context.Empleados
+                .AnyAsync(e => e.Id == renta.IdEmpleado);
 
             if (!empleadoExiste)
+            {
                 return BadRequest("El empleado seleccionado no existe.");
+            }
 
             renta.Total = renta.MontoXdia * renta.CantidadDias;
-            renta.Estado = "Activa";
+            renta.Estado = EstadoRentaActiva;
             renta.FechaDevolucion = null;
+            renta.Comentario = renta.Comentario?.Trim() ?? string.Empty;
+
+            vehiculo.Estado = false;
+            vehiculo.EstadoOperacion = VehiculoRentado;
 
             _context.Rentas.Add(renta);
-
-            // El vehículo deja de estar disponible definitivamente.
-            vehiculo.Estado = false;
 
             await _context.SaveChangesAsync();
 
@@ -107,78 +122,194 @@ namespace RentCar.API.Controllers
             );
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> PutRenta(int id, Renta renta)
         {
             if (id != renta.NoRenta)
+            {
                 return BadRequest("El ID de la renta no coincide.");
+            }
+
+            var rentaActual = await _context.Rentas
+                .FirstOrDefaultAsync(r => r.NoRenta == id);
+
+            if (rentaActual == null)
+            {
+                return NotFound("La renta solicitada no existe.");
+            }
+
+            if (EsRentaConcluida(rentaActual))
+            {
+                return BadRequest(
+                    "Una renta concluida no puede ser modificada."
+                );
+            }
 
             if (renta.MontoXdia <= 0)
-                return BadRequest("El monto por día debe ser mayor que cero.");
+            {
+                return BadRequest(
+                    "El monto por día debe ser mayor que cero."
+                );
+            }
 
             if (renta.CantidadDias <= 0)
-                return BadRequest("La cantidad de días debe ser mayor que cero.");
+            {
+                return BadRequest(
+                    "La cantidad de días debe ser mayor que cero."
+                );
+            }
 
-            var existeRenta = await _context.Rentas.AnyAsync(r => r.NoRenta == id);
+            rentaActual.MontoXdia = renta.MontoXdia;
+            rentaActual.CantidadDias = renta.CantidadDias;
+            rentaActual.Total =
+                renta.MontoXdia * renta.CantidadDias;
+            rentaActual.Comentario =
+                renta.Comentario?.Trim() ?? string.Empty;
 
-            if (!existeRenta)
-                return NotFound();
-
-            renta.Total = renta.MontoXdia * renta.CantidadDias;
-
-            _context.Entry(renta).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        [HttpPut("{id}/devolucion")]
+        [HttpPut("{id:int}/devolucion")]
         public async Task<IActionResult> DevolverVehiculo(int id)
         {
-            var renta = await _context.Rentas.FindAsync(id);
+            var renta = await _context.Rentas
+                .FirstOrDefaultAsync(r => r.NoRenta == id);
 
             if (renta == null)
-                return NotFound("La renta seleccionada no existe.");
-
-            if (string.Equals(
-                renta.Estado,
-                "Concluida",
-                StringComparison.OrdinalIgnoreCase))
             {
-                return BadRequest("Esta renta ya fue concluida anteriormente.");
+                return NotFound(
+                    "La renta seleccionada no existe."
+                );
             }
 
-            renta.Estado = "Concluida";
-            renta.FechaDevolucion = DateTime.Now;
-            renta.Total = renta.MontoXdia * renta.CantidadDias;
-
-            var vehiculo = await _context.Vehiculos.FindAsync(renta.IdVehiculo);
-
-            if (vehiculo != null)
+            if (EsRentaConcluida(renta))
             {
-                /*
-                 * No vuelve a Disponible.
-                 * Como ya fue rentado una vez, queda fuera de futuras rentas.
-                 */
-                vehiculo.Estado = false;
+                var fechaRegistrada =
+                    renta.FechaDevolucion?.ToString(
+                        "dd/MM/yyyy"
+                    ) ?? "sin fecha registrada";
+
+                return BadRequest(
+                    $"Esta renta ya fue concluida el {fechaRegistrada}."
+                );
             }
+
+            var vehiculo = await _context.Vehiculos
+                .FirstOrDefaultAsync(
+                    v => v.Id == renta.IdVehiculo
+                );
+
+            if (vehiculo == null)
+            {
+                return BadRequest(
+                    "No se encontró el vehículo asociado a esta renta."
+                );
+            }
+
+            renta.Estado = EstadoRentaConcluida;
+
+            renta.FechaDevolucion =
+                renta.FechaRenta.Date
+                    .AddDays(renta.CantidadDias);
+
+            renta.Total =
+                renta.MontoXdia * renta.CantidadDias;
+
+            vehiculo.Estado = false;
+            vehiculo.EstadoOperacion =
+                VehiculoNoDisponible;
 
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new
+            {
+                mensaje = "Vehículo devuelto correctamente.",
+                renta.NoRenta,
+                renta.Estado,
+                renta.FechaDevolucion,
+                idVehiculo = vehiculo.Id,
+                estadoVehiculo =
+                    vehiculo.EstadoOperacion
+            });
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteRenta(int id)
         {
-            var renta = await _context.Rentas.FindAsync(id);
+            var rentaExiste = await _context.Rentas
+                .AnyAsync(r => r.NoRenta == id);
 
-            if (renta == null)
-                return NotFound("La renta seleccionada no existe.");
+            if (!rentaExiste)
+            {
+                return NotFound(
+                    "La renta seleccionada no existe."
+                );
+            }
 
             return BadRequest(
                 "Las rentas no pueden eliminarse porque forman parte del historial del vehículo."
             );
+        }
+
+        private static string? ValidarRenta(Renta renta)
+        {
+            if (renta.IdVehiculo <= 0)
+            {
+                return "Debe seleccionar un vehículo válido.";
+            }
+
+            if (renta.IdCliente <= 0)
+            {
+                return "Debe seleccionar un cliente válido.";
+            }
+
+            if (renta.IdEmpleado <= 0)
+            {
+                return "Debe seleccionar un empleado válido.";
+            }
+
+            if (renta.FechaRenta == default)
+            {
+                return "Debe indicar una fecha de renta válida.";
+            }
+
+            if (renta.MontoXdia <= 0)
+            {
+                return "El monto por día debe ser mayor que cero.";
+            }
+
+            if (renta.CantidadDias <= 0)
+            {
+                return "La cantidad de días debe ser mayor que cero.";
+            }
+
+            return null;
+        }
+
+        private static bool EsRentaConcluida(
+            Renta renta)
+        {
+            return string.Equals(
+                renta.Estado,
+                EstadoRentaConcluida,
+                StringComparison.OrdinalIgnoreCase
+            );
+        }
+
+        private static string NormalizarEstadoOperacion(
+            Vehiculo vehiculo)
+        {
+            if (!string.IsNullOrWhiteSpace(
+                vehiculo.EstadoOperacion))
+            {
+                return vehiculo.EstadoOperacion.Trim();
+            }
+
+            return vehiculo.Estado == true
+                ? VehiculoDisponible
+                : VehiculoRentado;
         }
     }
 }

@@ -496,3 +496,93 @@ BEGIN CATCH
 
 END CATCH;
 GO
+
+
+
+
+
+
+
+
+
+
+
+
+USE RentCarDB;
+GO
+
+/* Estado operativo del vehículo */
+IF COL_LENGTH('Vehiculos', 'EstadoOperacion') IS NULL
+BEGIN
+    ALTER TABLE Vehiculos
+    ADD EstadoOperacion VARCHAR(20) NOT NULL
+        CONSTRAINT DF_Vehiculos_EstadoOperacion
+        DEFAULT 'Disponible';
+END
+GO
+
+/* Actualizar registros anteriores */
+UPDATE Vehiculos
+SET EstadoOperacion =
+    CASE
+        WHEN Estado = 1 THEN 'Disponible'
+        ELSE 'Rentado'
+    END
+WHERE EstadoOperacion IS NULL
+   OR LTRIM(RTRIM(EstadoOperacion)) = '';
+GO
+
+/* Ajustar placa */
+ALTER TABLE Vehiculos
+ALTER COLUMN NoPlaca VARCHAR(7) NOT NULL;
+GO
+
+/* Ajustar chasis */
+ALTER TABLE Vehiculos
+ALTER COLUMN NoChasis VARCHAR(17) NULL;
+GO
+
+/* Ajustar estado */
+ALTER TABLE Vehiculos
+ALTER COLUMN EstadoOperacion VARCHAR(20) NOT NULL;
+GO
+
+/* Índice único para placa */
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = 'UX_Vehiculos_NoPlaca'
+      AND object_id = OBJECT_ID('Vehiculos')
+)
+BEGIN
+    CREATE UNIQUE INDEX UX_Vehiculos_NoPlaca
+    ON Vehiculos(NoPlaca);
+END
+GO
+
+/* Índice único para chasis */
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = 'UX_Vehiculos_NoChasis'
+      AND object_id = OBJECT_ID('Vehiculos')
+)
+BEGIN
+    CREATE UNIQUE INDEX UX_Vehiculos_NoChasis
+    ON Vehiculos(NoChasis)
+    WHERE NoChasis IS NOT NULL;
+END
+GO
+
+SELECT
+    Id,
+    Descripcion,
+    NoPlaca,
+    NoChasis,
+    Estado,
+    EstadoOperacion
+FROM Vehiculos
+ORDER BY Id;
+GO

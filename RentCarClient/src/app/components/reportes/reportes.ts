@@ -128,6 +128,20 @@ export class ReportesComponent implements OnInit {
     return vehiculo ? vehiculo.descripcion : `Vehículo ID ${idVehiculo}`;
   }
 
+  formatearFecha(fecha: string | Date | null | undefined): string {
+    if (!fecha) {
+      return 'Pendiente';
+    }
+
+    const valor = new Date(fecha);
+
+    if (Number.isNaN(valor.getTime())) {
+      return 'Pendiente';
+    }
+
+    return valor.toLocaleDateString('es-DO');
+  }
+
   formatoRD(valor: number): string {
     return `RD$ ${Number(valor || 0).toLocaleString('es-DO', {
       minimumFractionDigits: 2,
@@ -206,10 +220,21 @@ export class ReportesComponent implements OnInit {
       theme: 'striped',
       styles: { fontSize: 8 },
       headStyles: { fillColor: [33, 37, 41], textColor: 255 },
-      head: [['No. Renta', 'Fecha', 'Cliente', 'Vehículo', 'Días', 'Tarifa', 'Total', 'Estado']],
+      head: [[
+        'No. Renta',
+        'Fecha Renta',
+        'Fecha Devolución',
+        'Cliente',
+        'Vehículo',
+        'Días',
+        'Tarifa',
+        'Total',
+        'Estado'
+      ]],
       body: this.rentasFiltradas.map((renta: any) => [
         `#${renta.noRenta ?? renta.id}`,
-        new Date(renta.fechaRenta).toLocaleDateString('es-DO'),
+        this.formatearFecha(renta.fechaRenta),
+        this.formatearFecha(renta.fechaDevolucion),
         this.obtenerCliente(renta.idCliente),
         this.obtenerVehiculo(renta.idVehiculo),
         `${renta.cantidadDias ?? 0}`,

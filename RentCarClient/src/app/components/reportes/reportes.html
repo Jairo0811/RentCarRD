@@ -34,7 +34,7 @@
           <select class="form-select" [(ngModel)]="filtroEstado">
             <option value="">Todos</option>
             <option value="Activa">Activa</option>
-            <option value="Devuelto">Devuelto</option>
+            <option value="Concluida">Concluida</option>
           </select>
         </div>
         <div class="col-12 text-end mt-3">
@@ -71,8 +71,9 @@
         <thead class="table-dark">
           <tr>
             <th class="py-3 px-4">No. Renta</th>
-            <th class="py-3">Fecha Salida</th>
-            <th class="py-3">Cliente (ID)</th>
+            <th class="py-3">Fecha de Renta</th>
+            <th class="py-3">Fecha de Devolución</th>
+            <th class="py-3">Cliente</th>
             <th class="py-3">Vehículo (ID)</th>
             <th class="py-3">Días</th>
             <th class="py-3">Monto Total</th>
@@ -83,8 +84,13 @@
           <tr *ngFor="let renta of rentasFiltradas">
             <td class="px-4 fw-bold">#{{ renta.noRenta || renta.id }}</td>
             <td>{{ renta.fechaRenta | date: 'dd/MM/yyyy' }}</td>
-            <td>{{ renta.idCliente }}</td>
-            <td>{{ renta.idVehiculo }}</td>
+            <td>
+              <span [ngClass]="renta.fechaDevolucion ? 'text-success fw-bold' : 'text-muted'">
+                {{ renta.fechaDevolucion ? (renta.fechaDevolucion | date: 'dd/MM/yyyy') : 'Pendiente' }}
+              </span>
+            </td>
+            <td>{{ obtenerCliente(renta.idCliente) }}</td>
+            <td>{{ obtenerVehiculo(renta.idVehiculo) }}</td>
             <td>{{ renta.cantidadDias || 0 }} días</td>
 <td class="fw-bold text-success">
 RD$ {{ obtenerTotal(renta) | number:'1.2-2' }}
@@ -96,7 +102,7 @@ RD$ {{ obtenerTotal(renta) | number:'1.2-2' }}
             </td>
           </tr>
           <tr *ngIf="rentasFiltradas.length === 0">
-            <td colspan="7" class="text-center py-5 text-muted fw-bold">
+            <td colspan="8" class="text-center py-5 text-muted fw-bold">
               No hay registros que coincidan con los filtros.
             </td>
           </tr>

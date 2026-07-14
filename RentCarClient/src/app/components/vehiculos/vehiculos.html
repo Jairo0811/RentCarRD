@@ -153,9 +153,15 @@
 
           <input
             [(ngModel)]="nuevoVehiculo.noPlaca"
-            placeholder="Placa"
+            (input)="onPlacaInput()"
+            placeholder="Ej. A123456"
             class="form-control form-control-lg"
+            minlength="6"
+            maxlength="7"
+            pattern="[A-Za-z0-9]{6,7}"
+            autocomplete="off"
           />
+          <small class="text-muted">Entre 6 y 7 caracteres alfanuméricos.</small>
         </div>
 
         <div class="col-md-4">
@@ -165,9 +171,14 @@
 
           <input
             [(ngModel)]="nuevoVehiculo.noChasis"
-            placeholder="Chasis"
+            (input)="onChasisInput()"
+            placeholder="Máximo 17 caracteres"
             class="form-control form-control-lg"
+            maxlength="17"
+            pattern="[A-Za-z0-9]{1,17}"
+            autocomplete="off"
           />
+          <small class="text-muted">Solo letras y números. Máximo 17 caracteres.</small>
         </div>
 
         <div class="col-md-4">
@@ -177,8 +188,11 @@
 
           <input
             [(ngModel)]="nuevoVehiculo.noMotor"
+            (input)="onMotorInput()"
             placeholder="Motor"
             class="form-control form-control-lg"
+            maxlength="50"
+            autocomplete="off"
           />
         </div>
 
@@ -231,17 +245,21 @@
           </label>
 
           <select
-            [(ngModel)]="nuevoVehiculo.estado"
+            [(ngModel)]="nuevoVehiculo.estadoOperacion"
             class="form-select form-select-lg"
+            [disabled]="modoEdicion && obtenerEstadoOperacion(nuevoVehiculo) !== 'Disponible'"
           >
-            <option [ngValue]="true">
-              Disponible
-            </option>
-
-            <option [ngValue]="false">
-              Rentado
-            </option>
+            <option value="Disponible">Disponible</option>
+            <option value="Rentado">Rentado</option>
+            <option value="NoDisponible">No disponible</option>
           </select>
+
+          <small
+            *ngIf="modoEdicion && obtenerEstadoOperacion(nuevoVehiculo) !== 'Disponible'"
+            class="text-muted"
+          >
+            El estado de un vehículo rentado o devuelto se controla desde Gestión de Rentas.
+          </small>
         </div>
       </div>
 
@@ -312,6 +330,10 @@
             <option value="rentados">
               Rentados
             </option>
+
+            <option value="no-disponibles">
+              No disponibles
+            </option>
           </select>
         </div>
 
@@ -348,6 +370,10 @@
 
           <span class="badge text-bg-danger">
             Rentados: {{ cantidadRentados }}
+          </span>
+
+          <span class="badge text-bg-secondary">
+            No disponibles: {{ cantidadNoDisponibles }}
           </span>
         </div>
       </div>
@@ -410,17 +436,9 @@
 
           <span
             class="badge rounded-pill"
-            [ngClass]="
-              v.estado
-                ? 'bg-success'
-                : 'bg-danger'
-            "
+            [ngClass]="obtenerClaseEstado(v)"
           >
-            {{
-              v.estado
-                ? 'Disponible'
-                : 'Rentado'
-            }}
+            {{ obtenerTextoEstado(v) }}
           </span>
         </div>
 

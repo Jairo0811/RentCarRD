@@ -66,6 +66,7 @@ export class Vehiculos implements OnInit {
       idTipoCombustible: null,
       idCombustible: null,
       estado: true,
+      estadoOperacion: 'Disponible',
       imagenUrl: ''
     };
   }
@@ -142,7 +143,7 @@ export class Vehiculos implements OnInit {
       const modelo = this.obtenerModelo(vehiculo.idModelo);
       const tipo = this.obtenerTipoVehiculo(vehiculo.idTipoVehiculo);
       const combustible = this.obtenerCombustible(vehiculo);
-      const estado = vehiculo.estado ? 'disponible' : 'rentado';
+      const estado = this.obtenerEstadoOperacion(vehiculo);
 
       const contenidoBuscable = [
         vehiculo.descripcion,
@@ -163,11 +164,21 @@ export class Vehiculos implements OnInit {
   }
 
   get cantidadDisponibles(): number {
-    return this.vehiculos.filter((vehiculo: any) => vehiculo.estado === true).length;
+    return this.vehiculos.filter(
+      (vehiculo: any) => this.obtenerEstadoOperacion(vehiculo) === 'Disponible'
+    ).length;
   }
 
   get cantidadRentados(): number {
-    return this.vehiculos.filter((vehiculo: any) => vehiculo.estado === false).length;
+    return this.vehiculos.filter(
+      (vehiculo: any) => this.obtenerEstadoOperacion(vehiculo) === 'Rentado'
+    ).length;
+  }
+
+  get cantidadNoDisponibles(): number {
+    return this.vehiculos.filter(
+      (vehiculo: any) => this.obtenerEstadoOperacion(vehiculo) === 'NoDisponible'
+    ).length;
   }
 
   limpiarFiltros(): void {
@@ -178,10 +189,13 @@ export class Vehiculos implements OnInit {
   private coincideConEstado(vehiculo: any): boolean {
     switch (this.filtroEstado) {
       case 'disponibles':
-        return vehiculo.estado === true;
+        return this.obtenerEstadoOperacion(vehiculo) === 'Disponible';
 
       case 'rentados':
-        return vehiculo.estado === false;
+        return this.obtenerEstadoOperacion(vehiculo) === 'Rentado';
+
+      case 'no-disponibles':
+        return this.obtenerEstadoOperacion(vehiculo) === 'NoDisponible';
 
       default:
         return true;
@@ -194,6 +208,62 @@ export class Vehiculos implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .trim()
       .toLowerCase();
+  }
+
+  obtenerEstadoOperacion(vehiculo: any): string {
+    const estadoOperacion = String(vehiculo?.estadoOperacion ?? '').trim();
+
+    if (estadoOperacion === 'Disponible' || estadoOperacion === 'Rentado' || estadoOperacion === 'NoDisponible') {
+      return estadoOperacion;
+    }
+
+    return vehiculo?.estado === true ? 'Disponible' : 'Rentado';
+  }
+
+  obtenerTextoEstado(vehiculo: any): string {
+    const estado = this.obtenerEstadoOperacion(vehiculo);
+    return estado === 'NoDisponible' ? 'No disponible' : estado;
+  }
+
+  obtenerClaseEstado(vehiculo: any): string {
+    const estado = this.obtenerEstadoOperacion(vehiculo);
+
+    switch (estado) {
+      case 'Disponible':
+        return 'bg-success';
+      case 'Rentado':
+        return 'bg-danger';
+      default:
+        return 'bg-secondary';
+    }
+  }
+
+  onPlacaInput(): void {
+    this.nuevoVehiculo.noPlaca = this.limpiarAlfanumerico(
+      this.nuevoVehiculo.noPlaca,
+      7
+    );
+  }
+
+  onChasisInput(): void {
+    this.nuevoVehiculo.noChasis = this.limpiarAlfanumerico(
+      this.nuevoVehiculo.noChasis,
+      17
+    );
+  }
+
+  onMotorInput(): void {
+    this.nuevoVehiculo.noMotor = this.limpiarAlfanumerico(
+      this.nuevoVehiculo.noMotor,
+      50
+    );
+  }
+
+  private limpiarAlfanumerico(valor: string, maximo: number): string {
+    return String(valor ?? '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, maximo);
   }
 
   get modelosFiltrados(): any[] {
@@ -239,6 +309,23 @@ export class Vehiculos implements OnInit {
       return;
     }
 
+    this.onPlacaInput();
+    this.onChasisInput();
+    this.onMotorInput();
+
+    if (!/^[A-Z0-9]{6,7}$/.test(this.nuevoVehiculo.noPlaca)) {
+      alert('La placa debe contener entre 6 y 7 caracteres alfanuméricos.');
+      return;
+    }
+
+    if (
+      this.nuevoVehiculo.noChasis &&
+      !/^[A-Z0-9]{1,17}$/.test(this.nuevoVehiculo.noChasis)
+    ) {
+      alert('El chasis solo puede contener letras y números y debe tener un máximo de 17 caracteres.');
+      return;
+    }
+
     if (
       !this.nuevoVehiculo.idMarca ||
       !this.nuevoVehiculo.idModelo ||
@@ -255,7 +342,10 @@ export class Vehiculos implements OnInit {
       idModelo: Number(this.nuevoVehiculo.idModelo),
       idTipoVehiculo: Number(this.nuevoVehiculo.idTipoVehiculo),
       idTipoCombustible: Number(this.nuevoVehiculo.idTipoCombustible),
-      idCombustible: Number(this.nuevoVehiculo.idTipoCombustible)
+      idCombustible: Number(this.nuevoVehiculo.idTipoCombustible),
+      estadoOperacion:
+        this.nuevoVehiculo.estadoOperacion ||
+        (this.nuevoVehiculo.estado === true ? 'Disponible' : 'Rentado')
     };
 
     if (this.modoEdicion) {
@@ -271,7 +361,7 @@ export class Vehiculos implements OnInit {
         },
         error: (err: any) => {
           console.error('Error al actualizar vehículo:', err);
-          alert('Error al actualizar. Revisa la consola.');
+          alert(typeof err.error === 'string' ? err.error : 'Error al actualizar. Revisa la consola.');
         }
       });
 
@@ -292,7 +382,7 @@ export class Vehiculos implements OnInit {
       },
       error: (err: any) => {
         console.error('Error al guardar vehículo:', err);
-        alert('Error al guardar. Revisa la conexión.');
+        alert(typeof err.error === 'string' ? err.error : 'Error al guardar. Revisa la conexión.');
       }
     });
   }

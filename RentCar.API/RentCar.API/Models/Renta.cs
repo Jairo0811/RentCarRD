@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace RentCar.API.Models;
 
@@ -19,13 +17,13 @@ public partial class Renta
     public DateTime? FechaDevolucion { get; set; }
 
     [JsonPropertyName("montoXDia")]
-    public decimal MontoXdia { get; set; } = default(decimal);
+    public decimal MontoXdia { get; set; }
 
     public int CantidadDias { get; set; }
 
     public decimal Total { get; set; }
 
-    public string Comentario { get; set; } = null!;
+    public string Comentario { get; set; } = string.Empty;
 
-    public string Estado { get; set; } = null!;
+    public string Estado { get; set; } = "Activa";
 }
