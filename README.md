@@ -347,17 +347,6 @@ http://localhost:4200
 
 ---
 
-# 🚀 Próximas Mejoras
-
-- 📈 Dashboard con gráficas estadísticas.
-- 📅 Reservas de vehículos.
-- 🛠 Historial de mantenimiento.
-- 📧 Notificaciones por correo electrónico.
-- 📊 Exportación de reportes a Excel.
-- 📱 Diseño completamente adaptado para dispositivos móviles.
-
----
-
 # 👨‍💻 Autor
 
 **Francis Jairo Matías Rosario**
