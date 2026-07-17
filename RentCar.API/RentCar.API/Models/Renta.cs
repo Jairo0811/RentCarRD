@@ -21,6 +21,10 @@ public partial class Renta
 
     public int CantidadDias { get; set; }
 
+    public decimal Subtotal { get; set; }
+
+    public decimal Itbis { get; set; }
+
     public decimal Total { get; set; }
 
     public string Comentario { get; set; } = string.Empty;

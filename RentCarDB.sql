@@ -586,3 +586,30 @@ SELECT
 FROM Vehiculos
 ORDER BY Id;
 GO
+
+
+ALTER TABLE Rentas
+ADD
+    Subtotal DECIMAL(18,2) NOT NULL CONSTRAINT DF_Rentas_Subtotal DEFAULT(0),
+    Itbis DECIMAL(18,2) NOT NULL CONSTRAINT DF_Rentas_Itbis DEFAULT(0);
+
+
+
+
+
+
+
+    UPDATE Rentas
+SET
+    Subtotal = ROUND(
+        MontoXdia * CantidadDias,
+        2
+    ),
+    Itbis = ROUND(
+        (MontoXdia * CantidadDias) * 0.18,
+        2
+    ),
+    Total = ROUND(
+        (MontoXdia * CantidadDias) * 1.18,
+        2
+    );

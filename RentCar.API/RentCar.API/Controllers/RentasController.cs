@@ -8,6 +8,8 @@ namespace RentCar.API.Controllers
     [ApiController]
     public class RentasController : ControllerBase
     {
+        private const decimal TasaItbis = 0.18m;
+
         private const string EstadoRentaActiva = "Activa";
         private const string EstadoRentaConcluida = "Concluida";
 
@@ -63,10 +65,13 @@ namespace RentCar.API.Controllers
 
             if (vehiculo == null)
             {
-                return BadRequest("El vehículo seleccionado no existe.");
+                return BadRequest(
+                    "El vehículo seleccionado no existe."
+                );
             }
 
-            var estadoOperacion = NormalizarEstadoOperacion(vehiculo);
+            var estadoOperacion =
+                NormalizarEstadoOperacion(vehiculo);
 
             if (estadoOperacion != VehiculoDisponible)
             {
@@ -77,8 +82,10 @@ namespace RentCar.API.Controllers
                 );
             }
 
-            var fueRentadoAnteriormente = await _context.Rentas
-                .AnyAsync(r => r.IdVehiculo == renta.IdVehiculo);
+            var fueRentadoAnteriormente =
+                await _context.Rentas.AnyAsync(
+                    r => r.IdVehiculo == renta.IdVehiculo
+                );
 
             if (fueRentadoAnteriormente)
             {
@@ -87,26 +94,36 @@ namespace RentCar.API.Controllers
                 );
             }
 
-            var clienteExiste = await _context.Clientes
-                .AnyAsync(c => c.Id == renta.IdCliente);
+            var clienteExiste =
+                await _context.Clientes.AnyAsync(
+                    c => c.Id == renta.IdCliente
+                );
 
             if (!clienteExiste)
             {
-                return BadRequest("El cliente seleccionado no existe.");
+                return BadRequest(
+                    "El cliente seleccionado no existe."
+                );
             }
 
-            var empleadoExiste = await _context.Empleados
-                .AnyAsync(e => e.Id == renta.IdEmpleado);
+            var empleadoExiste =
+                await _context.Empleados.AnyAsync(
+                    e => e.Id == renta.IdEmpleado
+                );
 
             if (!empleadoExiste)
             {
-                return BadRequest("El empleado seleccionado no existe.");
+                return BadRequest(
+                    "El empleado seleccionado no existe."
+                );
             }
 
-            renta.Total = renta.MontoXdia * renta.CantidadDias;
+            CalcularTotales(renta);
+
             renta.Estado = EstadoRentaActiva;
             renta.FechaDevolucion = null;
-            renta.Comentario = renta.Comentario?.Trim() ?? string.Empty;
+            renta.Comentario =
+                renta.Comentario?.Trim() ?? string.Empty;
 
             vehiculo.Estado = false;
             vehiculo.EstadoOperacion = VehiculoRentado;
@@ -123,19 +140,28 @@ namespace RentCar.API.Controllers
         }
 
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> PutRenta(int id, Renta renta)
+        public async Task<IActionResult> PutRenta(
+            int id,
+            Renta renta
+        )
         {
             if (id != renta.NoRenta)
             {
-                return BadRequest("El ID de la renta no coincide.");
+                return BadRequest(
+                    "El ID de la renta no coincide."
+                );
             }
 
             var rentaActual = await _context.Rentas
-                .FirstOrDefaultAsync(r => r.NoRenta == id);
+                .FirstOrDefaultAsync(
+                    r => r.NoRenta == id
+                );
 
             if (rentaActual == null)
             {
-                return NotFound("La renta solicitada no existe.");
+                return NotFound(
+                    "La renta solicitada no existe."
+                );
             }
 
             if (EsRentaConcluida(rentaActual))
@@ -161,10 +187,10 @@ namespace RentCar.API.Controllers
 
             rentaActual.MontoXdia = renta.MontoXdia;
             rentaActual.CantidadDias = renta.CantidadDias;
-            rentaActual.Total =
-                renta.MontoXdia * renta.CantidadDias;
             rentaActual.Comentario =
                 renta.Comentario?.Trim() ?? string.Empty;
+
+            CalcularTotales(rentaActual);
 
             await _context.SaveChangesAsync();
 
@@ -172,10 +198,14 @@ namespace RentCar.API.Controllers
         }
 
         [HttpPut("{id:int}/devolucion")]
-        public async Task<IActionResult> DevolverVehiculo(int id)
+        public async Task<IActionResult> DevolverVehiculo(
+            int id
+        )
         {
             var renta = await _context.Rentas
-                .FirstOrDefaultAsync(r => r.NoRenta == id);
+                .FirstOrDefaultAsync(
+                    r => r.NoRenta == id
+                );
 
             if (renta == null)
             {
@@ -211,11 +241,11 @@ namespace RentCar.API.Controllers
             renta.Estado = EstadoRentaConcluida;
 
             renta.FechaDevolucion =
-                renta.FechaRenta.Date
-                    .AddDays(renta.CantidadDias);
+                renta.FechaRenta.Date.AddDays(
+                    renta.CantidadDias
+                );
 
-            renta.Total =
-                renta.MontoXdia * renta.CantidadDias;
+            CalcularTotales(renta);
 
             vehiculo.Estado = false;
             vehiculo.EstadoOperacion =
@@ -225,10 +255,14 @@ namespace RentCar.API.Controllers
 
             return Ok(new
             {
-                mensaje = "Vehículo devuelto correctamente.",
+                mensaje =
+                    "Vehículo devuelto correctamente.",
                 renta.NoRenta,
                 renta.Estado,
                 renta.FechaDevolucion,
+                renta.Subtotal,
+                renta.Itbis,
+                renta.Total,
                 idVehiculo = vehiculo.Id,
                 estadoVehiculo =
                     vehiculo.EstadoOperacion
@@ -236,10 +270,14 @@ namespace RentCar.API.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteRenta(int id)
+        public async Task<IActionResult> DeleteRenta(
+            int id
+        )
         {
-            var rentaExiste = await _context.Rentas
-                .AnyAsync(r => r.NoRenta == id);
+            var rentaExiste =
+                await _context.Rentas.AnyAsync(
+                    r => r.NoRenta == id
+                );
 
             if (!rentaExiste)
             {
@@ -253,7 +291,29 @@ namespace RentCar.API.Controllers
             );
         }
 
-        private static string? ValidarRenta(Renta renta)
+        private static void CalcularTotales(
+            Renta renta
+        )
+        {
+            renta.Subtotal = Math.Round(
+                renta.MontoXdia * renta.CantidadDias,
+                2
+            );
+
+            renta.Itbis = Math.Round(
+                renta.Subtotal * TasaItbis,
+                2
+            );
+
+            renta.Total = Math.Round(
+                renta.Subtotal + renta.Itbis,
+                2
+            );
+        }
+
+        private static string? ValidarRenta(
+            Renta renta
+        )
         {
             if (renta.IdVehiculo <= 0)
             {
@@ -289,7 +349,8 @@ namespace RentCar.API.Controllers
         }
 
         private static bool EsRentaConcluida(
-            Renta renta)
+            Renta renta
+        )
         {
             return string.Equals(
                 renta.Estado,
@@ -299,10 +360,12 @@ namespace RentCar.API.Controllers
         }
 
         private static string NormalizarEstadoOperacion(
-            Vehiculo vehiculo)
+            Vehiculo vehiculo
+        )
         {
             if (!string.IsNullOrWhiteSpace(
-                vehiculo.EstadoOperacion))
+                vehiculo.EstadoOperacion
+            ))
             {
                 return vehiculo.EstadoOperacion.Trim();
             }
