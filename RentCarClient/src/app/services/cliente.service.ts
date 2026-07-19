@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ClienteService {
-  private apiUrl = 'http://localhost:5266/api/Clientes';
+  private readonly apiUrl = 'http://localhost:5266/api/Clientes';
 
   constructor(private http: HttpClient) {}
 
@@ -30,13 +30,24 @@ export class ClienteService {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
-  validarCedula(cedula: string, idCliente?: number): Observable<any> {
-    let url = `${this.apiUrl}/validar-cedula/${cedula}`;
+  validarDocumento(
+    documento: string,
+    tipoPersona: string,
+    idCliente?: number
+  ): Observable<any> {
+    let params = new HttpParams().set('tipoPersona', tipoPersona);
 
     if (idCliente) {
-      url += `?idCliente=${idCliente}`;
+      params = params.set('idCliente', idCliente);
     }
 
-    return this.http.get(url);
+    return this.http.get(
+      `${this.apiUrl}/validar-documento/${documento}`,
+      { params }
+    );
+  }
+
+  validarCedula(cedula: string, idCliente?: number): Observable<any> {
+    return this.validarDocumento(cedula, 'Fisica', idCliente);
   }
 }
