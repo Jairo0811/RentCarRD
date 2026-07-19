@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Models;
+using System.Text.RegularExpressions;
 
 namespace RentCar.API.Controllers
 {
@@ -8,6 +9,9 @@ namespace RentCar.API.Controllers
     [ApiController]
     public class ClientesController : ControllerBase
     {
+        private const string PersonaFisica = "Fisica";
+        private const string PersonaJuridica = "Juridica";
+
         private readonly RentCarDbContext _context;
 
         public ClientesController(RentCarDbContext context)
@@ -18,50 +22,73 @@ namespace RentCar.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Cliente>>> GetClientes()
         {
-            return await _context.Clientes.ToListAsync();
+            return await _context.Clientes
+                .AsNoTracking()
+                .OrderBy(c => c.Nombre)
+                .ToListAsync();
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<Cliente>> GetCliente(int id)
         {
-            var cliente = await _context.Clientes.FindAsync(id);
+            var cliente = await _context.Clientes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (cliente == null)
+            {
                 return NotFound("El cliente solicitado no existe.");
+            }
 
-            return cliente;
+            return Ok(cliente);
         }
 
-        [HttpGet("validar-cedula/{cedula}")]
-        public async Task<IActionResult> ValidarCedula(
-            string cedula,
+        [HttpGet("validar-documento/{documento}")]
+        public async Task<IActionResult> ValidarDocumento(
+            string documento,
+            string tipoPersona = PersonaFisica,
             int? idCliente = null)
         {
-            var cedulaLimpia = LimpiarCedula(cedula);
-            var esValida = CedulaValida(cedulaLimpia);
+            var tipoNormalizado = NormalizarTipoPersona(tipoPersona);
+            var documentoLimpio = LimpiarDocumento(documento);
+            var esValido = DocumentoValido(documentoLimpio, tipoNormalizado);
 
             var clienteExistente = await _context.Clientes
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c =>
-                    c.Cedula == cedulaLimpia &&
+                    c.Cedula == documentoLimpio &&
                     (!idCliente.HasValue || c.Id != idCliente.Value));
 
             var existe = clienteExistente != null;
+            var nombreDocumento = tipoNormalizado == PersonaJuridica
+                ? "RNC"
+                : "cédula";
 
             return Ok(new
             {
-                cedula = cedulaLimpia,
-                cedulaFormateada = FormatearCedula(cedulaLimpia),
-                esValida = esValida && !existe,
+                documento = documentoLimpio,
+                documentoFormateado = FormatearDocumento(documentoLimpio, tipoNormalizado),
+                tipoPersona = tipoNormalizado,
+                tipoDocumento = nombreDocumento,
+                esValida = esValido && !existe,
                 existe,
                 nombreCliente = clienteExistente?.Nombre,
                 fuente = "Validador local",
-                mensaje = !esValida
-                    ? "La cédula ingresada no es válida."
+                mensaje = !esValido
+                    ? $"El {nombreDocumento} ingresado no es válido."
                     : existe
-                        ? $"Esta cédula ya pertenece a {clienteExistente!.Nombre}."
-                        : "Cédula válida y disponible para registrar."
+                        ? $"Este {nombreDocumento} ya pertenece a {clienteExistente!.Nombre}."
+                        : $"{(tipoNormalizado == PersonaJuridica ? "RNC" : "Cédula")} válido y disponible para registrar."
             });
+        }
+
+        // Se conserva para compatibilidad con versiones anteriores del frontend.
+        [HttpGet("validar-cedula/{cedula}")]
+        public Task<IActionResult> ValidarCedula(
+            string cedula,
+            int? idCliente = null)
+        {
+            return ValidarDocumento(cedula, PersonaFisica, idCliente);
         }
 
         [HttpPost]
@@ -72,13 +99,18 @@ namespace RentCar.API.Controllers
             var errorValidacion = ValidarCliente(cliente);
 
             if (errorValidacion != null)
+            {
                 return BadRequest(errorValidacion);
+            }
 
-            var cedulaDuplicada = await _context.Clientes
+            var documentoDuplicado = await _context.Clientes
                 .AnyAsync(c => c.Cedula == cliente.Cedula);
 
-            if (cedulaDuplicada)
-                return BadRequest("Ya existe un cliente registrado con esta cédula.");
+            if (documentoDuplicado)
+            {
+                return BadRequest(
+                    $"Ya existe un cliente registrado con este {ObtenerNombreDocumento(cliente.TipoPersona)}.");
+            }
 
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
@@ -89,30 +121,39 @@ namespace RentCar.API.Controllers
                 cliente);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> PutCliente(int id, Cliente cliente)
         {
             if (id != cliente.Id)
+            {
                 return BadRequest("El ID del cliente no coincide.");
+            }
 
             var clienteExistente = await _context.Clientes.FindAsync(id);
 
             if (clienteExistente == null)
+            {
                 return NotFound("El cliente solicitado no existe.");
+            }
 
             NormalizarCliente(cliente);
 
             var errorValidacion = ValidarCliente(cliente);
 
             if (errorValidacion != null)
+            {
                 return BadRequest(errorValidacion);
+            }
 
-            var cedulaDuplicada = await _context.Clientes.AnyAsync(c =>
+            var documentoDuplicado = await _context.Clientes.AnyAsync(c =>
                 c.Cedula == cliente.Cedula &&
                 c.Id != id);
 
-            if (cedulaDuplicada)
-                return BadRequest("Ya existe otro cliente registrado con esta cédula.");
+            if (documentoDuplicado)
+            {
+                return BadRequest(
+                    $"Ya existe otro cliente registrado con este {ObtenerNombreDocumento(cliente.TipoPersona)}.");
+            }
 
             clienteExistente.Nombre = cliente.Nombre;
             clienteExistente.Cedula = cliente.Cedula;
@@ -129,13 +170,15 @@ namespace RentCar.API.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteCliente(int id)
         {
             var cliente = await _context.Clientes.FindAsync(id);
 
             if (cliente == null)
+            {
                 return NotFound("El cliente solicitado no existe.");
+            }
 
             var tieneRentas = await _context.Rentas
                 .AnyAsync(r => r.IdCliente == id);
@@ -152,11 +195,11 @@ namespace RentCar.API.Controllers
             return NoContent();
         }
 
-        private void NormalizarCliente(Cliente cliente)
+        private static void NormalizarCliente(Cliente cliente)
         {
             cliente.Nombre = (cliente.Nombre ?? string.Empty).Trim();
-            cliente.Cedula = LimpiarCedula(cliente.Cedula);
             cliente.TipoPersona = NormalizarTipoPersona(cliente.TipoPersona);
+            cliente.Cedula = LimpiarDocumento(cliente.Cedula);
 
             cliente.NombreTitularTarjeta =
                 LimpiarTextoOpcional(cliente.NombreTitularTarjeta);
@@ -171,16 +214,26 @@ namespace RentCar.API.Controllers
                 DetectarTipoTarjeta(cliente.NoTarjetaCr);
         }
 
-        private string? ValidarCliente(Cliente cliente)
+        private static string? ValidarCliente(Cliente cliente)
         {
             if (string.IsNullOrWhiteSpace(cliente.Nombre))
-                return "El nombre completo del cliente es obligatorio.";
+            {
+                return cliente.TipoPersona == PersonaJuridica
+                    ? "La razón social es obligatoria."
+                    : "El nombre completo del cliente es obligatorio.";
+            }
 
-            if (!CedulaValida(cliente.Cedula))
-                return "La cédula ingresada no es válida.";
+            if (!DocumentoValido(cliente.Cedula, cliente.TipoPersona))
+            {
+                return cliente.TipoPersona == PersonaJuridica
+                    ? "El RNC ingresado no es válido."
+                    : "La cédula ingresada no es válida.";
+            }
 
             if (cliente.LimiteCredito < 0)
+            {
                 return "El límite de crédito no puede ser negativo.";
+            }
 
             var tieneDatosTarjeta =
                 !string.IsNullOrWhiteSpace(cliente.NoTarjetaCr) ||
@@ -193,55 +246,92 @@ namespace RentCar.API.Controllers
                 cliente.NombreTitularTarjeta = null;
                 cliente.FechaExpiracionTarjeta = null;
                 cliente.TipoTarjeta = null;
-
                 return null;
             }
 
             if (string.IsNullOrWhiteSpace(cliente.NombreTitularTarjeta))
+            {
                 return "El nombre del titular de la tarjeta es obligatorio.";
+            }
 
             if (string.IsNullOrWhiteSpace(cliente.NoTarjetaCr))
+            {
                 return "El número de tarjeta es obligatorio.";
+            }
 
             if (!NumeroTarjetaValido(cliente.NoTarjetaCr))
+            {
                 return "El número de tarjeta no es válido.";
+            }
 
             if (string.IsNullOrWhiteSpace(cliente.TipoTarjeta))
+            {
                 return "La franquicia de la tarjeta no pudo ser identificada.";
+            }
 
             if (!FechaExpiracionValida(cliente.FechaExpiracionTarjeta))
+            {
                 return "La fecha de expiración no es válida o la tarjeta está vencida.";
+            }
 
             return null;
         }
 
-        private string LimpiarCedula(string? cedula)
+        private static string NormalizarTipoPersona(string? tipoPersona)
         {
-            if (string.IsNullOrWhiteSpace(cedula))
-                return string.Empty;
-
-            return new string(cedula.Where(char.IsDigit).ToArray());
+            return string.Equals(
+                tipoPersona,
+                PersonaJuridica,
+                StringComparison.OrdinalIgnoreCase)
+                    ? PersonaJuridica
+                    : PersonaFisica;
         }
 
-        private string FormatearCedula(string cedula)
+        private static string ObtenerNombreDocumento(string? tipoPersona)
         {
-            cedula = LimpiarCedula(cedula);
-
-            if (cedula.Length != 11)
-                return cedula;
-
-            return $"{cedula[..3]}-{cedula.Substring(3, 7)}-{cedula[10]}";
+            return NormalizarTipoPersona(tipoPersona) == PersonaJuridica
+                ? "RNC"
+                : "cédula";
         }
 
-        private bool CedulaValida(string cedula)
+        private static string LimpiarDocumento(string? documento)
         {
-            cedula = LimpiarCedula(cedula);
+            return string.IsNullOrWhiteSpace(documento)
+                ? string.Empty
+                : new string(documento.Where(char.IsDigit).ToArray());
+        }
 
-            if (cedula.Length != 11)
-                return false;
+        private static bool DocumentoValido(string documento, string? tipoPersona)
+        {
+            return NormalizarTipoPersona(tipoPersona) == PersonaJuridica
+                ? RncValido(documento)
+                : CedulaValida(documento);
+        }
 
-            if (cedula.All(c => c == cedula[0]))
+        private static string FormatearDocumento(string documento, string? tipoPersona)
+        {
+            documento = LimpiarDocumento(documento);
+
+            if (NormalizarTipoPersona(tipoPersona) == PersonaJuridica)
+            {
+                return documento.Length == 9
+                    ? $"{documento[..3]}-{documento.Substring(3, 5)}-{documento[8]}"
+                    : documento;
+            }
+
+            return documento.Length == 11
+                ? $"{documento[..3]}-{documento.Substring(3, 7)}-{documento[10]}"
+                : documento;
+        }
+
+        private static bool CedulaValida(string cedula)
+        {
+            cedula = LimpiarDocumento(cedula);
+
+            if (cedula.Length != 11 || cedula.All(c => c == cedula[0]))
+            {
                 return false;
+            }
 
             int[] pesos = { 1, 2, 1, 2, 1, 2, 1, 2, 1, 2 };
             var suma = 0;
@@ -251,91 +341,109 @@ namespace RentCar.API.Controllers
                 var valor = (cedula[i] - '0') * pesos[i];
 
                 if (valor >= 10)
+                {
                     valor = (valor / 10) + (valor % 10);
+                }
 
                 suma += valor;
             }
 
             var digitoVerificador = (10 - (suma % 10)) % 10;
-
             return digitoVerificador == (cedula[10] - '0');
         }
 
-        private string? LimpiarTextoOpcional(string? valor)
+        private static bool RncValido(string rnc)
         {
-            if (string.IsNullOrWhiteSpace(valor))
-                return null;
+            rnc = LimpiarDocumento(rnc);
 
-            return valor.Trim();
+            if (rnc.Length != 9 || rnc.All(c => c == rnc[0]))
+            {
+                return false;
+            }
+
+            int[] pesos = { 7, 9, 8, 6, 5, 4, 3, 2 };
+            var suma = 0;
+
+            for (var i = 0; i < 8; i++)
+            {
+                suma += (rnc[i] - '0') * pesos[i];
+            }
+
+            var resto = suma % 11;
+            var digitoVerificador = resto switch
+            {
+                0 => 2,
+                1 => 1,
+                _ => 11 - resto
+            };
+
+            return digitoVerificador == (rnc[8] - '0');
         }
 
-        private string? LimpiarNumeroTarjeta(string? numero)
+        private static string? LimpiarTextoOpcional(string? valor)
         {
-            if (string.IsNullOrWhiteSpace(numero))
-                return null;
-
-            return new string(numero.Where(char.IsDigit).ToArray());
+            return string.IsNullOrWhiteSpace(valor)
+                ? null
+                : valor.Trim();
         }
 
-        private string NormalizarTipoPersona(string? tipoPersona)
+        private static string? LimpiarNumeroTarjeta(string? numero)
         {
-            return string.Equals(
-                tipoPersona,
-                "Juridica",
-                StringComparison.OrdinalIgnoreCase)
-                    ? "Juridica"
-                    : "Fisica";
+            return string.IsNullOrWhiteSpace(numero)
+                ? null
+                : new string(numero.Where(char.IsDigit).ToArray());
         }
 
-        private string? DetectarTipoTarjeta(string? numeroTarjeta)
+        private static string? DetectarTipoTarjeta(string? numeroTarjeta)
         {
             var numero = LimpiarNumeroTarjeta(numeroTarjeta);
 
             if (string.IsNullOrWhiteSpace(numero))
+            {
                 return null;
+            }
 
-            if (numero.StartsWith("4"))
-                return "VISA";
-
-            if (EsMastercard(numero))
-                return "MASTERCARD";
-
-            if (numero.StartsWith("34") || numero.StartsWith("37"))
-                return "AMEX";
-
-            if (numero.StartsWith("6"))
-                return "DISCOVER";
+            if (numero.StartsWith("4")) return "VISA";
+            if (EsMastercard(numero)) return "MASTERCARD";
+            if (numero.StartsWith("34") || numero.StartsWith("37")) return "AMEX";
+            if (numero.StartsWith("6")) return "DISCOVER";
 
             return null;
         }
 
-        private bool EsMastercard(string numero)
+        private static bool EsMastercard(string numero)
         {
             if (numero.Length < 2)
+            {
                 return false;
+            }
 
             var primerosDos = int.Parse(numero[..2]);
 
-            if (primerosDos >= 51 && primerosDos <= 55)
+            if (primerosDos is >= 51 and <= 55)
+            {
                 return true;
+            }
 
             if (numero.Length < 4)
+            {
                 return false;
+            }
 
             var primerosCuatro = int.Parse(numero[..4]);
-
-            return primerosCuatro >= 2221 && primerosCuatro <= 2720;
+            return primerosCuatro is >= 2221 and <= 2720;
         }
 
-        private bool NumeroTarjetaValido(string numeroTarjeta)
+        private static bool NumeroTarjetaValido(string numeroTarjeta)
         {
             var numero = LimpiarNumeroTarjeta(numeroTarjeta);
 
             if (string.IsNullOrWhiteSpace(numero))
+            {
                 return false;
+            }
 
             var tipo = DetectarTipoTarjeta(numero);
-
             var longitudValida = tipo switch
             {
                 "AMEX" => numero.Length == 15,
@@ -345,13 +453,10 @@ namespace RentCar.API.Controllers
                 _ => false
             };
 
-            if (!longitudValida)
-                return false;
-
-            return CumpleAlgoritmoLuhn(numero);
+            return longitudValida && CumpleAlgoritmoLuhn(numero);
         }
 
-        private bool CumpleAlgoritmoLuhn(string numero)
+        private static bool CumpleAlgoritmoLuhn(string numero)
         {
             var suma = 0;
             var duplicar = false;
@@ -363,9 +468,7 @@ namespace RentCar.API.Controllers
                 if (duplicar)
                 {
                     digito *= 2;
-
-                    if (digito > 9)
-                        digito -= 9;
+                    if (digito > 9) digito -= 9;
                 }
 
                 suma += digito;
@@ -375,23 +478,17 @@ namespace RentCar.API.Controllers
             return suma % 10 == 0;
         }
 
-        private bool FechaExpiracionValida(string? fecha)
+        private static bool FechaExpiracionValida(string? fecha)
         {
-            if (string.IsNullOrWhiteSpace(fecha))
-                return false;
-
-            if (!System.Text.RegularExpressions.Regex.IsMatch(
-                fecha,
-                @"^(0[1-9]|1[0-2])\/\d{2}$"))
+            if (string.IsNullOrWhiteSpace(fecha) ||
+                !Regex.IsMatch(fecha, @"^(0[1-9]|1[0-2])\/\d{2}$"))
             {
                 return false;
             }
 
             var partes = fecha.Split('/');
-
             var mes = int.Parse(partes[0]);
             var anio = 2000 + int.Parse(partes[1]);
-
             var fechaExpiracion = new DateTime(
                 anio,
                 mes,
