@@ -1,16 +1,12 @@
 # 🚗 RentCarRD — Sistema de Gestión de Rentas de Vehículos
 
 <p align="center">
-  <img src="https://skillicons.dev/icons?i=angular,ts,html,css,bootstrap,dotnet,cs,visualstudio,vscode,git,github&perline=11" alt="Tecnologías de RentCarRD" />
-</p>
-
-<p align="center">
   <strong>Aplicación web para administrar clientes, empleados, vehículos, inspecciones, rentas, devoluciones y reportes.</strong><br>
   Desarrollada con Angular, ASP.NET Core Web API, Entity Framework Core y Microsoft SQL Server.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Estado-Finalizado-success" alt="Estado del proyecto" />
+  <img src="https://img.shields.io/badge/Estado-Versión%201.1%20estable-success" alt="Estado del proyecto" />
   <img src="https://img.shields.io/badge/Versión-1.1-blue" alt="Versión" />
   <img src="https://img.shields.io/badge/Proyecto-Académico%20y%20Portafolio-purple" alt="Tipo de proyecto" />
 </p>
@@ -47,6 +43,7 @@ RentCarRD forma parte de una colección de proyectos académicos desarrollados e
 - **HTML5:** estructura semántica de las vistas.
 - **CSS3:** estilos personalizados.
 - **Bootstrap 5:** diseño responsivo y componentes visuales.
+- **SweetAlert2:** alertas visuales para mensajes de éxito, error, advertencia e información.
 - **Chart.js y ng2-charts:** gráficos del dashboard.
 - **jsPDF y jsPDF AutoTable:** generación de contratos y reportes PDF.
 - **SheetJS (`xlsx`):** exportación de reportes a Excel.
@@ -223,6 +220,13 @@ Los valores controlados se seleccionan desde listas para evitar inconsistencias 
 - Cambio del vehículo devuelto a `NoDisponible`.
 - Bloqueo para impedir que un vehículo devuelto vuelva a rentarse.
 - Conservación del historial completo de la operación.
+
+### 🔔 Alertas y retroalimentación visual
+
+- Mensajes de éxito, error, advertencia e información mediante SweetAlert2.
+- Sustitución de las ventanas genéricas del navegador para las operaciones principales.
+- Estilo visual consistente con la interfaz del sistema.
+- Mensajes más claros para validaciones y resultados de operaciones.
 
 ### 📄 Contratos y reportes PDF
 
@@ -450,6 +454,7 @@ http://localhost:4200
 | Reportes PDF | ✅ Finalizado |
 | Exportación Excel | ✅ Finalizado |
 | Validación de cédula y RNC | ✅ Finalizado |
+| Alertas SweetAlert2 | ✅ Integrado |
 | Login y roles | ✅ Finalizado |
 | API REST | ✅ Finalizado |
 | SQL Server | ✅ Finalizado |
@@ -459,7 +464,7 @@ http://localhost:4200
 ## 🗺️ Mejoras futuras
 
 - Migración gradual de CSS a SCSS.
-- SweetAlert2 para alertas, confirmaciones y notificaciones.
+- Migración de confirmaciones nativas restantes a SweetAlert2.
 - Loader global y manejo centralizado de errores HTTP.
 - Reservas y calendario de disponibilidad.
 - Historial de mantenimiento de vehículos.
