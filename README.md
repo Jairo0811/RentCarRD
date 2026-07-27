@@ -34,24 +34,57 @@ RentCarRD forma parte de una colección de proyectos académicos desarrollados e
 
 ---
 
-## 🛠️ Tecnologías utilizadas
+## 🛠️ Stack tecnológico
 
-| Tecnología | Uso principal |
-|---|---|
-| Angular 21 | Aplicación web frontend |
-| TypeScript | Lógica, tipado y componentes del cliente |
-| HTML5 | Estructura de las vistas |
-| CSS3 | Estilos personalizados |
-| Bootstrap 5 | Diseño responsivo y componentes visuales |
-| ASP.NET Core Web API | API REST del backend |
-| C# | Reglas de negocio y controladores |
-| Entity Framework Core | Acceso y mapeo de datos |
-| Microsoft SQL Server | Base de datos relacional |
-| Chart.js y ng2-charts | Gráficos del dashboard |
-| jsPDF | Generación de documentos PDF |
-| jsPDF AutoTable | Tablas profesionales en PDF |
-| SheetJS `xlsx` | Exportación de reportes a Excel |
-| Git y GitHub | Control de versiones |
+### 🎨 Frontend y diseño de interfaces
+
+<p>
+  <img src="https://skillicons.dev/icons?i=angular,ts,html,css,bootstrap" alt="Angular, TypeScript, HTML, CSS y Bootstrap" />
+</p>
+
+- **Angular 21:** construcción de la aplicación web SPA.
+- **TypeScript:** lógica, tipado y componentes del cliente.
+- **HTML5:** estructura semántica de las vistas.
+- **CSS3:** estilos personalizados.
+- **Bootstrap 5:** diseño responsivo y componentes visuales.
+- **Chart.js y ng2-charts:** gráficos del dashboard.
+- **jsPDF y jsPDF AutoTable:** generación de contratos y reportes PDF.
+- **SheetJS (`xlsx`):** exportación de reportes a Excel.
+
+### ⚙️ Backend, frameworks y APIs
+
+<p>
+  <img src="https://skillicons.dev/icons?i=dotnet,cs" alt=".NET y C#" />
+</p>
+
+- **ASP.NET Core Web API:** exposición de los endpoints REST.
+- **C#:** reglas de negocio, controladores y servicios del backend.
+- **Entity Framework Core:** acceso, mapeo y persistencia de datos.
+- **HTTP y JSON:** comunicación entre Angular y la API.
+- **Swagger/OpenAPI:** exploración y prueba de endpoints.
+
+### 🗄️ Base de datos y persistencia
+
+<p>
+  <img src="https://img.shields.io/badge/SQL%20Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white" alt="Microsoft SQL Server" />
+</p>
+
+- **Microsoft SQL Server:** base de datos relacional principal.
+- **Migraciones de Entity Framework Core:** evolución controlada del esquema.
+- **Script `RentCarDB.sql`:** creación y preparación inicial de la base de datos.
+- **Almacenamiento local de imágenes:** recursos de vehículos publicados desde el backend.
+
+### 🧰 Herramientas de desarrollo
+
+<p>
+  <img src="https://skillicons.dev/icons?i=visualstudio,vscode,git,github" alt="Visual Studio, Visual Studio Code, Git y GitHub" />
+</p>
+
+- **Visual Studio:** desarrollo y depuración del backend.
+- **Visual Studio Code:** desarrollo del frontend y edición general.
+- **SQL Server Management Studio:** administración y validación de la base de datos.
+- **npm y Angular CLI:** dependencias, compilación y ejecución del frontend.
+- **Git y GitHub:** control de versiones y publicación del proyecto.
 
 ---
 
@@ -364,7 +397,7 @@ En otra terminal, desde la raíz del repositorio:
 ```bash
 cd RentCarClient
 npm install --legacy-peer-deps
-npm start
+ng serve
 ```
 
 La aplicación estará disponible normalmente en:
