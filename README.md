@@ -36,6 +36,13 @@ RentCarRD forma parte de una colección de proyectos académicos desarrollados e
 
 <p>
   <img src="https://skillicons.dev/icons?i=angular,ts,html,css,bootstrap" alt="Angular, TypeScript, HTML, CSS y Bootstrap" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/chartjs/chartjs-original.svg" alt="Chart.js" title="Chart.js" width="48" height="48" />
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/SweetAlert2-Alertas-7066E0?style=flat-square&logo=javascript&logoColor=white" alt="SweetAlert2" />
+  <img src="https://img.shields.io/badge/jsPDF-Reportes%20PDF-F43F5E?style=flat-square&logo=javascript&logoColor=white" alt="jsPDF" />
+  <img src="https://img.shields.io/badge/SheetJS-Excel-217346?style=flat-square&logo=microsoftexcel&logoColor=white" alt="SheetJS" />
 </p>
 
 - **Angular 21:** construcción de la aplicación web SPA.
@@ -52,6 +59,12 @@ RentCarRD forma parte de una colección de proyectos académicos desarrollados e
 
 <p>
   <img src="https://skillicons.dev/icons?i=dotnet,cs" alt=".NET y C#" />
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/ASP.NET%20Core-Web%20API-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt="ASP.NET Core Web API" />
+  <img src="https://img.shields.io/badge/Entity%20Framework%20Core-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt="Entity Framework Core" />
+  <img src="https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?style=flat-square&logo=swagger&logoColor=black" alt="Swagger y OpenAPI" />
 </p>
 
 - **ASP.NET Core Web API:** exposición de los endpoints REST.
@@ -74,7 +87,7 @@ RentCarRD forma parte de una colección de proyectos académicos desarrollados e
 ### 🧰 Herramientas de desarrollo
 
 <p>
-  <img src="https://skillicons.dev/icons?i=visualstudio,vscode,git,github" alt="Visual Studio, Visual Studio Code, Git y GitHub" />
+  <img src="https://skillicons.dev/icons?i=npm,visualstudio,vscode,git,github" alt="npm, Visual Studio, Visual Studio Code, Git y GitHub" />
 </p>
 
 - **Visual Studio:** desarrollo y depuración del backend.
