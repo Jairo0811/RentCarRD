@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 export class ModeloService {
   private apiUrl = 'http://localhost:5266/api/Modelos';
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   getModelos(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl);
@@ -20,6 +20,13 @@ export class ModeloService {
 
   createModelo(modelo: any): Observable<any> {
     return this.crearModelo(modelo);
+  }
+
+  actualizarModelo(modelo: any): Observable<void> {
+    return this.http.put<void>(
+      `${this.apiUrl}/${modelo.id}`,
+      modelo
+    );
   }
 
   eliminarModelo(id: number): Observable<any> {
