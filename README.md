@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/Entrega-Académica%20Completada-success" alt="Entrega académica" />
   <img src="https://img.shields.io/badge/Proyecto-Académico%20y%20Portafolio-purple" alt="Tipo de proyecto" />
 </p>
----
+
 
 ## 📖 Descripción
 
