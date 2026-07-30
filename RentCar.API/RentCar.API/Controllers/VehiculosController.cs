@@ -169,7 +169,7 @@ namespace RentCar.API.Controllers
         [HttpPost("{id:int}/imagen")]
         public async Task<IActionResult> SubirImagen(
             int id,
-            IFormFile imagen)
+            [FromForm(Name = "imagen")] IFormFile imagen)
         {
             var vehiculo = await _context.Vehiculos.FindAsync(id);
 
@@ -179,12 +179,12 @@ namespace RentCar.API.Controllers
             if (imagen == null || imagen.Length == 0)
                 return BadRequest("No se recibió ninguna imagen.");
 
-            const long tamanoMaximo = 5 * 1024 * 1024;
+            const long tamanoMaximo = 15 * 1024 * 1024;
 
             if (imagen.Length > tamanoMaximo)
             {
                 return BadRequest(
-                    "La imagen no puede superar los 5 MB.");
+                    "La imagen no puede superar los 15 MB.");
             }
 
             var extensionesPermitidas = new[]

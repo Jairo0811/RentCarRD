@@ -195,6 +195,7 @@
             <th class="py-3 px-4"># Renta</th>
             <th>Fecha de Renta</th>
             <th>Fecha de Devolución</th>
+            <th>Vehículo</th>
             <th>Tarifa/Día</th>
             <th>Días</th>
             <th>Subtotal</th>
@@ -228,6 +229,23 @@
                 : 'Pendiente'
                 }}
               </span>
+            </td>
+
+            <td>
+              <div class="fw-semibold text-dark">
+                {{
+                obtenerVehiculoRenta(r)?.descripcion ||
+                'Vehículo no disponible'
+                }}
+              </div>
+
+              <small class="text-muted">
+                Placa:
+                {{
+                obtenerVehiculoRenta(r)?.noPlaca ||
+                'N/D'
+                }}
+              </small>
             </td>
 
             <td>
@@ -293,7 +311,7 @@
           </tr>
 
           <tr *ngIf="rentas.length === 0">
-            <td colspan="10" class="text-center py-5 text-muted">
+            <td colspan="11" class="text-center py-5 text-muted">
               No hay rentas registradas en el sistema.
             </td>
           </tr>

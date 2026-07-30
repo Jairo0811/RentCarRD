@@ -149,6 +149,34 @@ export class Rentas implements OnInit {
     });
   }
 
+  obtenerVehiculoRenta(renta: any): any | null {
+    const idVehiculo = Number(
+      renta?.idVehiculo ??
+      renta?.idvehiculo ??
+      renta?.vehiculo?.id ??
+      renta?.idVehiculoNavigation?.id ??
+      0
+    );
+
+    if (idVehiculo <= 0) {
+      return (
+        renta?.vehiculo ??
+        renta?.idVehiculoNavigation ??
+        null
+      );
+    }
+
+    return (
+      this.vehiculos.find(
+        (vehiculo: any) =>
+          Number(vehiculo.id) === idVehiculo
+      ) ??
+      renta?.vehiculo ??
+      renta?.idVehiculoNavigation ??
+      null
+    );
+  }
+
   guardarRenta(): void {
     const idVehiculo = Number(
       this.nuevaRenta.idVehiculo

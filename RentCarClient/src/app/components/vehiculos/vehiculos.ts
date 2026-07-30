@@ -281,28 +281,80 @@ export class Vehiculos implements OnInit {
     this.nuevoVehiculo.idModelo = null;
   }
 
-  seleccionarImagen(event: Event): void {
-    const input = event.target as HTMLInputElement;
+ seleccionarImagen(event: Event): void {
+  const input = event.target as HTMLInputElement;
 
-    if (!input.files || input.files.length === 0) {
-      this.imagenSeleccionada = null;
-      this.imagenPreview = null;
-      return;
-    }
-
-    const archivo = input.files[0];
-    this.imagenSeleccionada = archivo;
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      this.imagenPreview = reader.result as string;
-      this.cdr.detectChanges();
-    };
-
-    reader.readAsDataURL(archivo);
+  if (!input.files || input.files.length === 0) {
+    this.imagenSeleccionada = null;
+    this.imagenPreview = null;
+    return;
   }
 
+  const archivo = input.files[0];
+
+  const tiposPermitidos = [
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ];
+
+  const extensionesPermitidas = [
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.webp'
+  ];
+
+  const nombreArchivo = archivo.name.toLowerCase();
+
+  const extensionValida = extensionesPermitidas.some(
+    extension => nombreArchivo.endsWith(extension)
+  );
+
+  if (
+    !tiposPermitidos.includes(archivo.type) ||
+    !extensionValida
+  ) {
+    alert(
+      'Formato de imagen no permitido. Utiliza JPG, JPEG, PNG o WEBP.'
+    );
+
+    input.value = '';
+    this.imagenSeleccionada = null;
+    this.imagenPreview = null;
+    return;
+  }
+
+  const tamanoMaximo = 5 * 1024 * 1024;
+
+  if (archivo.size > tamanoMaximo) {
+    alert('La imagen no puede superar los 5 MB.');
+
+    input.value = '';
+    this.imagenSeleccionada = null;
+    this.imagenPreview = null;
+    return;
+  }
+
+  this.imagenSeleccionada = archivo;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    this.imagenPreview = reader.result as string;
+    this.cdr.detectChanges();
+  };
+
+  reader.onerror = () => {
+    alert('No fue posible leer la imagen seleccionada.');
+
+    input.value = '';
+    this.imagenSeleccionada = null;
+    this.imagenPreview = null;
+  };
+
+  reader.readAsDataURL(archivo);
+}
   guardarVehiculo(): void {
     if (!this.nuevoVehiculo.descripcion || !this.nuevoVehiculo.noPlaca) {
       alert('Por favor, completa la descripción y la placa.');
@@ -387,31 +439,44 @@ export class Vehiculos implements OnInit {
     });
   }
 
-  subirImagenVehiculo(idVehiculo: number): void {
-    if (!this.imagenSeleccionada) {
-      return;
-    }
-
-    this.vehiculoService
-      .subirImagen(idVehiculo, this.imagenSeleccionada)
-      .subscribe({
-        next: () => {
-          alert('Vehículo e imagen guardados correctamente.');
-          this.cancelar();
-          this.cargarVehiculos();
-        },
-        error: (err: any) => {
-          console.error('Error al subir imagen:', err);
-          alert(
-            'El vehículo se guardó, pero ocurrió un error al subir la imagen.'
-          );
-
-          this.cancelar();
-          this.cargarVehiculos();
-        }
-      });
+ subirImagenVehiculo(idVehiculo: number): void {
+  if (!this.imagenSeleccionada) {
+    return;
   }
 
+  this.vehiculoService
+    .subirImagen(idVehiculo, this.imagenSeleccionada)
+    .subscribe({
+      next: () => {
+        alert('Vehículo e imagen guardados correctamente.');
+
+        this.cancelar();
+        this.cargarVehiculos();
+      },
+      error: (err: any) => {
+        console.error('Error al subir imagen:', err);
+
+        const mensaje =
+          typeof err?.error === 'string'
+            ? err.error
+            : err?.error?.message ||
+              err?.error?.title ||
+              'El vehículo se guardó, pero no fue posible subir la imagen.';
+
+        alert(mensaje);
+
+        /*
+         * No cerramos el formulario automáticamente.
+         * Así el usuario puede elegir otra imagen y editar
+         * el vehículo que ya fue creado.
+         */
+        this.imagenSeleccionada = null;
+        this.imagenPreview = null;
+        this.cargarVehiculos();
+        this.cdr.detectChanges();
+      }
+    });
+}
   editar(vehiculo: any): void {
     this.nuevoVehiculo = { ...vehiculo };
 
