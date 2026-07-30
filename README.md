@@ -1,4 +1,11 @@
-# 🚗 RentCarRD — Sistema de Gestión de Rentas de Vehículos
+<p align="center">
+  <img
+    src="docs/images/portada-rentcarrd.png"
+    alt="Portada oficial de RentCarRD"
+    width="100%"
+  />
+</p>
+
 
 <p align="center">
   <strong>Aplicación web para administrar clientes, empleados, vehículos, inspecciones, rentas, devoluciones y reportes.</strong><br>
@@ -6,11 +13,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Estado-Versión%201.1%20estable-success" alt="Estado del proyecto" />
+  <img src="https://img.shields.io/badge/Estado-Finalizado-success" alt="Estado del proyecto" />
   <img src="https://img.shields.io/badge/Versión-1.1-blue" alt="Versión" />
+  <img src="https://img.shields.io/badge/Entrega-Académica%20Completada-success" alt="Entrega académica" />
   <img src="https://img.shields.io/badge/Proyecto-Académico%20y%20Portafolio-purple" alt="Tipo de proyecto" />
 </p>
-
 ---
 
 ## 📖 Descripción
