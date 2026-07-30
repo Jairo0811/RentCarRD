@@ -2,7 +2,7 @@
   <img
     src="docs/images/portada-rentcarrd.png"
     alt="Portada oficial de RentCarRD"
-    width="100%"
+    width="420"
   />
 </p>
 
