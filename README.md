@@ -51,6 +51,17 @@ RentCarRD forma parte de una colección de proyectos académicos desarrollados e
 
 
 
+## 🔗 Continuidad académica
+
+RentCarRD forma parte del conjunto de proyectos académicos de UNAPEC desarrollados y documentados en este portafolio durante 2026.
+
+| Tipo de continuidad | Coincidencia | Proyectos relacionados |
+|---|---|---|
+| 📅 Período académico compartido | **Mayo - Agosto 2026** | [Digital Sanctuary](https://github.com/Jairo0811/DigitalSanctuary) (ISO-710) y [EcoSoft](https://github.com/Jairo0811/Ecosoft) (ISO-705) |
+| 📚 Línea académica de referencia | **Juan Pablo Valdez Reyes** | [CineGest](https://github.com/Jairo0811/CineGest) y [MediCore](https://github.com/Jairo0811/MediCore) también documentan proyectos o enunciados asociados a su catálogo académico |
+
+En esta colección no se ha verificado una segunda asignatura cursada con **Juan Pablo Valdez Reyes** como profesor ni un compañero recurrente que coincida de forma inequívoca por **nombre y matrícula**. Por ello, la relación con CineGest y MediCore se documenta como **continuidad de referencia académica**, no como repetición docente.
+
 ## 🛠️ Stack tecnológico
 
 ### 🎨 Frontend y diseño de interfaces
