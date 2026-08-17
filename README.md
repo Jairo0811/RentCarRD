@@ -79,8 +79,8 @@ Esta relación se denomina **continuidad por origen del enunciado académico**. 
 
 | Tipo | Estado | Evidencia |
 |---|---|---|
-| 👥 Estudiante recurrente | No aplica | Proyecto académico individual |
-| 👨‍🏫 Profesor recurrente | No verificado | Solo se ha documentado ISO-715 con Juan Pablo Valdez Reyes |
+| 👥 Estudiante | No aplica | Proyecto académico individual |
+| 👨‍🏫 Profesor | No verificado | Solo se ha documentado ISO-715 con Juan Pablo Valdez Reyes |
 | 📚 Origen de enunciado recurrente | Verificado | MediCore, CineGest y RentCarRD parten de presentaciones de Proyecto Final de **Juan P. Valdez (2020)** |
 
 La separación entre estos ejes evita confundir al **autor/origen del enunciado** con el **profesor efectivo de cada asignatura cursada**.
