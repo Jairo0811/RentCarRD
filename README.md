@@ -40,6 +40,17 @@ RentCarRD forma parte de una colección de proyectos académicos desarrollados e
 
 ---
 
+| Información | Detalle |
+|---|---|
+| 👨‍🎓 Estudiante | **Francis Jairo Matías Rosario** |
+| 🆔 Matrícula | **A00115261** |
+| 📖 Asignatura | **Desarrollo de Software con Tecnología Open Source 2 (ISO-715)** |
+| 👨‍🏫 Profesor | **Juan Pablo Valdez Reyes** |
+| 🏫 Institución | **Universidad APEC (UNAPEC)** |
+| 📅 Período académico | **Mayo - Agosto 2026** |
+
+
+
 ## 🛠️ Stack tecnológico
 
 ### 🎨 Frontend y diseño de interfaces
