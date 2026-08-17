@@ -51,16 +51,26 @@ RentCarRD forma parte de una colección de proyectos académicos desarrollados e
 
 
 
-## 🔗 Continuidad académica
+## 🧭 Continuidad académica
 
-RentCarRD forma parte del conjunto de proyectos académicos de UNAPEC desarrollados y documentados en este portafolio durante 2026.
+**RentCarRD** forma parte de la colección de proyectos académicos documentados de Francis Jairo Matías Rosario en la Universidad APEC (UNAPEC). Siguiendo el mismo criterio aplicado en EcoSoft, la continuidad se registra únicamente cuando existe una coincidencia verificable por **estudiante** o **profesor**; compartir período académico o una referencia histórica no se considera suficiente por sí solo.
 
-| Tipo de continuidad | Coincidencia | Proyectos relacionados |
+### 👥 Continuidad por estudiante
+
+RentCarRD fue desarrollado como proyecto académico individual por **Francis Jairo Matías Rosario (A00115261)**. Por esa razón, no existe un equipo de compañeros dentro de este proyecto que permita establecer una continuidad estudiantil con otro repositorio.
+
+### 👨‍🏫 Continuidad por profesor
+
+El profesor de **Desarrollo de Software con Tecnología Open Source 2 (ISO-715)** fue **Juan Pablo Valdez Reyes**. En la colección actual no se ha verificado una segunda asignatura cursada por Francis Jairo Matías Rosario con el mismo profesor.
+
+[CineGest](https://github.com/Jairo0811/CineGest) y [MediCore](https://github.com/Jairo0811/MediCore) documentan proyectos o enunciados históricos asociados a Juan Pablo Valdez Reyes, pero sus profesores efectivos en 2026 fueron otros docentes. Por ello, esa relación se conserva únicamente como **referencia académica histórica**, no como continuidad docente.
+
+| Tipo | Estado | Evidencia |
 |---|---|---|
-| 📅 Período académico compartido | **Mayo - Agosto 2026** | [Digital Sanctuary](https://github.com/Jairo0811/DigitalSanctuary) (ISO-710) y [EcoSoft](https://github.com/Jairo0811/Ecosoft) (ISO-705) |
-| 📚 Línea académica de referencia | **Juan Pablo Valdez Reyes** | [CineGest](https://github.com/Jairo0811/CineGest) y [MediCore](https://github.com/Jairo0811/MediCore) también documentan proyectos o enunciados asociados a su catálogo académico |
+| 👥 Estudiante recurrente | No aplica | Proyecto académico individual |
+| 👨‍🏫 Profesor recurrente | No verificado | Solo se ha documentado ISO-715 con Juan Pablo Valdez Reyes |
 
-En esta colección no se ha verificado una segunda asignatura cursada con **Juan Pablo Valdez Reyes** como profesor ni un compañero recurrente que coincida de forma inequívoca por **nombre y matrícula**. Por ello, la relación con CineGest y MediCore se documenta como **continuidad de referencia académica**, no como repetición docente.
+Esta distinción evita convertir coincidencias de período o referencias de enunciados en relaciones académicas que no están demostradas.
 
 ## 🛠️ Stack tecnológico
 
