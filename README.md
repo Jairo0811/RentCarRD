@@ -71,6 +71,7 @@ El profesor de **Desarrollo de Software con Tecnología Open Source 2 (ISO-715)*
 | 👨‍🏫 Profesor recurrente | No verificado | Solo se ha documentado ISO-715 con Juan Pablo Valdez Reyes |
 
 Esta distinción evita convertir coincidencias de período o referencias de enunciados en relaciones académicas que no están demostradas.
+
 ## 🛠️ Stack tecnológico
 
 ### 🎨 Frontend y diseño de interfaces
