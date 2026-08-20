@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { EmpleadoService } from '../../services/empleado.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -17,7 +17,7 @@ export class LoginComponent {
 
   constructor(
     private router: Router,
-    private empleadoService: EmpleadoService
+    private authService: AuthService
   ) {}
 
   ingresar(): void {
@@ -35,76 +35,10 @@ export class LoginComponent {
 
     this.procesandoLogin = true;
 
-    // Administrador predeterminado
-    if (
-      usuarioNormalizado === 'admin' &&
-      passwordNormalizado === '1234'
-    ) {
-      this.limpiarSesion();
-
-      localStorage.setItem('rolUsuario', 'admin');
-      localStorage.setItem('idEmpleado', '1');
-      localStorage.setItem(
-        'nombreUsuario',
-        'Administrador General'
-      );
-
-      this.procesandoLogin = false;
-
-      this.router.navigateByUrl('/dashboard');
-      return;
-    }
-
-    // Inicio de sesión de empleados
-    this.empleadoService.getEmpleados().subscribe({
-      next: (empleados: any[]) => {
-        const passwordSinFormato =
-          passwordNormalizado.replace(/\D/g, '');
-
-        const empleadoValido = empleados.find((empleado: any) => {
-          const usuarioEmpleado = String(
-            empleado.usuario ?? ''
-          )
-            .trim()
-            .toLowerCase();
-
-          const cedulaEmpleado = String(
-            empleado.cedula ?? ''
-          ).replace(/\D/g, '');
-
-          return (
-            empleado.estado === true &&
-            usuarioEmpleado === usuarioNormalizado &&
-            cedulaEmpleado === passwordSinFormato
-          );
-        });
-
-        if (!empleadoValido) {
-          this.procesandoLogin = false;
-
-          alert(
-            'Credenciales incorrectas.\n' +
-            'Para empleados, la contraseña es la cédula sin guiones.'
-          );
-
-          return;
-        }
-
-        this.limpiarSesion();
-
-        localStorage.setItem('rolUsuario', 'empleado');
-        localStorage.setItem(
-          'idEmpleado',
-          String(empleadoValido.id)
-        );
-        localStorage.setItem(
-          'nombreUsuario',
-          empleadoValido.nombre
-        );
-
+    this.authService.login(usuarioNormalizado, passwordNormalizado).subscribe({
+      next: (sesion) => {
         this.procesandoLogin = false;
-
-        this.router.navigateByUrl('/rentas');
+        this.router.navigateByUrl(sesion.rol.toLowerCase() === 'admin' ? '/dashboard' : '/rentas');
       },
       error: (err: any) => {
         console.error(
@@ -114,16 +48,12 @@ export class LoginComponent {
 
         this.procesandoLogin = false;
 
-        alert(
-          'No se pudo conectar con la base de datos.'
-        );
+        alert(err.status === 401 ? 'Credenciales incorrectas.' : 'No se pudo conectar con el servidor.');
       }
     });
   }
 
   private limpiarSesion(): void {
-    localStorage.removeItem('rolUsuario');
-    localStorage.removeItem('idEmpleado');
-    localStorage.removeItem('nombreUsuario');
+    this.authService.logout();
   }
 }
