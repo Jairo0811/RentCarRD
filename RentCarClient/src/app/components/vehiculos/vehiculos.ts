@@ -7,6 +7,8 @@ import { MarcaService } from '../../services/marca.service';
 import { ModeloService } from '../../services/modelo.service';
 import { TipoVehiculoService } from '../../services/tipo-vehiculo.service';
 import { TipoCombustibleService } from '../../services/tipo-combustible.service';
+import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-vehiculos',
@@ -16,6 +18,7 @@ import { TipoCombustibleService } from '../../services/tipo-combustible.service'
   styleUrl: './vehiculos.css',
 })
 export class Vehiculos implements OnInit {
+  readonly apiBaseUrl = environment.apiBaseUrl;
   vehiculos: any[] = [];
   marcas: any[] = [];
   modelos: any[] = [];
@@ -39,11 +42,12 @@ export class Vehiculos implements OnInit {
     private modeloService: ModeloService,
     private tipoVehiculoService: TipoVehiculoService,
     private tipoCombustibleService: TipoCombustibleService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
   get rolActual(): string | null {
-    return localStorage.getItem('rolUsuario');
+    return this.authService.isAdmin ? 'admin' : 'empleado';
   }
 
   ngOnInit(): void {

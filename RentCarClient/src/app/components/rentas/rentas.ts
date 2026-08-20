@@ -9,6 +9,7 @@ import { ClienteService } from '../../services/cliente.service';
 import { EmpleadoService } from '../../services/empleado.service';
 import { MarcaService } from '../../services/marca.service';
 import { ModeloService } from '../../services/modelo.service';
+import { AuthService } from '../../services/auth.service';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -33,7 +34,7 @@ export class Rentas implements OnInit {
 
   mostrarFormulario = false;
 
-  nuevaRenta: any = this.crearRentaVacia();
+  nuevaRenta: any;
 
   empresa = {
     nombre: 'RentCarRD',
@@ -52,36 +53,22 @@ export class Rentas implements OnInit {
     private empleadoService: EmpleadoService,
     private marcaService: MarcaService,
     private modeloService: ModeloService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    this.nuevaRenta = this.crearRentaVacia();
+  }
 
   ngOnInit(): void {
     setTimeout(() => this.cargarDatos(), 0);
   }
 
   obtenerIdEmpleadoActual(): number {
-    if (
-      typeof window === 'undefined' ||
-      typeof localStorage === 'undefined'
-    ) {
-      return 1;
-    }
-
-    return Number(localStorage.getItem('idEmpleado') || 1);
+    return this.authService.session?.idEmpleado ?? 0;
   }
 
   obtenerNombreUsuarioActual(): string {
-    if (
-      typeof window === 'undefined' ||
-      typeof localStorage === 'undefined'
-    ) {
-      return 'Administrador General';
-    }
-
-    return (
-      localStorage.getItem('nombreUsuario') ||
-      'Administrador General'
-    );
+    return this.authService.session?.nombre ?? 'Usuario autenticado';
   }
 
   crearRentaVacia(): any {
@@ -106,7 +93,7 @@ export class Rentas implements OnInit {
       rentas: this.rentaService.getRentas(),
       vehiculos: this.vehiculoService.getVehiculos(),
       clientes: this.clienteService.getClientes(),
-      empleados: this.empleadoService.getEmpleados(),
+      empleados: this.empleadoService.getDirectorio(),
       marcas: this.marcaService.getMarcas(),
       modelos: this.modeloService.getModelos()
     }).subscribe({

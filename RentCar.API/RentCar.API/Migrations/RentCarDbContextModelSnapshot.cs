@@ -32,19 +32,33 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("Cedula")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(11)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(11)");
 
                     b.Property<bool>("Estado")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<decimal>("LimiteCredito")
                         .HasColumnType("decimal(18, 2)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("TipoPersona")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Cedula")
+                        .IsUnique();
 
                     b.ToTable("Clientes");
                 });
@@ -59,7 +73,9 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("Cedula")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(11)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(11)");
 
                     b.Property<bool>("Estado")
                         .HasColumnType("bit");
@@ -69,20 +85,43 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(500)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<int>("PorcientoComision")
                         .HasColumnType("int");
 
                     b.Property<string>("TandaLabor")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Rol")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("Empleado");
 
                     b.Property<string>("Usuario")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Cedula")
+                        .IsUnique();
+
+                    b.HasIndex("Usuario")
+                        .IsUnique();
 
                     b.ToTable("Empleados");
                 });
@@ -97,7 +136,8 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("CantidadCombustible")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<bool>("Estado")
                         .HasColumnType("bit");
@@ -209,11 +249,14 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("Comentario")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Estado")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<DateTime?>("FechaDevolucion")
                         .HasColumnType("datetime2");
@@ -234,7 +277,19 @@ namespace RentCar.API.Migrations
                         .HasColumnType("decimal(18, 2)")
                         .HasColumnName("MontoXDia");
 
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<decimal>("Itbis")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("decimal(18, 2)");
+
                     b.HasKey("NoRenta");
+
+                    b.HasIndex("IdVehiculo")
+                        .IsUnique();
 
                     b.ToTable("Rentas");
                 });

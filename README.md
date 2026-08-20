@@ -17,7 +17,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Estado-Finalizado-success" alt="Estado del proyecto" />
-  <img src="https://img.shields.io/badge/Versión-1.1-blue" alt="Versión" />
+  <img src="https://img.shields.io/badge/Versión-1.2-blue" alt="Versión" />
   <img src="https://img.shields.io/badge/Entrega-Académica%20Completada-success" alt="Entrega académica" />
   <img src="https://img.shields.io/badge/Proyecto-Académico%20y%20Portafolio-purple" alt="Tipo de proyecto" />
 </p>
@@ -97,7 +97,7 @@ La separación entre estos ejes evita confundir al **autor/origen del enunciado*
 <p>
   <img src="https://img.shields.io/badge/SweetAlert2-Alertas-7066E0?style=flat-square&logo=javascript&logoColor=white" alt="SweetAlert2" />
   <img src="https://img.shields.io/badge/jsPDF-Reportes%20PDF-F43F5E?style=flat-square&logo=javascript&logoColor=white" alt="jsPDF" />
-  <img src="https://img.shields.io/badge/SheetJS-Excel-217346?style=flat-square&logo=microsoftexcel&logoColor=white" alt="SheetJS" />
+  <img src="https://img.shields.io/badge/ExcelJS-Excel-217346?style=flat-square&logo=microsoftexcel&logoColor=white" alt="ExcelJS" />
 </p>
 
 - **Angular 21:** construcción de la aplicación web SPA.
@@ -108,7 +108,7 @@ La separación entre estos ejes evita confundir al **autor/origen del enunciado*
 - **SweetAlert2:** alertas visuales para mensajes de éxito, error, advertencia e información.
 - **Chart.js y ng2-charts:** gráficos del dashboard.
 - **jsPDF y jsPDF AutoTable:** generación de contratos y reportes PDF.
-- **SheetJS (`xlsx`):** exportación de reportes a Excel.
+- **ExcelJS:** exportación de reportes a Excel, cargada bajo demanda.
 
 ### ⚙️ Backend, frameworks y APIs
 
@@ -205,12 +205,8 @@ El frontend funciona como una **Single Page Application (SPA)**. La API expone e
 - Prevención de cédulas y RNC duplicados.
 - Registro y validación del límite de crédito.
 - Restricción de valores negativos.
-- Registro opcional de método de pago ficticio.
-- Detección de Visa, Mastercard, American Express y Discover.
-- Validación de tarjetas mediante algoritmo de Luhn.
-- Validación de fecha de expiración.
-- Visualización de franquicia y últimos cuatro dígitos.
-- El CVV se utiliza únicamente de forma temporal y no se almacena.
+- El sistema no recibe ni almacena números de tarjeta, CVV ni fechas de expiración.
+- Una futura integración de pagos debe usar tokens de un proveedor certificado PCI DSS.
 
 ### 👨‍💼 Gestión de empleados
 
@@ -331,8 +327,8 @@ RentCarRD aplica validaciones tanto en el frontend como en el backend para prote
 
 | Módulo | Validaciones principales |
 |---|---|
-| Clientes | Cédula, RNC, documento duplicado, límite de crédito, tarjeta y expiración |
-| Empleados | Nombre, usuario único, cédula, tanda, comisión y estado |
+| Clientes | Cédula, RNC, documento duplicado, nombre y límite de crédito |
+| Empleados | Nombre, usuario único, contraseña robusta, rol, cédula, tanda, comisión y estado |
 | Vehículos | Placa, chasis, año, catálogos y estado operativo |
 | Rentas | Cliente, empleado, vehículo, disponibilidad, tarifa y cantidad de días |
 | Finanzas | Subtotal, ITBIS y total calculados automáticamente |
@@ -366,7 +362,8 @@ Puede:
 
 Cada renta queda asociada automáticamente al empleado que realizó la operación.
 
-> Las credenciales del entorno académico deben sustituirse antes de utilizar el sistema en producción.
+La API exige un JWT válido por defecto. El identificador del empleado en rentas e
+inspecciones se toma del token y no del cuerpo enviado por el navegador.
 
 ---
 
@@ -378,9 +375,11 @@ RentCarRD
 ├── RentCar.API
 │   └── RentCar.API
 │       ├── Controllers
-│       ├── Helpers
+│       ├── Contracts
 │       ├── Migrations
 │       ├── Models
+│       ├── Security
+│       ├── Services
 │       ├── Properties
 │       ├── wwwroot
 │       │   └── vehiculos
@@ -390,8 +389,6 @@ RentCarRD
 ├── RentCarClient
 │   ├── public
 │   │   └── images
-│   │       ├── cards
-│   │       └── logo.png
 │   ├── src
 │   │   └── app
 │   │       ├── components
@@ -412,9 +409,8 @@ RentCarRD
 
 Antes de ejecutar el proyecto, instala:
 
-- .NET SDK compatible con el backend.
-- Node.js y npm.
-- Angular CLI.
+- .NET SDK 10.
+- Una versión de Node.js compatible con Angular 21 y npm.
 - Microsoft SQL Server.
 - SQL Server Management Studio.
 - Visual Studio 2022 o Visual Studio Code.
@@ -439,37 +435,73 @@ cd RentCarRD
 RentCarDB.sql
 ```
 
-3. Verificar la cadena de conexión del backend en:
+El script es idempotente: no borra registros, no crea cuentas conocidas y elimina
+las columnas heredadas que contenían información de tarjetas. Realiza antes una
+copia de seguridad si estás actualizando una base antigua; esa eliminación es
+intencional e irreversible.
 
-```text
-RentCar.API/RentCar.API/appsettings.json
-```
-
-No publiques credenciales reales en el repositorio.
-
-### 3. Ejecutar el backend
+### 3. Configurar secretos y crear el administrador inicial
 
 ```bash
 cd RentCar.API/RentCar.API
 dotnet restore
+dotnet dev-certs https --trust
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\\MSSQLLocalDB;Database=RentCarDB;Trusted_Connection=True;TrustServerCertificate=True;"
+dotnet user-secrets set "Jwt:Key" "REEMPLAZAR_POR_UN_SECRETO_ALEATORIO_DE_32_O_MAS_CARACTERES"
+dotnet user-secrets set "SeedAdmin:Enabled" "true"
+dotnet user-secrets set "SeedAdmin:Usuario" "tu-administrador"
+dotnet user-secrets set "SeedAdmin:Nombre" "Nombre del administrador"
+dotnet user-secrets set "SeedAdmin:Cedula" "CEDULA_VALIDA_DE_11_DIGITOS"
+dotnet user-secrets set "SeedAdmin:Password" "UNA_CONTRASENA_UNICA_DE_12_O_MAS_CARACTERES"
+dotnet user-secrets set "Database:MigrateOnStartup" "true"
+```
+
+Los valores anteriores son marcadores, no credenciales funcionales. Usa valores
+propios y no los publiques. En producción configura equivalentes mediante un
+gestor de secretos o variables de entorno (`Jwt__Key`,
+`ConnectionStrings__DefaultConnection`, etc.).
+
+Configura también el host y origen reales. La API rechaza comodines de host y
+orígenes HTTP cuando no está en Development:
+
+```text
+AllowedHosts=api.rentcar.example
+Cors__AllowedOrigins__0=https://rentcar.example
+```
+
+### 4. Ejecutar el backend
+
+```bash
 dotnet build
 dotnet run
 ```
 
+El primer inicio aplica la migración y crea el administrador únicamente en
+Development. Después de confirmar que puedes iniciar sesión, detén la API y
+desactiva el sembrado:
+
+```bash
+dotnet user-secrets set "SeedAdmin:Enabled" "false"
+```
+
+Las cuentas heredadas reciben el rol `Empleado`, pero quedan sin contraseña por
+seguridad: el administrador debe asignarles una nueva desde el módulo Empleados.
+La cédula anterior nunca se reutiliza como contraseña.
+
 Swagger estará disponible normalmente en:
 
 ```text
-http://localhost:5266/swagger
+https://localhost:7162/swagger
 ```
 
-### 4. Ejecutar el frontend
+### 5. Ejecutar el frontend
 
 En otra terminal, desde la raíz del repositorio:
 
 ```bash
 cd RentCarClient
-npm install --legacy-peer-deps
-ng serve
+npm ci
+npm start
 ```
 
 La aplicación estará disponible normalmente en:
@@ -478,7 +510,8 @@ La aplicación estará disponible normalmente en:
 http://localhost:4200
 ```
 
-> El modificador `--legacy-peer-deps` evita conflictos de resolución de dependencias en la configuración actual del proyecto.
+El token se mantiene durante la pestaña actual y se adjunta automáticamente como
+`Authorization: Bearer ...`. Al expirar o recibir un `401`, la sesión se cierra.
 
 ---
 
@@ -540,7 +573,6 @@ http://localhost:4200
 - Firma digital de contratos.
 - Integración con pasarelas de pago.
 - Recuperación de contraseña.
-- Autenticación con JWT y contraseñas almacenadas mediante hash seguro.
 - Bloqueo temporal por intentos fallidos de inicio de sesión.
 - Pruebas unitarias y de integración.
 - Dockerización del frontend, backend y base de datos.
@@ -551,16 +583,21 @@ http://localhost:4200
 
 ## ⚠️ Consideraciones de seguridad
 
-Este proyecto fue desarrollado con fines académicos y de portafolio. Antes de utilizarlo en un entorno comercial se recomienda:
+Esta versión incorpora las medidas prioritarias de endurecimiento:
 
-- Sustituir las credenciales académicas.
-- Implementar autenticación JWT.
-- Almacenar contraseñas mediante hash y salt.
-- Proteger secretos con variables de entorno o un gestor de secretos.
-- Restringir CORS según el entorno.
-- Utilizar HTTPS.
-- Aplicar autorización por roles en todos los endpoints sensibles.
-- Implementar auditoría y registro de operaciones críticas.
+- JWT con validación de firma, emisor, audiencia y expiración.
+- Contraseñas con el `PasswordHasher` de ASP.NET Core; nunca se guardan en texto claro.
+- Autorización por roles en todas las rutas; solo login y `/health` son públicos.
+- Límite de intentos en login y mensajes que no revelan si una cuenta existe.
+- CORS limitado a orígenes configurados.
+- Validación de modelos en el servidor y consultas parametrizadas mediante EF Core.
+- Imágenes limitadas a 5 MB y 20 megapíxeles, decodificadas, limpiadas y recodificadas a WebP.
+- Eliminación del almacenamiento de datos de tarjetas.
+
+Para un despliegue comercial todavía se debe usar HTTPS de extremo a extremo, un
+gestor de secretos, copias de seguridad protegidas, monitoreo/auditoría y un
+proveedor PCI DSS si se incorporan pagos. También conviene añadir bloqueo de cuenta
+por usuario y rotación o revocación centralizada de sesiones.
 
 ---
 

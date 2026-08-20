@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Models;
+using RentCar.API.Security;
 
 namespace RentCar.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = AppRoles.Operaciones)]
     public class MarcasController : ControllerBase
     {
         private readonly RentCarDbContext _context;
@@ -22,6 +25,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<ActionResult<Marca>> PostMarca(Marca marca)
         {
             _context.Marcas.Add(marca);
@@ -30,6 +34,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> PutMarca(int id, Marca marca)
         {
             if (id != marca.Id) return BadRequest();
@@ -39,6 +44,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> DeleteMarca(int id)
         {
             var marca = await _context.Marcas.FindAsync(id);

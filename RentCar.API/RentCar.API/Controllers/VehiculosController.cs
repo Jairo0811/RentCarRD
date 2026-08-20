@@ -1,12 +1,18 @@
 ﻿using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Models;
+using RentCar.API.Security;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 
 namespace RentCar.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = AppRoles.Operaciones)]
     public class VehiculosController : ControllerBase
     {
         private const string EstadoDisponible = "Disponible";
@@ -15,13 +21,16 @@ namespace RentCar.API.Controllers
 
         private readonly RentCarDbContext _context;
         private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<VehiculosController> _logger;
 
         public VehiculosController(
             RentCarDbContext context,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            ILogger<VehiculosController> logger)
         {
             _context = context;
             _environment = environment;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -49,6 +58,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<ActionResult<Vehiculo>> PostVehiculo(Vehiculo vehiculo)
         {
             NormalizarVehiculo(vehiculo);
@@ -57,6 +67,14 @@ namespace RentCar.API.Controllers
 
             if (errorValidacion != null)
                 return BadRequest(errorValidacion);
+
+            var errorCatalogos = await ValidarCatalogos(vehiculo);
+            if (errorCatalogos != null)
+                return BadRequest(errorCatalogos);
+
+            // La ruta de imagen solo puede asignarse después de decodificar y
+            // recodificar un archivo en SubirImagen.
+            vehiculo.ImagenUrl = null;
 
             var placaDuplicada = await _context.Vehiculos.AnyAsync(v =>
                 v.NoPlaca == vehiculo.NoPlaca);
@@ -86,6 +104,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> PutVehiculo(
             int id,
             Vehiculo vehiculo)
@@ -105,6 +124,10 @@ namespace RentCar.API.Controllers
 
             if (errorValidacion != null)
                 return BadRequest(errorValidacion);
+
+            var errorCatalogos = await ValidarCatalogos(vehiculo);
+            if (errorCatalogos != null)
+                return BadRequest(errorCatalogos);
 
             var placaDuplicada = await _context.Vehiculos.AnyAsync(v =>
                 v.NoPlaca == vehiculo.NoPlaca &&
@@ -156,22 +179,21 @@ namespace RentCar.API.Controllers
             vehiculoActual.Estado = vehiculo.Estado;
             vehiculoActual.EstadoOperacion = vehiculo.EstadoOperacion;
 
-            if (!string.IsNullOrWhiteSpace(vehiculo.ImagenUrl))
-            {
-                vehiculoActual.ImagenUrl = vehiculo.ImagenUrl;
-            }
-
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
         [HttpPost("{id:int}/imagen")]
+        [Authorize(Roles = AppRoles.Administrador)]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<IActionResult> SubirImagen(
             int id,
-            [FromForm(Name = "imagen")] IFormFile imagen)
+            [FromForm(Name = "imagen")] IFormFile imagen,
+            CancellationToken cancellationToken)
         {
-            var vehiculo = await _context.Vehiculos.FindAsync(id);
+            var vehiculo = await _context.Vehiculos
+                .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
 
             if (vehiculo == null)
                 return NotFound("Vehículo no encontrado.");
@@ -179,30 +201,49 @@ namespace RentCar.API.Controllers
             if (imagen == null || imagen.Length == 0)
                 return BadRequest("No se recibió ninguna imagen.");
 
-            const long tamanoMaximo = 15 * 1024 * 1024;
+            const long tamanoMaximo = 5 * 1024 * 1024;
 
             if (imagen.Length > tamanoMaximo)
             {
                 return BadRequest(
-                    "La imagen no puede superar los 15 MB.");
+                    "La imagen no puede superar los 5 MB.");
             }
 
-            var extensionesPermitidas = new[]
+            byte[] payload;
+            await using (var input = imagen.OpenReadStream())
             {
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".webp"
-            };
+                await using var buffer = new MemoryStream((int)imagen.Length);
+                await input.CopyToAsync(buffer, cancellationToken);
+                payload = buffer.ToArray();
+            }
 
-            var extension = Path
-                .GetExtension(imagen.FileName)
-                .ToLowerInvariant();
-
-            if (!extensionesPermitidas.Contains(extension))
+            if (!TieneFirmaImagenPermitida(payload))
             {
                 return BadRequest(
-                    "Formato no permitido. Usa JPG, JPEG, PNG o WEBP.");
+                    "El archivo no contiene una imagen JPG, PNG o WEBP válida.");
+            }
+
+            Image image;
+            try
+            {
+                var information = Image.Identify(payload);
+                if (information is null ||
+                    (long)information.Width * information.Height > 20_000_000)
+                {
+                    return BadRequest(
+                        "La imagen supera el límite de 20 millones de píxeles.");
+                }
+
+                image = Image.Load(payload);
+            }
+            catch (Exception exception) when (
+                exception is UnknownImageFormatException or InvalidImageContentException)
+            {
+                _logger.LogWarning(
+                    exception,
+                    "Se rechazó una carga de imagen inválida para el vehículo {VehiculoId}.",
+                    id);
+                return BadRequest("El contenido del archivo no es una imagen válida.");
             }
 
             var webRootPath = _environment.WebRootPath;
@@ -220,16 +261,22 @@ namespace RentCar.API.Controllers
 
             Directory.CreateDirectory(carpeta);
 
-            var nombreArchivo = $"{Guid.NewGuid():N}{extension}";
+            var nombreArchivo = $"{Guid.NewGuid():N}.webp";
             var rutaArchivo = Path.Combine(
                 carpeta,
                 nombreArchivo);
 
-            await using (var stream = new FileStream(
-                rutaArchivo,
-                FileMode.Create))
+            using (image)
             {
-                await imagen.CopyToAsync(stream);
+                image.Mutate(operation => operation.AutoOrient());
+                image.Metadata.ExifProfile = null;
+                image.Metadata.IccProfile = null;
+                image.Metadata.XmpProfile = null;
+
+                await image.SaveAsWebpAsync(
+                    rutaArchivo,
+                    new WebpEncoder { Quality = 82 },
+                    cancellationToken);
             }
 
             EliminarImagenAnterior(
@@ -240,7 +287,7 @@ namespace RentCar.API.Controllers
             vehiculo.ImagenUrl =
                 $"/vehiculos/{nombreArchivo}";
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
 
             return Ok(new
             {
@@ -249,7 +296,41 @@ namespace RentCar.API.Controllers
             });
         }
 
+        private static bool TieneFirmaImagenPermitida(byte[] payload)
+        {
+            if (payload.Length < 12)
+            {
+                return false;
+            }
+
+            var esJpeg =
+                payload[0] == 0xFF &&
+                payload[1] == 0xD8 &&
+                payload[2] == 0xFF;
+            var esPng =
+                payload[0] == 0x89 &&
+                payload[1] == 0x50 &&
+                payload[2] == 0x4E &&
+                payload[3] == 0x47 &&
+                payload[4] == 0x0D &&
+                payload[5] == 0x0A &&
+                payload[6] == 0x1A &&
+                payload[7] == 0x0A;
+            var esWebp =
+                payload[0] == (byte)'R' &&
+                payload[1] == (byte)'I' &&
+                payload[2] == (byte)'F' &&
+                payload[3] == (byte)'F' &&
+                payload[8] == (byte)'W' &&
+                payload[9] == (byte)'E' &&
+                payload[10] == (byte)'B' &&
+                payload[11] == (byte)'P';
+
+            return esJpeg || esPng || esWebp;
+        }
+
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> DeleteVehiculo(int id)
         {
             var vehiculo = await _context.Vehiculos.FindAsync(id);
@@ -402,6 +483,32 @@ namespace RentCar.API.Controllers
             }
 
             return null;
+        }
+
+        private async Task<string?> ValidarCatalogos(Vehiculo vehiculo)
+        {
+            var marcaValida = await _context.Marcas.AnyAsync(item =>
+                item.Id == vehiculo.IdMarca && item.Estado == true);
+            if (!marcaValida)
+                return "La marca seleccionada no existe o está inactiva.";
+
+            var modeloValido = await _context.Modelos.AnyAsync(item =>
+                item.Id == vehiculo.IdModelo &&
+                item.IdMarca == vehiculo.IdMarca &&
+                item.Estado == true);
+            if (!modeloValido)
+                return "El modelo no existe, está inactivo o no pertenece a la marca.";
+
+            var tipoValido = await _context.TiposVehiculos.AnyAsync(item =>
+                item.Id == vehiculo.IdTipoVehiculo && item.Estado == true);
+            if (!tipoValido)
+                return "El tipo de vehículo seleccionado no existe o está inactivo.";
+
+            var combustibleValido = await _context.TiposCombustibles.AnyAsync(item =>
+                item.Id == vehiculo.IdTipoCombustible && item.Estado == true);
+            return combustibleValido
+                ? null
+                : "El tipo de combustible seleccionado no existe o está inactivo.";
         }
 
         private static string NormalizarEstadoOperacion(

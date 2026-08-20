@@ -12,6 +12,8 @@ export interface Empleado {
   porcientoComision: number;
   fechaIngreso: string;
   estado: boolean;
+  rol: 'Administrador' | 'Empleado';
+  password?: string;
 }
 
 @Component({
@@ -49,7 +51,9 @@ export class EmpleadosComponent implements OnInit {
       tandaLabor: '',
       porcientoComision: 0,
       fechaIngreso: new Date().toISOString(),
-      estado: true
+      estado: true,
+      rol: 'Empleado',
+      password: ''
     };
   }
 
@@ -71,8 +75,21 @@ export class EmpleadosComponent implements OnInit {
       return;
     }
 
-    if (Number(this.empleadoActual.porcientoComision) < 0) {
-      alert('El porcentaje de comisión no puede ser negativo.');
+    if (
+      Number(this.empleadoActual.porcientoComision) < 0 ||
+      Number(this.empleadoActual.porcientoComision) > 100
+    ) {
+      alert('El porcentaje de comisión debe estar entre 0 y 100.');
+      return;
+    }
+
+    if (!this.modoEdicion && (this.empleadoActual.password?.length ?? 0) < 12) {
+      alert('La contraseña inicial debe tener al menos 12 caracteres.');
+      return;
+    }
+
+    if (this.modoEdicion && this.empleadoActual.password && this.empleadoActual.password.length < 12) {
+      alert('La nueva contraseña debe tener al menos 12 caracteres.');
       return;
     }
 
@@ -125,6 +142,7 @@ export class EmpleadosComponent implements OnInit {
   editar(empleado: Empleado): void {
     this.empleadoActual = {
       ...empleado,
+      password: '',
       cedula: this.formatearCedula(empleado.cedula),
       fechaIngreso: empleado.fechaIngreso || new Date().toISOString()
     };

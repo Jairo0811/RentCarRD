@@ -1,47 +1,39 @@
-import { Component } from '@angular/core';
-import { RouterOutlet, RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { Router, RouterModule, RouterOutlet } from '@angular/router';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, RouterModule, CommonModule],
-  templateUrl: './app.html',
+  templateUrl: './app.html'
 })
 export class App {
-  constructor(public router: Router) {}
+  constructor(
+    public readonly router: Router,
+    public readonly auth: AuthService
+  ) {}
 
-  get rolActual(): string | null {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return null;
-    }
-
-    return localStorage.getItem('rolUsuario');
+  get rolActual(): 'admin' | 'empleado' | null {
+    const role = this.auth.session?.rol;
+    return role === 'Administrador'
+      ? 'admin'
+      : role === 'Empleado'
+        ? 'empleado'
+        : null;
   }
 
   get idEmpleadoActual(): number | null {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return null;
-    }
-
-    const valor = localStorage.getItem('idEmpleado');
-
-    return valor ? Number(valor) : null;
+    return this.auth.session?.idEmpleado ?? null;
   }
 
   get nombreUsuarioActual(): string {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return '';
-    }
-
-    return localStorage.getItem('nombreUsuario') ?? '';
+    return this.auth.session?.nombre ?? '';
   }
 
   cerrarSesion(): void {
-    localStorage.removeItem('rolUsuario');
-    localStorage.removeItem('idEmpleado');
-    localStorage.removeItem('nombreUsuario');
-
-    this.router.navigateByUrl('/login');
+    this.auth.logout();
+    void this.router.navigateByUrl('/login');
   }
 }
