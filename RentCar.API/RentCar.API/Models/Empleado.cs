@@ -1,5 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace RentCar.API.Models;
 
@@ -20,4 +22,10 @@ public partial class Empleado
     public bool Estado { get; set; }
 
     public string Usuario { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public string PasswordHash { get; set; } = string.Empty;
+
+    [NotMapped]
+    public string? Password { get; set; }
 }

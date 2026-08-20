@@ -8,6 +8,7 @@ export interface Empleado {
   nombre: string;
   cedula: string;
   usuario: string;
+  password?: string;
   tandaLabor: string;
   porcientoComision: number;
   fechaIngreso: string;
@@ -46,6 +47,7 @@ export class EmpleadosComponent implements OnInit {
       nombre: '',
       cedula: '',
       usuario: '',
+      password: '',
       tandaLabor: '',
       porcientoComision: 0,
       fechaIngreso: new Date().toISOString(),
@@ -68,6 +70,16 @@ export class EmpleadosComponent implements OnInit {
   guardar(): void {
     if (!this.empleadoActual.nombre || !this.empleadoActual.cedula || !this.empleadoActual.usuario) {
       alert('El nombre, usuario y cédula son obligatorios.');
+      return;
+    }
+
+    if (!this.modoEdicion && (!this.empleadoActual.password || this.empleadoActual.password.length < 8)) {
+      alert('La contraseña inicial debe tener al menos 8 caracteres.');
+      return;
+    }
+
+    if (this.modoEdicion && this.empleadoActual.password && this.empleadoActual.password.length < 8) {
+      alert('La nueva contraseña debe tener al menos 8 caracteres.');
       return;
     }
 
@@ -125,6 +137,7 @@ export class EmpleadosComponent implements OnInit {
   editar(empleado: Empleado): void {
     this.empleadoActual = {
       ...empleado,
+      password: '',
       cedula: this.formatearCedula(empleado.cedula),
       fechaIngreso: empleado.fechaIngreso || new Date().toISOString()
     };

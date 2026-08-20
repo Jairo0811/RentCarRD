@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Models;
 
@@ -6,13 +8,16 @@ namespace RentCar.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class EmpleadosController : ControllerBase
     {
         private readonly RentCarDbContext _context;
+        private readonly IPasswordHasher<Empleado> _passwordHasher;
 
-        public EmpleadosController(RentCarDbContext context)
+        public EmpleadosController(RentCarDbContext context, IPasswordHasher<Empleado> passwordHasher)
         {
             _context = context;
+            _passwordHasher = passwordHasher;
         }
 
         [HttpGet]
@@ -80,9 +85,14 @@ namespace RentCar.API.Controllers
             if (string.IsNullOrWhiteSpace(empleado.Usuario))
                 return BadRequest("El usuario de acceso es obligatorio.");
 
+            if (string.IsNullOrWhiteSpace(empleado.Password) || empleado.Password.Length < 8)
+                return BadRequest("La contraseña inicial debe tener al menos 8 caracteres.");
+
             if (empleado.PorcientoComision < 0)
                 return BadRequest("El porcentaje de comisión no puede ser negativo.");
 
+            empleado.PasswordHash = _passwordHasher.HashPassword(empleado, empleado.Password);
+            empleado.Password = null;
             _context.Empleados.Add(empleado);
             await _context.SaveChangesAsync();
 
@@ -106,6 +116,8 @@ namespace RentCar.API.Controllers
             if (string.IsNullOrWhiteSpace(empleado.Usuario))
                 return BadRequest("El usuario de acceso es obligatorio.");
 
+            var passwordNueva = empleado.Password;
+
             if (empleado.PorcientoComision < 0)
                 return BadRequest("El porcentaje de comisión no puede ser negativo.");
 
@@ -128,6 +140,11 @@ namespace RentCar.API.Controllers
             if (usuarioDuplicado)
                 return BadRequest("Ya existe otro empleado registrado con este usuario.");
 
+            var actual = await _context.Empleados.AsNoTracking().SingleAsync(e => e.Id == id);
+            empleado.PasswordHash = string.IsNullOrWhiteSpace(passwordNueva)
+                ? actual.PasswordHash
+                : _passwordHasher.HashPassword(empleado, passwordNueva);
+            empleado.Password = null;
             _context.Entry(empleado).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 

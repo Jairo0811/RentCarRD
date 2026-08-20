@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Models;
@@ -179,12 +179,12 @@ namespace RentCar.API.Controllers
             if (imagen == null || imagen.Length == 0)
                 return BadRequest("No se recibió ninguna imagen.");
 
-            const long tamanoMaximo = 15 * 1024 * 1024;
+            const long tamanoMaximo = 5 * 1024 * 1024;
 
             if (imagen.Length > tamanoMaximo)
             {
                 return BadRequest(
-                    "La imagen no puede superar los 15 MB.");
+                    "La imagen no puede superar los 5 MB.");
             }
 
             var extensionesPermitidas = new[]
@@ -204,6 +204,9 @@ namespace RentCar.API.Controllers
                 return BadRequest(
                     "Formato no permitido. Usa JPG, JPEG, PNG o WEBP.");
             }
+
+            if (!await TieneFirmaDeImagenValida(imagen, extension))
+                return BadRequest("El contenido del archivo no coincide con una imagen permitida.");
 
             var webRootPath = _environment.WebRootPath;
 
@@ -247,6 +250,21 @@ namespace RentCar.API.Controllers
                 vehiculo.Id,
                 vehiculo.ImagenUrl
             });
+        }
+
+        private static async Task<bool> TieneFirmaDeImagenValida(IFormFile archivo, string extension)
+        {
+            var encabezado = new byte[12];
+            await using var stream = archivo.OpenReadStream();
+            var leidos = await stream.ReadAsync(encabezado.AsMemory(0, encabezado.Length));
+            if (leidos < 4) return false;
+            return extension switch
+            {
+                ".jpg" or ".jpeg" => encabezado[0] == 0xFF && encabezado[1] == 0xD8 && encabezado[2] == 0xFF,
+                ".png" => encabezado.Take(8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),
+                ".webp" => leidos >= 12 && System.Text.Encoding.ASCII.GetString(encabezado, 0, 4) == "RIFF" && System.Text.Encoding.ASCII.GetString(encabezado, 8, 4) == "WEBP",
+                _ => false
+            };
         }
 
         [HttpDelete("{id:int}")]

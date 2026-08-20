@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace RentCar.API.Models;
 
@@ -92,6 +92,9 @@ public partial class RentCarDbContext : DbContext
             entity.Property(e => e.Usuario)
                 .HasMaxLength(100)
                 .IsUnicode(false);
+
+            entity.Property(e => e.PasswordHash)
+                .HasMaxLength(512);
 
             entity.HasIndex(e => e.Cedula)
                 .IsUnique();

@@ -16,6 +16,20 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label fw-bold text-muted small">
+            {{ modoEdicion ? 'Nueva contraseña (opcional)' : 'Contraseña inicial' }}
+          </label>
+          <input
+            type="password"
+            class="form-control form-control-lg"
+            [(ngModel)]="empleadoActual.password"
+            minlength="8"
+            maxlength="128"
+            autocomplete="new-password"
+            placeholder="Mínimo 8 caracteres">
+        </div>
+
+        <div class="col-md-4">
           <label class="form-label fw-bold text-muted small">Usuario de Acceso</label>
           <input
             type="text"

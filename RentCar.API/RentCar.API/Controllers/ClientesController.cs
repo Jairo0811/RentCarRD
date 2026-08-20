@@ -112,6 +112,7 @@ namespace RentCar.API.Controllers
                     $"Ya existe un cliente registrado con este {ObtenerNombreDocumento(cliente.TipoPersona)}.");
             }
 
+            ProtegerDatosTarjeta(cliente);
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
 
@@ -154,6 +155,8 @@ namespace RentCar.API.Controllers
                 return BadRequest(
                     $"Ya existe otro cliente registrado con este {ObtenerNombreDocumento(cliente.TipoPersona)}.");
             }
+
+            ProtegerDatosTarjeta(cliente);
 
             clienteExistente.Nombre = cliente.Nombre;
             clienteExistente.Cedula = cliente.Cedula;
@@ -212,6 +215,17 @@ namespace RentCar.API.Controllers
 
             cliente.TipoTarjeta =
                 DetectarTipoTarjeta(cliente.NoTarjetaCr);
+        }
+
+        // RentCarRD no procesa pagos: conserva solo los últimos cuatro dígitos.
+        // El PAN, titular y expiración deben vivir exclusivamente en un proveedor PCI.
+        private static void ProtegerDatosTarjeta(Cliente cliente)
+        {
+            cliente.NoTarjetaCr = string.IsNullOrWhiteSpace(cliente.NoTarjetaCr)
+                ? null
+                : cliente.NoTarjetaCr[^Math.Min(4, cliente.NoTarjetaCr.Length)..];
+            cliente.NombreTitularTarjeta = null;
+            cliente.FechaExpiracionTarjeta = null;
         }
 
         private static string? ValidarCliente(Cliente cliente)
