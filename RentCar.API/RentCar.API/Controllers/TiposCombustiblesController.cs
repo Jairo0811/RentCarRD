@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Models;
+using RentCar.API.Security;
 
 namespace RentCar.API.Controllers // <-- ¡Aquí está el namespace!
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = AppRoles.Operaciones)]
     public class TiposCombustiblesController : ControllerBase
     {
         private readonly RentCarDbContext _context;
@@ -37,6 +40,7 @@ namespace RentCar.API.Controllers // <-- ¡Aquí está el namespace!
 
         // PUT: api/TiposCombustible/5
         [HttpPut("{id}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> PutTiposCombustible(int? id, TiposCombustible tiposcombustible)
         {
             if (id != tiposcombustible.Id)
@@ -67,6 +71,7 @@ namespace RentCar.API.Controllers // <-- ¡Aquí está el namespace!
 
         // POST: api/TiposCombustible
         [HttpPost]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<ActionResult<TiposCombustible>> PostTiposCombustible(TiposCombustible tiposcombustible)
         {
             _context.TiposCombustibles.Add(tiposcombustible);
@@ -77,6 +82,7 @@ namespace RentCar.API.Controllers // <-- ¡Aquí está el namespace!
 
         // DELETE: api/TiposCombustible/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> DeleteTiposCombustible(int? id)
         {
             var tiposcombustible = await _context.TiposCombustibles.FindAsync(id);

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace RentCar.API.Models;
 
@@ -7,12 +6,15 @@ public partial class Inspeccione
 {
     public int IdTransaccion { get; set; }
 
+    [Range(1, int.MaxValue)]
     public int IdVehiculo { get; set; }
 
+    [Range(1, int.MaxValue)]
     public int IdCliente { get; set; }
 
     public bool TieneRalladuras { get; set; }
 
+    [Required, RegularExpression(@"^(1/4|1/2|3/4|Lleno)$")]
     public string CantidadCombustible { get; set; } = null!;
 
     public bool TieneGomaRespuesta { get; set; }
@@ -31,6 +33,7 @@ public partial class Inspeccione
 
     public DateTime Fecha { get; set; }
 
+    [Range(1, int.MaxValue)]
     public int IdEmpleadoInspeccion { get; set; }
 
     public bool Estado { get; set; }

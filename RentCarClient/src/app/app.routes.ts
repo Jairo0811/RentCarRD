@@ -11,20 +11,22 @@ import { LoginComponent } from './components/login/login';
 import { DashboardComponent } from './components/dashboard/dashboard';
 import { InspeccionComponent } from './components/inspeccion/inspeccion';
 import { ReportesComponent } from './components/reportes/reportes';
+import { adminGuard, authGuard } from './auth.guards';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
 
   { path: 'login', component: LoginComponent },
-  { path: 'dashboard', component: DashboardComponent },
-  { path: 'vehiculos', component: Vehiculos },
-  { path: 'clientes', component: ClientesComponent },
-  { path: 'rentas', component: Rentas },
-  { path: 'marcas', component: MarcasComponent },
-  { path: 'modelos', component: ModelosComponent },
-  { path: 'tipos-vehiculos', component: TiposVehiculosComponent },
-  { path: 'tipos-combustibles', component: TiposCombustiblesComponent },
-  { path: 'empleados', component: EmpleadosComponent },
-  { path: 'inspeccion', component: InspeccionComponent },
-  { path: 'reportes', component: ReportesComponent }
+  { path: 'dashboard', component: DashboardComponent, canActivate: [adminGuard] },
+  { path: 'vehiculos', component: Vehiculos, canActivate: [authGuard] },
+  { path: 'clientes', component: ClientesComponent, canActivate: [authGuard] },
+  { path: 'rentas', component: Rentas, canActivate: [authGuard] },
+  { path: 'marcas', component: MarcasComponent, canActivate: [authGuard] },
+  { path: 'modelos', component: ModelosComponent, canActivate: [authGuard] },
+  { path: 'tipos-vehiculos', component: TiposVehiculosComponent, canActivate: [authGuard] },
+  { path: 'tipos-combustibles', component: TiposCombustiblesComponent, canActivate: [authGuard] },
+  { path: 'empleados', component: EmpleadosComponent, canActivate: [adminGuard] },
+  { path: 'inspeccion', component: InspeccionComponent, canActivate: [adminGuard] },
+  { path: 'reportes', component: ReportesComponent, canActivate: [adminGuard] },
+  { path: '**', redirectTo: 'login' }
 ];

@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Models;
+using RentCar.API.Security;
 
 namespace RentCar.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = AppRoles.Operaciones)]
     public class RentasController : ControllerBase
     {
         private const decimal TasaItbis = 0.18m;
@@ -53,6 +58,15 @@ namespace RentCar.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Renta>> PostRenta(Renta renta)
         {
+            if (!int.TryParse(
+                    User.FindFirstValue(ClaimTypes.NameIdentifier),
+                    out var currentEmployeeId))
+            {
+                return Unauthorized();
+            }
+
+            // El empleado siempre se toma del token, nunca del body manipulable.
+            renta.IdEmpleado = currentEmployeeId;
             var errorValidacion = ValidarRenta(renta);
 
             if (errorValidacion != null)
@@ -108,7 +122,7 @@ namespace RentCar.API.Controllers
 
             var empleadoExiste =
                 await _context.Empleados.AnyAsync(
-                    e => e.Id == renta.IdEmpleado
+                    e => e.Id == renta.IdEmpleado && e.Estado
                 );
 
             if (!empleadoExiste)
@@ -130,7 +144,16 @@ namespace RentCar.API.Controllers
 
             _context.Rentas.Add(renta);
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException exception) when (
+                exception.InnerException is SqlException { Number: 2601 or 2627 })
+            {
+                return Conflict(
+                    "El vehículo ya fue asignado a otra renta. Actualiza la lista e inténtalo nuevamente.");
+            }
 
             return CreatedAtAction(
                 nameof(GetRenta),
@@ -162,6 +185,11 @@ namespace RentCar.API.Controllers
                 return NotFound(
                     "La renta solicitada no existe."
                 );
+            }
+
+            if (!PuedeModificar(rentaActual))
+            {
+                return Forbid();
             }
 
             if (EsRentaConcluida(rentaActual))
@@ -212,6 +240,11 @@ namespace RentCar.API.Controllers
                 return NotFound(
                     "La renta seleccionada no existe."
                 );
+            }
+
+            if (!PuedeModificar(renta))
+            {
+                return Forbid();
             }
 
             if (EsRentaConcluida(renta))
@@ -270,6 +303,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> DeleteRenta(
             int id
         )
@@ -357,6 +391,19 @@ namespace RentCar.API.Controllers
                 EstadoRentaConcluida,
                 StringComparison.OrdinalIgnoreCase
             );
+        }
+
+        private bool PuedeModificar(Renta renta)
+        {
+            if (User.IsInRole(AppRoles.Administrador))
+            {
+                return true;
+            }
+
+            return int.TryParse(
+                    User.FindFirstValue(ClaimTypes.NameIdentifier),
+                    out var currentEmployeeId) &&
+                renta.IdEmpleado == currentEmployeeId;
         }
 
         private static string NormalizarEstadoOperacion(

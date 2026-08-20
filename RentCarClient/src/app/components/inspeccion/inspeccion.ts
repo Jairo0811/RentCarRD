@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { InspeccionService } from '../../services/inspeccion.service';
 import { VehiculoService } from '../../services/vehiculo.service';
 import { ClienteService } from '../../services/cliente.service';
+import { AuthService } from '../../services/auth.service';
 
 export interface Inspeccion {
   id?: number;
@@ -38,17 +39,20 @@ export class InspeccionComponent implements OnInit {
   clientes: any[] = [];
   modoEdicion = false;
 
-  inspeccionActual: Inspeccion = this.resetForm();
+  inspeccionActual: Inspeccion;
 
   constructor(
     private inspeccionService: InspeccionService,
     private vehiculoService: VehiculoService,
     private clienteService: ClienteService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    this.inspeccionActual = this.resetForm();
+  }
 
   get rolActual(): string | null {
-    return localStorage.getItem('rolUsuario');
+    return this.authService.isAdmin ? 'admin' : null;
   }
 
   ngOnInit(): void {
@@ -105,7 +109,7 @@ export class InspeccionComponent implements OnInit {
       estadoGomasTD: true,
       estadoGomasTI: true,
       fecha: new Date().toISOString(),
-      idEmpleadoInspeccion: 1,
+      idEmpleadoInspeccion: this.authService.session?.idEmpleado ?? 0,
       estado: true
     };
   }
@@ -128,7 +132,7 @@ export class InspeccionComponent implements OnInit {
       ...this.inspeccionActual,
       idVehiculo: Number(this.inspeccionActual.idVehiculo),
       idCliente: Number(this.inspeccionActual.idCliente),
-      idEmpleadoInspeccion: 1,
+      idEmpleadoInspeccion: this.authService.session?.idEmpleado ?? 0,
       fecha: this.inspeccionActual.fecha || new Date().toISOString(),
       estado: true
     };

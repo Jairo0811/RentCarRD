@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common'; // <-- Arregla el aviso del *ngIf
 import { RouterModule } from '@angular/router'; // <-- Necesario para los routerLink del menú
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -9,13 +10,10 @@ import { RouterModule } from '@angular/router'; // <-- Necesario para los router
   templateUrl: './navbar.html'
 })
 export class NavbarComponent {
+  constructor(private readonly auth: AuthService) {}
   
   get rolActual(): string | null {
-    // Escudo protector: Solo busca en localStorage si estamos en el navegador
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      return localStorage.getItem('rolUsuario');
-    }
-    return null;
+    return this.auth.isAdmin ? 'admin' : this.auth.isAuthenticated ? 'empleado' : null;
   }
   
 }

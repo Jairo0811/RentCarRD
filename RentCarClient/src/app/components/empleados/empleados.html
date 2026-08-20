@@ -10,15 +10,38 @@
           <label class="form-label fw-bold text-muted small">Nombre Completo</label>
           <input
             type="text"
+            maxlength="150"
             class="form-control form-control-lg"
             [(ngModel)]="empleadoActual.nombre"
             placeholder="Ej. Juan Pérez">
         </div>
 
         <div class="col-md-4">
+          <label class="form-label fw-bold text-muted small">Rol</label>
+          <select class="form-select form-select-lg" [(ngModel)]="empleadoActual.rol">
+            <option value="Empleado">Empleado</option>
+            <option value="Administrador">Administrador</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-muted small">
+            {{ modoEdicion ? 'Nueva contraseña (opcional)' : 'Contraseña inicial' }}
+          </label>
+          <input
+            type="password"
+            maxlength="200"
+            autocomplete="new-password"
+            class="form-control form-control-lg"
+            [(ngModel)]="empleadoActual.password"
+            placeholder="Mínimo 12 caracteres">
+        </div>
+
+        <div class="col-md-4">
           <label class="form-label fw-bold text-muted small">Usuario de Acceso</label>
           <input
             type="text"
+            maxlength="100"
             class="form-control form-control-lg border-primary"
             [(ngModel)]="empleadoActual.usuario"
             placeholder="Ej. jperez">
@@ -68,6 +91,7 @@
           <input
             type="number"
             min="0"
+            max="100"
             class="form-control form-control-lg"
             [(ngModel)]="empleadoActual.porcientoComision"
             placeholder="Ej. 10">
@@ -103,6 +127,7 @@
             <th class="py-3 px-4">Nombre</th>
             <th class="py-3">Usuario</th>
             <th class="py-3">Cédula</th>
+            <th class="py-3">Rol</th>
             <th class="py-3">Tanda</th>
             <th class="py-3">Comisión</th>
             <th class="py-3">Estado</th>
@@ -115,6 +140,7 @@
             <td class="px-4 fw-bold text-secondary">{{ emp.nombre }}</td>
             <td class="fw-bold text-primary">{{ emp.usuario }}</td>
             <td>{{ formatearCedulaListado(emp.cedula) }}</td>
+            <td><span class="badge bg-secondary">{{ emp.rol }}</span></td>
             <td>{{ emp.tandaLabor }}</td>
             <td><span class="badge bg-info text-dark">{{ emp.porcientoComision }}%</span></td>
             <td>
@@ -134,7 +160,7 @@
           </tr>
 
           <tr *ngIf="listaEmpleados.length === 0">
-            <td colspan="7" class="text-center py-5 text-muted">
+            <td colspan="8" class="text-center py-5 text-muted">
               No hay empleados registrados.
             </td>
           </tr>

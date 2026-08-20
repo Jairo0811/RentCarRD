@@ -2,18 +2,25 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Empleado } from '../components/empleados/empleados';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EmpleadoService {
 
-  private apiUrl = 'http://localhost:5266/api/Empleados';
+  private readonly apiUrl = `${environment.apiBaseUrl}/api/Empleados`;
 
   constructor(private http: HttpClient) { }
 
   getEmpleados(): Observable<Empleado[]> {
     return this.http.get<Empleado[]>(this.apiUrl);
+  }
+
+  getDirectorio(): Observable<Array<Pick<Empleado, 'id' | 'nombre'>>> {
+    return this.http.get<Array<Pick<Empleado, 'id' | 'nombre'>>>(
+      `${this.apiUrl}/directory`
+    );
   }
 
   getEmpleado(id: number): Observable<Empleado> {

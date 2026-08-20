@@ -1,446 +1,17 @@
-CREATE DATABASE RentCarDB;
-GO
-USE RentCarDB;
+/*
+  RentCarRD - esquema seguro e idempotente
 
--- 1. Tablas Maestras
-CREATE TABLE TiposVehiculos (
-    Id INT PRIMARY KEY IDENTITY,
-    Descripcion VARCHAR(100),
-    Estado BIT DEFAULT 1 -- 1: Activo, 0: Inactivo
-);
+  Este script no elimina datos, no crea usuarios con contraseñas conocidas y no
+  almacena información de tarjetas. Puede ejecutarse varias veces sobre SQL Server.
+  Las credenciales de acceso se crean desde la API usando User Secrets; consulte
+  el README antes de iniciar la aplicación.
+*/
 
-CREATE TABLE Marcas (
-    Id INT PRIMARY KEY IDENTITY,
-    Descripcion VARCHAR(100),
-    Estado BIT DEFAULT 1
-);
-
-CREATE TABLE Modelos (
-    Id INT PRIMARY KEY IDENTITY,
-    IdMarca INT FOREIGN KEY REFERENCES Marcas(Id),
-    Descripcion VARCHAR(100),
-    Estado BIT DEFAULT 1
-);
-
-CREATE TABLE TiposCombustibles (
-    Id INT PRIMARY KEY IDENTITY,
-    Descripcion VARCHAR(100),
-    Estado BIT DEFAULT 1
-);
-
--- 2. Entidades Principales
-CREATE TABLE Vehiculos (
-    Id INT PRIMARY KEY IDENTITY,
-    Descripcion VARCHAR(200),
-    NoChasis VARCHAR(50),
-    NoMotor VARCHAR(50),
-    NoPlaca VARCHAR(20),
-    IdTipoVehiculo INT FOREIGN KEY REFERENCES TiposVehiculos(Id),
-    IdMarca INT FOREIGN KEY REFERENCES Marcas(Id),
-    IdModelo INT FOREIGN KEY REFERENCES Modelos(Id),
-    IdTipoCombustible INT FOREIGN KEY REFERENCES TiposCombustibles(Id),
-    Estado BIT DEFAULT 1 -- 1: Disponible, 0: Rentado/Mantenimiento
-);
-
-CREATE TABLE Clientes (
-    Id INT PRIMARY KEY IDENTITY,
-    Nombre VARCHAR(100),
-    Cedula VARCHAR(11) UNIQUE,
-    NoTarjetaCR VARCHAR(20),
-    LimiteCredito DECIMAL(18,2),
-    TipoPersona VARCHAR(20), -- Fisica / Juridica
-    Estado BIT DEFAULT 1
-);
-
-CREATE TABLE Empleados (
-    Id INT PRIMARY KEY IDENTITY,
-    Nombre VARCHAR(100),
-    Cedula VARCHAR(11) UNIQUE,
-    TandaLabor VARCHAR(20), -- Matutina, Vespertina, Nocturna
-    PorcientoComision INT,
-    FechaIngreso DATE,
-    Estado BIT DEFAULT 1
-);
-
--- 3. Procesos
-CREATE TABLE Inspecciones (
-    Id INT PRIMARY KEY IDENTITY,
-    IdVehiculo INT FOREIGN KEY REFERENCES Vehiculos(Id),
-    IdCliente INT FOREIGN KEY REFERENCES Clientes(Id),
-    TieneRalladuras BIT,
-    CantidadCombustible VARCHAR(20), -- 1/4, 1/2, 3/4, Lleno
-    TieneGomaRespuesta BIT,
-    TieneGato BIT,
-    TieneRoturasCristal BIT,
-    EstadoGomas_D_D BIT, -- Delantera Derecha
-    EstadoGomas_D_I BIT, -- Delantera Izquierda
-    EstadoGomas_T_D BIT, -- Trasera Derecha
-    EstadoGomas_T_I BIT, -- Trasera Izquierda
-    Fecha DATE DEFAULT GETDATE(),
-    IdEmpleadoInspeccion INT FOREIGN KEY REFERENCES Empleados(Id),
-    Estado BIT DEFAULT 1
-);
-
-CREATE TABLE Rentas (
-    NoRenta INT PRIMARY KEY IDENTITY,
-    IdEmpleado INT FOREIGN KEY REFERENCES Empleados(Id),
-    IdVehiculo INT FOREIGN KEY REFERENCES Vehiculos(Id),
-    IdCliente INT FOREIGN KEY REFERENCES Clientes(Id),
-    FechaRenta DATE,
-    FechaDevolucion DATE,
-    MontoXDia DECIMAL(18,2),
-    CantidadDias INT,
-    Comentario TEXT,
-    Estado VARCHAR(20) DEFAULT 'Activa' -- Activa, Concluida
-);
-
-
-USE RentCarDB;
-
-INSERT INTO Empleados (Nombre, Cedula, TandaLabor, PorcientoComision, FechaIngreso, Estado)
-VALUES ('Administrador General', '000-0000000-1', 'Matutina', 10, GETDATE(), 1);
-
-SELECT * FROM Empleados;
-
-
-IF NOT EXISTS (SELECT 1 FROM Marcas WHERE Id = 1)
-INSERT INTO Marcas (Descripcion, Estado) VALUES ('Toyota', 1);
-
-IF NOT EXISTS (SELECT 1 FROM Modelos WHERE Id = 1)
-INSERT INTO Modelos (IdMarca, Descripcion, Estado) VALUES (1, 'Corolla', 1);
-
-IF NOT EXISTS (SELECT 1 FROM TiposVehiculos WHERE Id = 1)
-INSERT INTO TiposVehiculos (Descripcion, Estado) VALUES ('Sedán', 1);
-
-IF NOT EXISTS (SELECT 1 FROM TiposCombustibles WHERE Id = 1)
-INSERT INTO TiposCombustibles (Descripcion, Estado) VALUES ('Gasolina', 1);
-
-SELECT TOP 1 * FROM Vehiculos;
-
-
-USE RentCarDB;
-GO
-
-SELECT 
-    COLUMN_NAME
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'Vehiculos';
-
-
-USE RentCarDB;
-GO
-
-ALTER TABLE Vehiculos
-ADD IdTipoCombustible INT NULL;
-GO
-
-ALTER TABLE Vehiculos
-ADD CONSTRAINT FK_Vehiculos_TiposCombustibles
-FOREIGN KEY (IdTipoCombustible) REFERENCES TiposCombustibles(Id);
-GO
-
-USE RentCarDB;
-GO
-
-ALTER TABLE Vehiculos
-ADD IdTipoCombustible INT NULL;
-GO
-
-ALTER TABLE Vehiculos
-ADD CONSTRAINT FK_Vehiculos_TiposCombustibles
-FOREIGN KEY (IdTipoCombustible) REFERENCES TiposCombustibles(Id);
-GO
-
-
-
-USE RentCarDB;
-GO
-
-SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'Vehiculos';
-
-
-USE RentCarDB;
-GO
-
-IF COL_LENGTH('Vehiculos', 'ImagenUrl') IS NULL
+IF DB_ID(N'RentCarDB') IS NULL
 BEGIN
-    ALTER TABLE Vehiculos
-    ADD ImagenUrl VARCHAR(300) NULL;
-END
+    CREATE DATABASE RentCarDB;
+END;
 GO
-
-
-USE RentCarDB;
-GO
-
-IF COL_LENGTH('Vehiculos', 'ImagenUrl') IS NULL
-BEGIN
-    ALTER TABLE Vehiculos
-    ADD ImagenUrl VARCHAR(300) NULL;
-END
-GO
-
-SELECT Id, ImagenUrl
-FROM Vehiculos;
-
-
-USE RentCarDB;
-GO
-
-SELECT * FROM Rentas WHERE NoRenta = 2;
-
-SELECT * FROM Clientes;
-
-SELECT * FROM Vehiculos;
-
-
-
-SELECT Id, Nombre, Cedula, Usuario
-FROM Empleados;
-
-
-
-USE RentCarDB;
-GO
-
-BEGIN TRANSACTION;
-
-BEGIN TRY
-
-    DELETE FROM Inspecciones;
-    DELETE FROM Rentas;
-    DELETE FROM Clientes;
-    DELETE FROM Empleados;
-    DELETE FROM Vehiculos;
-
-    DBCC CHECKIDENT ('Inspecciones', RESEED, 0);
-    DBCC CHECKIDENT ('Rentas', RESEED, 0);
-    DBCC CHECKIDENT ('Clientes', RESEED, 0);
-    DBCC CHECKIDENT ('Empleados', RESEED, 0);
-    DBCC CHECKIDENT ('Vehiculos', RESEED, 0);
-
-    COMMIT TRANSACTION;
-
-    PRINT 'Datos operativos eliminados correctamente.';
-
-END TRY
-BEGIN CATCH
-
-    ROLLBACK TRANSACTION;
-
-    PRINT ERROR_MESSAGE();
-
-END CATCH;
-GO
-
-
-
-
-USE RentCarDB;
-GO
-
-/* Nombre del titular */
-IF COL_LENGTH('Clientes', 'NombreTitularTarjeta') IS NULL
-BEGIN
-    ALTER TABLE Clientes
-    ADD NombreTitularTarjeta VARCHAR(120) NULL;
-END
-GO
-
-/* Fecha de expiración en formato MM/AA */
-IF COL_LENGTH('Clientes', 'FechaExpiracionTarjeta') IS NULL
-BEGIN
-    ALTER TABLE Clientes
-    ADD FechaExpiracionTarjeta VARCHAR(5) NULL;
-END
-GO
-
-/* Franquicia detectada: VISA, MASTERCARD, AMEX, DISCOVER */
-IF COL_LENGTH('Clientes', 'TipoTarjeta') IS NULL
-BEGIN
-    ALTER TABLE Clientes
-    ADD TipoTarjeta VARCHAR(20) NULL;
-END
-GO
-
-/* Ampliar el número para permitir formato con espacios */
-ALTER TABLE Clientes
-ALTER COLUMN NoTarjetaCR VARCHAR(19) NULL;
-GO
-
-SELECT
-    COLUMN_NAME,
-    DATA_TYPE,
-    CHARACTER_MAXIMUM_LENGTH,
-    IS_NULLABLE
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'Clientes'
-ORDER BY ORDINAL_POSITION;
-GO
-
-
-SELECT TABLE_NAME
-FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_TYPE = 'BASE TABLE'
-ORDER BY TABLE_NAME;
-
-
-
-
-
-
-
-
-
-USE RentCarDB;
-GO
-
-SET XACT_ABORT ON;
-GO
-
-BEGIN TRANSACTION;
-
-BEGIN TRY
-    /* =====================================================
-       1. BORRAR DATOS TRANSACCIONALES
-       ===================================================== */
-
-    DELETE FROM Inspecciones;
-    DELETE FROM Rentas;
-
-    /* =====================================================
-       2. BORRAR DATOS PRINCIPALES
-       ===================================================== */
-
-    DELETE FROM Clientes;
-    DELETE FROM Vehiculos;
-    DELETE FROM Empleados;
-
-    /* =====================================================
-       3. REINICIAR IDENTIDADES
-       ===================================================== */
-
-    DBCC CHECKIDENT ('Inspecciones', RESEED, 0);
-    DBCC CHECKIDENT ('Rentas', RESEED, 0);
-    DBCC CHECKIDENT ('Clientes', RESEED, 0);
-    DBCC CHECKIDENT ('Vehiculos', RESEED, 0);
-    DBCC CHECKIDENT ('Empleados', RESEED, 0);
-
-    /* =====================================================
-       4. CREAR ADMINISTRADOR CON ID = 1
-       ===================================================== */
-
-    INSERT INTO Empleados
-    (
-        Nombre,
-        Cedula,
-        Usuario,
-        TandaLabor,
-        PorcientoComision,
-        FechaIngreso,
-        Estado
-    )
-    VALUES
-    (
-        'Administrador General',
-        '40212428508',
-        'admin',
-        'Matutina',
-        0,
-        GETDATE(),
-        1
-    );
-
-    COMMIT TRANSACTION;
-
-    PRINT 'Datos eliminados correctamente.';
-    PRINT 'Administrador General creado nuevamente con Id = 1.';
-END TRY
-BEGIN CATCH
-    IF @@TRANCOUNT > 0
-        ROLLBACK TRANSACTION;
-
-    PRINT 'No fue posible limpiar la base de datos.';
-    PRINT ERROR_MESSAGE();
-
-    THROW;
-END CATCH;
-GO
-
-
-
-
-USE RentCarDB;
-GO
-
-IF COL_LENGTH('Clientes', 'NoTarjetaCR') IS NULL
-BEGIN
-    ALTER TABLE Clientes
-    ADD NoTarjetaCR VARCHAR(19) NULL;
-END
-GO
-
-IF COL_LENGTH('Clientes', 'NombreTitularTarjeta') IS NULL
-BEGIN
-    ALTER TABLE Clientes
-    ADD NombreTitularTarjeta VARCHAR(120) NULL;
-END
-GO
-
-IF COL_LENGTH('Clientes', 'FechaExpiracionTarjeta') IS NULL
-BEGIN
-    ALTER TABLE Clientes
-    ADD FechaExpiracionTarjeta VARCHAR(5) NULL;
-END
-GO
-
-IF COL_LENGTH('Clientes', 'TipoTarjeta') IS NULL
-BEGIN
-    ALTER TABLE Clientes
-    ADD TipoTarjeta VARCHAR(20) NULL;
-END
-GO
-
-IF COL_LENGTH('Clientes', 'TipoPersona') IS NULL
-BEGIN
-    ALTER TABLE Clientes
-    ADD TipoPersona VARCHAR(20) NULL;
-END
-GO
-
-ALTER TABLE Clientes
-ALTER COLUMN NoTarjetaCR VARCHAR(19) NULL;
-GO
-
-SELECT
-    COLUMN_NAME,
-    DATA_TYPE,
-    CHARACTER_MAXIMUM_LENGTH,
-    IS_NULLABLE
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'Clientes'
-ORDER BY ORDINAL_POSITION;
-GO
-
-SELECT
-    Id,
-    Nombre,
-    Cedula,
-    Usuario,
-    TandaLabor,
-    PorcientoComision,
-    FechaIngreso,
-    Estado
-FROM Empleados;
-
-
-
-SELECT COUNT(*) AS TotalClientes FROM Clientes;
-SELECT COUNT(*) AS TotalVehiculos FROM Vehiculos;
-SELECT COUNT(*) AS TotalRentas FROM Rentas;
-SELECT COUNT(*) AS TotalInspecciones FROM Inspecciones;
 
 USE RentCarDB;
 GO
@@ -449,167 +20,268 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
-BEGIN TRANSACTION;
-
-BEGIN TRY
-
-    /*==============================
-      ELIMINAR DATOS
-    ==============================*/
-
-    DELETE FROM Inspecciones;
-    DELETE FROM Rentas;
-    DELETE FROM Clientes;
-    DELETE FROM Vehiculos;
-    DELETE FROM Empleados;
-    DELETE FROM Modelos;
-    DELETE FROM Marcas;
-    DELETE FROM TiposVehiculos;
-    DELETE FROM TiposCombustibles;
-
-    /*==============================
-      REINICIAR IDENTIDADES
-    ==============================*/
-
-    DBCC CHECKIDENT ('Inspecciones', RESEED, 0);
-    DBCC CHECKIDENT ('Rentas', RESEED, 0);
-    DBCC CHECKIDENT ('Clientes', RESEED, 0);
-    DBCC CHECKIDENT ('Vehiculos', RESEED, 0);
-    DBCC CHECKIDENT ('Empleados', RESEED, 0);
-    DBCC CHECKIDENT ('Modelos', RESEED, 0);
-    DBCC CHECKIDENT ('Marcas', RESEED, 0);
-    DBCC CHECKIDENT ('TiposVehiculos', RESEED, 0);
-    DBCC CHECKIDENT ('TiposCombustibles', RESEED, 0);
-
-    COMMIT TRANSACTION;
-
-    PRINT 'Base de datos reiniciada correctamente.';
-    PRINT 'Todos los ID comenzarán nuevamente desde 1.';
-
-END TRY
-BEGIN CATCH
-
-    IF @@TRANCOUNT > 0
-        ROLLBACK TRANSACTION;
-
-    PRINT ERROR_MESSAGE();
-
-END CATCH;
-GO
-
-
-
-
-
-
-
-
-
-
-
-
-USE RentCarDB;
-GO
-
-/* Estado operativo del vehículo */
-IF COL_LENGTH('Vehiculos', 'EstadoOperacion') IS NULL
+IF OBJECT_ID(N'dbo.TiposVehiculos', N'U') IS NULL
 BEGIN
-    ALTER TABLE Vehiculos
-    ADD EstadoOperacion VARCHAR(20) NOT NULL
-        CONSTRAINT DF_Vehiculos_EstadoOperacion
-        DEFAULT 'Disponible';
-END
-GO
-
-/* Actualizar registros anteriores */
-UPDATE Vehiculos
-SET EstadoOperacion =
-    CASE
-        WHEN Estado = 1 THEN 'Disponible'
-        ELSE 'Rentado'
-    END
-WHERE EstadoOperacion IS NULL
-   OR LTRIM(RTRIM(EstadoOperacion)) = '';
-GO
-
-/* Ajustar placa */
-ALTER TABLE Vehiculos
-ALTER COLUMN NoPlaca VARCHAR(7) NOT NULL;
-GO
-
-/* Ajustar chasis */
-ALTER TABLE Vehiculos
-ALTER COLUMN NoChasis VARCHAR(17) NULL;
-GO
-
-/* Ajustar estado */
-ALTER TABLE Vehiculos
-ALTER COLUMN EstadoOperacion VARCHAR(20) NOT NULL;
-GO
-
-/* Índice único para placa */
-IF NOT EXISTS
-(
-    SELECT 1
-    FROM sys.indexes
-    WHERE name = 'UX_Vehiculos_NoPlaca'
-      AND object_id = OBJECT_ID('Vehiculos')
-)
-BEGIN
-    CREATE UNIQUE INDEX UX_Vehiculos_NoPlaca
-    ON Vehiculos(NoPlaca);
-END
-GO
-
-/* Índice único para chasis */
-IF NOT EXISTS
-(
-    SELECT 1
-    FROM sys.indexes
-    WHERE name = 'UX_Vehiculos_NoChasis'
-      AND object_id = OBJECT_ID('Vehiculos')
-)
-BEGIN
-    CREATE UNIQUE INDEX UX_Vehiculos_NoChasis
-    ON Vehiculos(NoChasis)
-    WHERE NoChasis IS NOT NULL;
-END
-GO
-
-SELECT
-    Id,
-    Descripcion,
-    NoPlaca,
-    NoChasis,
-    Estado,
-    EstadoOperacion
-FROM Vehiculos
-ORDER BY Id;
-GO
-
-
-ALTER TABLE Rentas
-ADD
-    Subtotal DECIMAL(18,2) NOT NULL CONSTRAINT DF_Rentas_Subtotal DEFAULT(0),
-    Itbis DECIMAL(18,2) NOT NULL CONSTRAINT DF_Rentas_Itbis DEFAULT(0);
-
-
-
-
-
-
-
-    UPDATE Rentas
-SET
-    Subtotal = ROUND(
-        MontoXdia * CantidadDias,
-        2
-    ),
-    Itbis = ROUND(
-        (MontoXdia * CantidadDias) * 0.18,
-        2
-    ),
-    Total = ROUND(
-        (MontoXdia * CantidadDias) * 1.18,
-        2
+    CREATE TABLE dbo.TiposVehiculos
+    (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_TiposVehiculos PRIMARY KEY,
+        Descripcion VARCHAR(100) NOT NULL,
+        Estado BIT NOT NULL CONSTRAINT DF_TiposVehiculos_Estado DEFAULT (1)
     );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Marcas', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Marcas
+    (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Marcas PRIMARY KEY,
+        Descripcion VARCHAR(100) NOT NULL,
+        Estado BIT NOT NULL CONSTRAINT DF_Marcas_Estado DEFAULT (1)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Modelos', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Modelos
+    (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Modelos PRIMARY KEY,
+        IdMarca INT NOT NULL,
+        Descripcion VARCHAR(100) NOT NULL,
+        Estado BIT NOT NULL CONSTRAINT DF_Modelos_Estado DEFAULT (1),
+        CONSTRAINT FK_Modelos_Marcas FOREIGN KEY (IdMarca) REFERENCES dbo.Marcas(Id)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.TiposCombustibles', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TiposCombustibles
+    (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_TiposCombustibles PRIMARY KEY,
+        Descripcion VARCHAR(100) NOT NULL,
+        Estado BIT NOT NULL CONSTRAINT DF_TiposCombustibles_Estado DEFAULT (1)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Clientes', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Clientes
+    (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Clientes PRIMARY KEY,
+        Nombre VARCHAR(150) NOT NULL,
+        Cedula VARCHAR(11) NOT NULL,
+        LimiteCredito DECIMAL(18,2) NOT NULL,
+        TipoPersona VARCHAR(20) NOT NULL,
+        Estado BIT NOT NULL CONSTRAINT DF_Clientes_Estado DEFAULT (1),
+        CONSTRAINT UX_Clientes_Cedula UNIQUE (Cedula),
+        CONSTRAINT CK_Clientes_LimiteCredito CHECK (LimiteCredito >= 0),
+        CONSTRAINT CK_Clientes_TipoPersona CHECK (TipoPersona IN ('Fisica', 'Juridica'))
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Empleados', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Empleados
+    (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Empleados PRIMARY KEY,
+        Nombre NVARCHAR(150) NOT NULL,
+        Cedula VARCHAR(11) NOT NULL,
+        Usuario VARCHAR(100) NOT NULL,
+        Rol VARCHAR(30) NOT NULL CONSTRAINT DF_Empleados_Rol DEFAULT ('Empleado'),
+        PasswordHash VARCHAR(500) NULL,
+        TandaLabor NVARCHAR(80) NOT NULL,
+        PorcientoComision INT NOT NULL,
+        FechaIngreso DATETIME2 NOT NULL,
+        Estado BIT NOT NULL CONSTRAINT DF_Empleados_Estado DEFAULT (1),
+        CONSTRAINT UX_Empleados_Cedula UNIQUE (Cedula),
+        CONSTRAINT UX_Empleados_Usuario UNIQUE (Usuario),
+        CONSTRAINT CK_Empleados_Rol CHECK (Rol IN ('Administrador', 'Empleado')),
+        CONSTRAINT CK_Empleados_Comision CHECK (PorcientoComision BETWEEN 0 AND 100)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Vehiculos', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Vehiculos
+    (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Vehiculos PRIMARY KEY,
+        Descripcion NVARCHAR(200) NOT NULL,
+        NoChasis VARCHAR(17) NULL,
+        NoMotor VARCHAR(50) NULL,
+        NoPlaca VARCHAR(7) NOT NULL,
+        IdTipoVehiculo INT NOT NULL,
+        IdMarca INT NOT NULL,
+        IdModelo INT NOT NULL,
+        IdTipoCombustible INT NOT NULL,
+        IdCombustible INT NULL,
+        Estado BIT NOT NULL CONSTRAINT DF_Vehiculos_Estado DEFAULT (1),
+        EstadoOperacion VARCHAR(20) NOT NULL
+            CONSTRAINT DF_Vehiculos_EstadoOperacion DEFAULT ('Disponible'),
+        ImagenUrl VARCHAR(300) NULL,
+        CONSTRAINT UX_Vehiculos_NoPlaca UNIQUE (NoPlaca),
+        CONSTRAINT FK_Vehiculos_TiposVehiculos FOREIGN KEY (IdTipoVehiculo)
+            REFERENCES dbo.TiposVehiculos(Id),
+        CONSTRAINT FK_Vehiculos_Marcas FOREIGN KEY (IdMarca) REFERENCES dbo.Marcas(Id),
+        CONSTRAINT FK_Vehiculos_Modelos FOREIGN KEY (IdModelo) REFERENCES dbo.Modelos(Id),
+        CONSTRAINT FK_Vehiculos_TiposCombustibles FOREIGN KEY (IdTipoCombustible)
+            REFERENCES dbo.TiposCombustibles(Id),
+        CONSTRAINT CK_Vehiculos_EstadoOperacion
+            CHECK (EstadoOperacion IN ('Disponible', 'Rentado', 'NoDisponible'))
+    );
+
+    CREATE UNIQUE INDEX UX_Vehiculos_NoChasis
+        ON dbo.Vehiculos(NoChasis)
+        WHERE NoChasis IS NOT NULL;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Inspecciones', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Inspecciones
+    (
+        IdTransaccion INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Inspecciones PRIMARY KEY,
+        IdVehiculo INT NOT NULL,
+        IdCliente INT NOT NULL,
+        TieneRalladuras BIT NOT NULL,
+        CantidadCombustible NVARCHAR(20) NOT NULL,
+        TieneGomaRespuesta BIT NOT NULL,
+        TieneGato BIT NOT NULL,
+        TieneRoturasCristal BIT NOT NULL,
+        GomaDelanteraDerecha BIT NOT NULL,
+        GomaDelanteraIzquierda BIT NOT NULL,
+        GomaTraseraDerecha BIT NOT NULL,
+        GomaTraseraIzquierda BIT NOT NULL,
+        Fecha DATETIME2 NOT NULL,
+        IdEmpleadoInspeccion INT NOT NULL,
+        Estado BIT NOT NULL,
+        CONSTRAINT FK_Inspecciones_Vehiculos FOREIGN KEY (IdVehiculo)
+            REFERENCES dbo.Vehiculos(Id),
+        CONSTRAINT FK_Inspecciones_Clientes FOREIGN KEY (IdCliente)
+            REFERENCES dbo.Clientes(Id),
+        CONSTRAINT FK_Inspecciones_Empleados FOREIGN KEY (IdEmpleadoInspeccion)
+            REFERENCES dbo.Empleados(Id),
+        CONSTRAINT CK_Inspecciones_Combustible
+            CHECK (CantidadCombustible IN ('1/4', '1/2', '3/4', 'Lleno'))
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Rentas', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Rentas
+    (
+        NoRenta INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Rentas PRIMARY KEY,
+        IdEmpleado INT NOT NULL,
+        IdVehiculo INT NOT NULL,
+        IdCliente INT NOT NULL,
+        FechaRenta DATETIME2 NOT NULL,
+        FechaDevolucion DATETIME2 NULL,
+        MontoXDia DECIMAL(18,2) NOT NULL,
+        CantidadDias INT NOT NULL,
+        Subtotal DECIMAL(18,2) NOT NULL,
+        Itbis DECIMAL(18,2) NOT NULL,
+        Total DECIMAL(18,2) NOT NULL,
+        Comentario NVARCHAR(1000) NOT NULL CONSTRAINT DF_Rentas_Comentario DEFAULT (N''),
+        Estado VARCHAR(20) NOT NULL CONSTRAINT DF_Rentas_Estado DEFAULT ('Activa'),
+        CONSTRAINT FK_Rentas_Empleados FOREIGN KEY (IdEmpleado) REFERENCES dbo.Empleados(Id),
+        CONSTRAINT FK_Rentas_Vehiculos FOREIGN KEY (IdVehiculo) REFERENCES dbo.Vehiculos(Id),
+        CONSTRAINT FK_Rentas_Clientes FOREIGN KEY (IdCliente) REFERENCES dbo.Clientes(Id),
+        CONSTRAINT UX_Rentas_IdVehiculo UNIQUE (IdVehiculo),
+        CONSTRAINT CK_Rentas_Monto CHECK (MontoXDia > 0),
+        CONSTRAINT CK_Rentas_Dias CHECK (CantidadDias BETWEEN 1 AND 3650),
+        CONSTRAINT CK_Rentas_Estado CHECK (Estado IN ('Activa', 'Concluida'))
+    );
+END;
+GO
+
+/* Elimina columnas heredadas que contenían datos de pago en texto claro. */
+IF COL_LENGTH('dbo.Clientes', 'NoTarjetaCR') IS NOT NULL
+    ALTER TABLE dbo.Clientes DROP COLUMN NoTarjetaCR;
+GO
+
+IF COL_LENGTH('dbo.Clientes', 'NombreTitularTarjeta') IS NOT NULL
+    ALTER TABLE dbo.Clientes DROP COLUMN NombreTitularTarjeta;
+GO
+
+IF COL_LENGTH('dbo.Clientes', 'FechaExpiracionTarjeta') IS NOT NULL
+    ALTER TABLE dbo.Clientes DROP COLUMN FechaExpiracionTarjeta;
+GO
+
+IF COL_LENGTH('dbo.Clientes', 'TipoTarjeta') IS NOT NULL
+    ALTER TABLE dbo.Clientes DROP COLUMN TipoTarjeta;
+GO
+
+IF COL_LENGTH('dbo.Empleados', 'Usuario') IS NULL
+    ALTER TABLE dbo.Empleados ADD Usuario VARCHAR(100) NULL;
+GO
+
+IF COL_LENGTH('dbo.Empleados', 'PasswordHash') IS NULL
+    ALTER TABLE dbo.Empleados ADD PasswordHash VARCHAR(500) NULL;
+GO
+
+IF COL_LENGTH('dbo.Empleados', 'Rol') IS NULL
+    ALTER TABLE dbo.Empleados ADD Rol VARCHAR(30) NOT NULL
+        CONSTRAINT DF_Empleados_Rol DEFAULT ('Empleado');
+GO
+
+UPDATE dbo.Empleados
+SET Usuario = CONCAT('empleado-', Id)
+WHERE Usuario IS NULL OR LTRIM(RTRIM(Usuario)) = '';
+GO
+
+UPDATE dbo.Empleados
+SET Usuario = CONCAT(LEFT(LOWER(LTRIM(RTRIM(Usuario))), 88), '-', Id)
+WHERE LEN(Usuario) > 100;
+GO
+
+;WITH UsuariosDuplicados AS
+(
+    SELECT Id,
+           ROW_NUMBER() OVER (PARTITION BY LOWER(Usuario) ORDER BY Id) AS Numero
+    FROM dbo.Empleados
+)
+UPDATE empleado
+SET Usuario = CONCAT(LEFT(empleado.Usuario, 88), '-', empleado.Id)
+FROM dbo.Empleados AS empleado
+INNER JOIN UsuariosDuplicados AS duplicado ON duplicado.Id = empleado.Id
+WHERE duplicado.Numero > 1;
+GO
+
+ALTER TABLE dbo.Empleados ALTER COLUMN Usuario VARCHAR(100) NOT NULL;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'UX_Empleados_Usuario'
+      AND object_id = OBJECT_ID('dbo.Empleados')
+)
+    CREATE UNIQUE INDEX UX_Empleados_Usuario ON dbo.Empleados(Usuario);
+GO
+
+IF EXISTS
+(
+    SELECT IdVehiculo
+    FROM dbo.Rentas
+    GROUP BY IdVehiculo
+    HAVING COUNT(*) > 1
+)
+    THROW 51000, 'No se puede proteger Rentas: existen vehículos rentados más de una vez.', 1;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'UX_Rentas_IdVehiculo'
+      AND object_id = OBJECT_ID('dbo.Rentas')
+)
+    CREATE UNIQUE INDEX UX_Rentas_IdVehiculo ON dbo.Rentas(IdVehiculo);
+GO
+
+PRINT 'Esquema RentCarDB verificado. No se crearon credenciales ni se eliminaron registros.';
+GO

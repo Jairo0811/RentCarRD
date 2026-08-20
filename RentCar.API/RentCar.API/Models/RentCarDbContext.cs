@@ -50,23 +50,6 @@ public partial class RentCarDbContext : DbContext
             entity.Property(e => e.LimiteCredito)
                 .HasColumnType("decimal(18, 2)");
 
-            entity.Property(e => e.NoTarjetaCr)
-                .HasMaxLength(19)
-                .IsUnicode(false)
-                .HasColumnName("NoTarjetaCR");
-
-            entity.Property(e => e.NombreTitularTarjeta)
-                .HasMaxLength(120)
-                .IsUnicode(false);
-
-            entity.Property(e => e.FechaExpiracionTarjeta)
-                .HasMaxLength(5)
-                .IsUnicode(false);
-
-            entity.Property(e => e.TipoTarjeta)
-                .HasMaxLength(20)
-                .IsUnicode(false);
-
             entity.Property(e => e.TipoPersona)
                 .HasMaxLength(20)
                 .IsUnicode(false);
@@ -85,12 +68,24 @@ public partial class RentCarDbContext : DbContext
             entity.Property(e => e.Nombre)
                 .HasMaxLength(150);
 
+            entity.Property(e => e.TandaLabor)
+                .HasMaxLength(80);
+
             entity.Property(e => e.Cedula)
                 .HasMaxLength(11)
                 .IsUnicode(false);
 
             entity.Property(e => e.Usuario)
                 .HasMaxLength(100)
+                .IsUnicode(false);
+
+            entity.Property(e => e.Rol)
+                .HasMaxLength(30)
+                .IsUnicode(false)
+                .HasDefaultValue("Empleado");
+
+            entity.Property(e => e.PasswordHash)
+                .HasMaxLength(500)
                 .IsUnicode(false);
 
             entity.HasIndex(e => e.Cedula)
@@ -103,6 +98,9 @@ public partial class RentCarDbContext : DbContext
         modelBuilder.Entity<Inspeccione>(entity =>
         {
             entity.HasKey(e => e.IdTransaccion);
+
+            entity.Property(e => e.CantidadCombustible)
+                .HasMaxLength(20);
         });
 
         modelBuilder.Entity<Marca>(entity =>
@@ -156,6 +154,9 @@ public partial class RentCarDbContext : DbContext
             entity.Property(e => e.Estado)
                 .HasMaxLength(20)
                 .IsUnicode(false);
+
+            entity.HasIndex(e => e.IdVehiculo)
+                .IsUnique();
         });
 
         modelBuilder.Entity<TiposCombustible>(entity =>

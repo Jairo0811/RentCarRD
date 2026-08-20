@@ -7,6 +7,7 @@ import { RentaService } from '../../services/renta.service';
 import { VehiculoService } from '../../services/vehiculo.service';
 import { ClienteService } from '../../services/cliente.service';
 import { InspeccionService } from '../../services/inspeccion.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-dashboard',
@@ -16,6 +17,7 @@ import { InspeccionService } from '../../services/inspeccion.service';
   styleUrl: './dashboard.css'
 })
 export class DashboardComponent implements OnInit {
+  readonly apiBaseUrl = environment.apiBaseUrl;
 
   vehiculos: any[] = [];
   clientes: any[] = [];

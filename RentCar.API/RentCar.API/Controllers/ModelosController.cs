@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Models;
+using RentCar.API.Security;
 
 namespace RentCar.API.Controllers // <-- ¡Aquí está el namespace faltante!
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = AppRoles.Operaciones)]
     public class ModelosController : ControllerBase
     {
         private readonly RentCarDbContext _context;
@@ -37,6 +40,7 @@ namespace RentCar.API.Controllers // <-- ¡Aquí está el namespace faltante!
 
         // PUT: api/Modelo/5
         [HttpPut("{id}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> PutModelo(int? id, Modelo modelo)
         {
             if (id != modelo.Id)
@@ -67,6 +71,7 @@ namespace RentCar.API.Controllers // <-- ¡Aquí está el namespace faltante!
 
         // POST: api/Modelo
         [HttpPost]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<ActionResult<Modelo>> PostModelo(Modelo modelo)
         {
             _context.Modelos.Add(modelo);
@@ -77,6 +82,7 @@ namespace RentCar.API.Controllers // <-- ¡Aquí está el namespace faltante!
 
         // DELETE: api/Modelo/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> DeleteModelo(int? id)
         {
             var modelo = await _context.Modelos.FindAsync(id);

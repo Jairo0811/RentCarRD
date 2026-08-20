@@ -226,7 +226,7 @@
               [src]="
                 imagenPreview
                   ? imagenPreview
-                  : 'http://localhost:5266' +
+                  : apiBaseUrl +
                     nuevoVehiculo.imagenUrl
               "
               alt="Vista previa del vehículo"
@@ -400,7 +400,7 @@
           <img
             *ngIf="v.imagenUrl"
             [src]="
-              'http://localhost:5266' +
+              apiBaseUrl +
               v.imagenUrl
             "
             alt="Imagen del vehículo"

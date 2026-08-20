@@ -8,10 +8,10 @@ import { forkJoin } from 'rxjs';
 import { RentaService } from '../../services/renta.service';
 import { ClienteService } from '../../services/cliente.service';
 import { VehiculoService } from '../../services/vehiculo.service';
+import { AuthService } from '../../services/auth.service';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-reportes',
@@ -45,16 +45,13 @@ export class ReportesComponent implements OnInit {
     private rentaService: RentaService,
     private clienteService: ClienteService,
     private vehiculoService: VehiculoService,
+    private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef,
   ) {}
 
   get rolActual(): string | null {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return null;
-    }
-
-    return localStorage.getItem('rolUsuario');
+    return this.authService.isAdmin ? 'admin' : null;
   }
 
   ngOnInit(): void {
@@ -476,7 +473,7 @@ export class ReportesComponent implements OnInit {
     doc.save(`Reporte_Rentas_${this.generarMarcaTiempo()}.pdf`);
   }
 
-  exportarExcel(): void {
+  async exportarExcel(): Promise<void> {
     if (this.rentasFiltradas.length === 0) {
       alert('No existen rentas para exportar a Excel.');
       return;
@@ -547,37 +544,49 @@ export class ReportesComponent implements OnInit {
       },
     ];
 
-    const hojaRentas = XLSX.utils.json_to_sheet(datosRentas);
+    const excelModule = await import('exceljs/dist/exceljs.min.js');
+    const ExcelJS = excelModule.default;
+    const libro = new ExcelJS.Workbook();
+    libro.creator = 'RentCarRD';
+    libro.created = new Date();
 
-    const hojaResumen = XLSX.utils.json_to_sheet(datosResumen);
-
-    hojaRentas['!cols'] = [
-      { wch: 12 },
-      { wch: 17 },
-      { wch: 21 },
-      { wch: 30 },
-      { wch: 38 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 15 },
+    const hojaRentas = libro.addWorksheet('Rentas');
+    hojaRentas.columns = [
+      { header: 'No. Renta', key: 'No. Renta', width: 12 },
+      { header: 'Fecha de Renta', key: 'Fecha de Renta', width: 17 },
+      { header: 'Fecha de Devolución', key: 'Fecha de Devolución', width: 21 },
+      { header: 'Cliente', key: 'Cliente', width: 30 },
+      { header: 'Vehículo', key: 'Vehículo', width: 38 },
+      { header: 'Cantidad de Días', key: 'Cantidad de Días', width: 18 },
+      { header: 'Tarifa por Día', key: 'Tarifa por Día', width: 18 },
+      { header: 'Subtotal', key: 'Subtotal', width: 18 },
+      { header: 'ITBIS (18%)', key: 'ITBIS (18%)', width: 18 },
+      { header: 'Total a Pagar', key: 'Total a Pagar', width: 18 },
+      { header: 'Estado', key: 'Estado', width: 15 },
     ];
+    hojaRentas.addRows(datosRentas);
+    this.formatearHojaExcel(hojaRentas, [7, 8, 9, 10]);
 
-    hojaResumen['!cols'] = [{ wch: 24 }, { wch: 40 }];
+    const hojaResumen = libro.addWorksheet('Resumen');
+    hojaResumen.columns = [
+      { header: 'Indicador', key: 'Indicador', width: 24 },
+      { header: 'Valor', key: 'Valor', width: 40 },
+    ];
+    hojaResumen.addRows(datosResumen);
+    this.formatearHojaExcel(hojaResumen, [2]);
 
-    this.aplicarFormatoMonetarioExcel(hojaRentas, datosRentas.length, ['G', 'H', 'I', 'J']);
-
-    this.aplicarFormatoMonetarioExcel(hojaResumen, datosResumen.length, ['B'], 10);
-
-    const libro = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(libro, hojaRentas, 'Rentas');
-
-    XLSX.utils.book_append_sheet(libro, hojaResumen, 'Resumen');
-
-    XLSX.writeFile(libro, `Reporte_Rentas_${this.generarMarcaTiempo()}.xlsx`);
+    const contenido = await libro.xlsx.writeBuffer();
+    const bytes = new Uint8Array(contenido);
+    const url = URL.createObjectURL(
+      new Blob([bytes.buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }),
+    );
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `Reporte_Rentas_${this.generarMarcaTiempo()}.xlsx`;
+    enlace.click();
+    URL.revokeObjectURL(url);
   }
 
   private obtenerDescripcionFiltroCliente(): string {
@@ -655,22 +664,27 @@ export class ReportesComponent implements OnInit {
     return `${anio}${mes}${dia}_${hora}${minuto}${segundo}`;
   }
 
-  private aplicarFormatoMonetarioExcel(
-    hoja: XLSX.WorkSheet,
-    cantidadFilas: number,
-    columnas: string[],
-    filaInicial = 2,
-  ): void {
-    const formato = '"RD$" #,##0.00';
+  private formatearHojaExcel(hoja: any, columnasMonetarias: number[]): void {
+    hoja.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    hoja.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0D6EFD' },
+    };
+    hoja.views = [{ state: 'frozen', ySplit: 1 }];
+    hoja.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: Math.max(1, hoja.rowCount), column: hoja.columnCount },
+    };
 
-    for (let fila = filaInicial; fila < filaInicial + cantidadFilas; fila++) {
-      for (const columna of columnas) {
-        const celda = hoja[`${columna}${fila}`];
-
-        if (celda && typeof celda.v === 'number') {
-          celda.z = formato;
+    hoja.eachRow((fila: any, numeroFila: number) => {
+      if (numeroFila === 1) return;
+      for (const columna of columnasMonetarias) {
+        const celda = fila.getCell(columna);
+        if (typeof celda.value === 'number') {
+          celda.numFmt = '"RD$" #,##0.00';
         }
       }
-    }
+    });
   }
 }

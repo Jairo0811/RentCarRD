@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Models;
+using RentCar.API.Security;
 
 namespace RentCar.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = AppRoles.Operaciones)]
     public class TiposVehiculosController : ControllerBase
     {
         private readonly RentCarDbContext _context;
@@ -22,6 +25,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<ActionResult<TiposVehiculo>> PostTipoVehiculo(TiposVehiculo tipoVehiculo)
         {
             _context.TiposVehiculos.Add(tipoVehiculo);
@@ -30,6 +34,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> PutTipoVehiculo(int id, TiposVehiculo tipoVehiculo)
         {
             if (id != tipoVehiculo.Id) return BadRequest();
@@ -39,6 +44,7 @@ namespace RentCar.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> DeleteTipoVehiculo(int id)
         {
             var tipoVehiculo = await _context.TiposVehiculos.FindAsync(id);
