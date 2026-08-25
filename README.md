@@ -63,25 +63,25 @@ RentCarRD fue desarrollado como proyecto académico individual por **Francis Jai
 
 El profesor de **Desarrollo de Software con Tecnología Open Source 2 (ISO-715)** fue **Juan Pablo Valdez Reyes**. En la colección actual no se ha verificado una segunda asignatura cursada por Francis Jairo Matías Rosario con el mismo profesor.
 
-Aunque no existe una segunda asignatura verificada cursada con Juan Pablo Valdez Reyes, RentCarRD sí comparte con [**MediCore**](https://github.com/Jairo0811/MediCore) y [**CineGest**](https://github.com/Jairo0811/CineGest) un **origen documental común**: los tres problemas de negocio provienen de presentaciones de **Proyecto Final de Universidad APEC elaboradas por Juan P. Valdez en 2020**.
+Aunque no existe una segunda asignatura verificada cursada con Juan Pablo Valdez Reyes, RentCarRD sí comparte con [**MediCore**](https://github.com/Jairo0811/MediCore) y [**CineGest**](https://github.com/Jairo0811/CineGest) un **origen documental común**: los tres problemas de negocio provienen de presentaciones de **Proyecto Final de Universidad APEC elaboradas por Juan Pablo Valdez Reyes en 2020**.
 
-### 📚 Línea académica de Juan P. Valdez
+### 📚 Línea académica de Juan Pablo Valdez Reyes
 
-Los documentos de **Dispensario Médico**, **Video Club** y **Rentcar** identifican explícitamente a **Juan P. Valdez** y establecen los requerimientos base que posteriormente dieron origen o sirvieron como referencia para MediCore, CineGest y RentCarRD.
+Los documentos de **Dispensario Médico**, **Video Club** y **Rentcar** identifican explícitamente a **Juan Pablo Valdez Reyes** y establecen los requerimientos base que posteriormente dieron origen o sirvieron como referencia para MediCore, CineGest y RentCarRD.
 
-| Orden | Enunciado académico de 2020 | Evolución en el portafolio | Relación con Juan P. Valdez |
+| Orden | Enunciado académico de 2020 | Evolución en el portafolio | Relación con Juan Pablo Valdez Reyes |
 |---:|---|---|---|
-| 1 | Dispensario Médico de UNAPEC | [**MediCore**](https://github.com/Jairo0811/MediCore) | Enunciado de Proyecto Final elaborado por **Juan P. Valdez** |
-| 2 | Sistema de Video Club | [**CineGest**](https://github.com/Jairo0811/CineGest) | Enunciado de Proyecto Final elaborado por **Juan P. Valdez** |
-| 3 | Sistema de Rentcar | **RentCarRD** | Enunciado de Proyecto Final elaborado por **Juan P. Valdez** |
+| 1 | Dispensario Médico de UNAPEC | [**MediCore**](https://github.com/Jairo0811/MediCore) | Enunciado de Proyecto Final elaborado por **Juan Pablo Valdez Reyes** |
+| 2 | Sistema de Video Club | [**CineGest**](https://github.com/Jairo0811/CineGest) | Enunciado de Proyecto Final elaborado por **Juan Pablo Valdez Reyes** |
+| 3 | Sistema de Rentcar | **RentCarRD** | Enunciado de Proyecto Final elaborado por **Juan Pablo Valdez Reyes** |
 
-Esta relación se denomina **continuidad por origen del enunciado académico**. Es distinta de la continuidad por profesor de asignatura: Juan P. Valdez sí fue el profesor efectivo de RentCarRD en **ISO-715**, mientras que MediCore y CineGest fueron impartidos en 2026 por **Ing. Omar Antonio De Jesus De La Cruz Gonzalez**.
+Esta relación se denomina **continuidad por origen del enunciado académico**. Es distinta de la continuidad por profesor de asignatura: Juan Pablo Valdez Reyes sí fue el profesor efectivo de RentCarRD en **ISO-715**, mientras que MediCore y CineGest fueron impartidos en 2026 por **Ing. Omar Antonio De Jesus De La Cruz Gonzalez**.
 
 | Tipo | Estado | Evidencia |
 |---|---|---|
 | 👥 Estudiante | No aplica | Proyecto académico individual |
 | 👨‍🏫 Profesor | No verificado | Solo se ha documentado ISO-715 con Juan Pablo Valdez Reyes |
-| 📚 Origen de enunciado recurrente | Verificado | MediCore, CineGest y RentCarRD parten de presentaciones de Proyecto Final de **Juan P. Valdez (2020)** |
+| 📚 Origen de enunciado recurrente | Verificado | MediCore, CineGest y RentCarRD parten de presentaciones de Proyecto Final de **Juan Pablo Valdez Reyes (2020)** |
 
 La separación entre estos ejes evita confundir al **autor/origen del enunciado** con el **profesor efectivo de cada asignatura cursada**.
 
