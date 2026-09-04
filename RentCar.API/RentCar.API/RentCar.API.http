@@ -1,6 +1,14 @@
-@RentCar.API_HostAddress = http://localhost:5266
+@RentCar.API_HostAddress = https://localhost:7162
 
-GET {{RentCar.API_HostAddress}}/weatherforecast/
+### Health check público
+GET {{RentCar.API_HostAddress}}/health
 Accept: application/json
 
-###
+### Login (sustituya las credenciales por las configuradas localmente)
+POST {{RentCar.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin",
+  "password": "<contraseña-local>"
+}
