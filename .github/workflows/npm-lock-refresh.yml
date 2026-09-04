@@ -24,7 +24,6 @@ jobs:
         run: |
           rm -rf node_modules package-lock.json
           npm install \
-            @angular/cdk@21.2.22 \
             @angular/common@21.2.22 \
             @angular/compiler@21.2.22 \
             @angular/core@21.2.22 \
@@ -32,8 +31,8 @@ jobs:
             @angular/platform-browser@21.2.22 \
             @angular/router@21.2.22 \
             @angular/compiler-cli@21.2.22 \
-            @angular/build@21.2.22 \
-            @angular/cli@21.2.22
+            @angular/build@^21.2.21 \
+            @angular/cli@^21.2.21
           npm audit fix
           npm audit --audit-level=high
       - name: Commit refreshed lockfile
