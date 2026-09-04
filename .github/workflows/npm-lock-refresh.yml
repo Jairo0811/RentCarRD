@@ -19,21 +19,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: RentCarClient/package-lock.json
       - name: Regenerate secure dependency tree
         working-directory: RentCarClient
         run: |
+          rm -rf node_modules package-lock.json
           npm install \
-            @angular/common@^21.2.19 \
-            @angular/compiler@^21.2.19 \
-            @angular/core@^21.2.19 \
-            @angular/forms@^21.2.19 \
-            @angular/platform-browser@^21.2.19 \
-            @angular/router@^21.2.19 \
-            @angular/compiler-cli@^21.2.19 \
-            @angular/build@^21.2.21 \
-            @angular/cli@^21.2.21
+            @angular/cdk@21.2.22 \
+            @angular/common@21.2.22 \
+            @angular/compiler@21.2.22 \
+            @angular/core@21.2.22 \
+            @angular/forms@21.2.22 \
+            @angular/platform-browser@21.2.22 \
+            @angular/router@21.2.22 \
+            @angular/compiler-cli@21.2.22 \
+            @angular/build@21.2.22 \
+            @angular/cli@21.2.22
           npm audit fix
           npm audit --audit-level=high
       - name: Commit refreshed lockfile
