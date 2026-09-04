@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Empleado } from '../components/empleados/empleados';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EmpleadoService {
 
-  private apiUrl = 'http://localhost:5266/api/Empleados';
+  private readonly apiUrl = `${environment.apiBaseUrl}/api/Empleados`;
 
   constructor(private http: HttpClient) { }
 
@@ -33,7 +34,6 @@ export class EmpleadoService {
   }
 
   validarCedula(cedula: string, idEmpleado?: number): Observable<any> {
-
     let url = `${this.apiUrl}/validar-cedula/${cedula}`;
 
     if (idEmpleado) {
@@ -42,5 +42,4 @@ export class EmpleadoService {
 
     return this.http.get(url);
   }
-
 }
