@@ -7,6 +7,7 @@ import { MarcaService } from '../../services/marca.service';
 import { ModeloService } from '../../services/modelo.service';
 import { TipoVehiculoService } from '../../services/tipo-vehiculo.service';
 import { TipoCombustibleService } from '../../services/tipo-combustible.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-vehiculos',
@@ -16,6 +17,8 @@ import { TipoCombustibleService } from '../../services/tipo-combustible.service'
   styleUrl: './vehiculos.css',
 })
 export class Vehiculos implements OnInit {
+  readonly apiBaseUrl = environment.apiBaseUrl;
+
   vehiculos: any[] = [];
   marcas: any[] = [];
   modelos: any[] = [];
@@ -190,13 +193,10 @@ export class Vehiculos implements OnInit {
     switch (this.filtroEstado) {
       case 'disponibles':
         return this.obtenerEstadoOperacion(vehiculo) === 'Disponible';
-
       case 'rentados':
         return this.obtenerEstadoOperacion(vehiculo) === 'Rentado';
-
       case 'no-disponibles':
         return this.obtenerEstadoOperacion(vehiculo) === 'NoDisponible';
-
       default:
         return true;
     }
@@ -239,24 +239,15 @@ export class Vehiculos implements OnInit {
   }
 
   onPlacaInput(): void {
-    this.nuevoVehiculo.noPlaca = this.limpiarAlfanumerico(
-      this.nuevoVehiculo.noPlaca,
-      7
-    );
+    this.nuevoVehiculo.noPlaca = this.limpiarAlfanumerico(this.nuevoVehiculo.noPlaca, 7);
   }
 
   onChasisInput(): void {
-    this.nuevoVehiculo.noChasis = this.limpiarAlfanumerico(
-      this.nuevoVehiculo.noChasis,
-      17
-    );
+    this.nuevoVehiculo.noChasis = this.limpiarAlfanumerico(this.nuevoVehiculo.noChasis, 17);
   }
 
   onMotorInput(): void {
-    this.nuevoVehiculo.noMotor = this.limpiarAlfanumerico(
-      this.nuevoVehiculo.noMotor,
-      50
-    );
+    this.nuevoVehiculo.noMotor = this.limpiarAlfanumerico(this.nuevoVehiculo.noMotor, 50);
   }
 
   private limpiarAlfanumerico(valor: string, maximo: number): string {
@@ -272,8 +263,7 @@ export class Vehiculos implements OnInit {
     }
 
     return this.modelos.filter(
-      (modelo: any) =>
-        Number(modelo.idMarca) === Number(this.nuevoVehiculo.idMarca)
+      (modelo: any) => Number(modelo.idMarca) === Number(this.nuevoVehiculo.idMarca)
     );
   }
 
@@ -281,80 +271,56 @@ export class Vehiculos implements OnInit {
     this.nuevoVehiculo.idModelo = null;
   }
 
- seleccionarImagen(event: Event): void {
-  const input = event.target as HTMLInputElement;
+  seleccionarImagen(event: Event): void {
+    const input = event.target as HTMLInputElement;
 
-  if (!input.files || input.files.length === 0) {
-    this.imagenSeleccionada = null;
-    this.imagenPreview = null;
-    return;
+    if (!input.files || input.files.length === 0) {
+      this.imagenSeleccionada = null;
+      this.imagenPreview = null;
+      return;
+    }
+
+    const archivo = input.files[0];
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    const extensionesPermitidas = ['.jpg', '.jpeg', '.png', '.webp'];
+    const nombreArchivo = archivo.name.toLowerCase();
+    const extensionValida = extensionesPermitidas.some(extension => nombreArchivo.endsWith(extension));
+
+    if (!tiposPermitidos.includes(archivo.type) || !extensionValida) {
+      alert('Formato de imagen no permitido. Utiliza JPG, JPEG, PNG o WEBP.');
+      input.value = '';
+      this.imagenSeleccionada = null;
+      this.imagenPreview = null;
+      return;
+    }
+
+    const tamanoMaximo = 5 * 1024 * 1024;
+    if (archivo.size > tamanoMaximo) {
+      alert('La imagen no puede superar los 5 MB.');
+      input.value = '';
+      this.imagenSeleccionada = null;
+      this.imagenPreview = null;
+      return;
+    }
+
+    this.imagenSeleccionada = archivo;
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.imagenPreview = reader.result as string;
+      this.cdr.detectChanges();
+    };
+
+    reader.onerror = () => {
+      alert('No fue posible leer la imagen seleccionada.');
+      input.value = '';
+      this.imagenSeleccionada = null;
+      this.imagenPreview = null;
+    };
+
+    reader.readAsDataURL(archivo);
   }
 
-  const archivo = input.files[0];
-
-  const tiposPermitidos = [
-    'image/jpeg',
-    'image/png',
-    'image/webp'
-  ];
-
-  const extensionesPermitidas = [
-    '.jpg',
-    '.jpeg',
-    '.png',
-    '.webp'
-  ];
-
-  const nombreArchivo = archivo.name.toLowerCase();
-
-  const extensionValida = extensionesPermitidas.some(
-    extension => nombreArchivo.endsWith(extension)
-  );
-
-  if (
-    !tiposPermitidos.includes(archivo.type) ||
-    !extensionValida
-  ) {
-    alert(
-      'Formato de imagen no permitido. Utiliza JPG, JPEG, PNG o WEBP.'
-    );
-
-    input.value = '';
-    this.imagenSeleccionada = null;
-    this.imagenPreview = null;
-    return;
-  }
-
-  const tamanoMaximo = 5 * 1024 * 1024;
-
-  if (archivo.size > tamanoMaximo) {
-    alert('La imagen no puede superar los 5 MB.');
-
-    input.value = '';
-    this.imagenSeleccionada = null;
-    this.imagenPreview = null;
-    return;
-  }
-
-  this.imagenSeleccionada = archivo;
-
-  const reader = new FileReader();
-
-  reader.onload = () => {
-    this.imagenPreview = reader.result as string;
-    this.cdr.detectChanges();
-  };
-
-  reader.onerror = () => {
-    alert('No fue posible leer la imagen seleccionada.');
-
-    input.value = '';
-    this.imagenSeleccionada = null;
-    this.imagenPreview = null;
-  };
-
-  reader.readAsDataURL(archivo);
-}
   guardarVehiculo(): void {
     if (!this.nuevoVehiculo.descripcion || !this.nuevoVehiculo.noPlaca) {
       alert('Por favor, completa la descripción y la placa.');
@@ -370,20 +336,12 @@ export class Vehiculos implements OnInit {
       return;
     }
 
-    if (
-      this.nuevoVehiculo.noChasis &&
-      !/^[A-Z0-9]{1,17}$/.test(this.nuevoVehiculo.noChasis)
-    ) {
+    if (this.nuevoVehiculo.noChasis && !/^[A-Z0-9]{1,17}$/.test(this.nuevoVehiculo.noChasis)) {
       alert('El chasis solo puede contener letras y números y debe tener un máximo de 17 caracteres.');
       return;
     }
 
-    if (
-      !this.nuevoVehiculo.idMarca ||
-      !this.nuevoVehiculo.idModelo ||
-      !this.nuevoVehiculo.idTipoVehiculo ||
-      !this.nuevoVehiculo.idTipoCombustible
-    ) {
+    if (!this.nuevoVehiculo.idMarca || !this.nuevoVehiculo.idModelo || !this.nuevoVehiculo.idTipoVehiculo || !this.nuevoVehiculo.idTipoCombustible) {
       alert('Selecciona marca, modelo, tipo de vehículo y combustible.');
       return;
     }
@@ -416,7 +374,6 @@ export class Vehiculos implements OnInit {
           alert(typeof err.error === 'string' ? err.error : 'Error al actualizar. Revisa la consola.');
         }
       });
-
       return;
     }
 
@@ -439,17 +396,14 @@ export class Vehiculos implements OnInit {
     });
   }
 
- subirImagenVehiculo(idVehiculo: number): void {
-  if (!this.imagenSeleccionada) {
-    return;
-  }
+  subirImagenVehiculo(idVehiculo: number): void {
+    if (!this.imagenSeleccionada) {
+      return;
+    }
 
-  this.vehiculoService
-    .subirImagen(idVehiculo, this.imagenSeleccionada)
-    .subscribe({
+    this.vehiculoService.subirImagen(idVehiculo, this.imagenSeleccionada).subscribe({
       next: () => {
         alert('Vehículo e imagen guardados correctamente.');
-
         this.cancelar();
         this.cargarVehiculos();
       },
@@ -459,33 +413,22 @@ export class Vehiculos implements OnInit {
         const mensaje =
           typeof err?.error === 'string'
             ? err.error
-            : err?.error?.message ||
-              err?.error?.title ||
-              'El vehículo se guardó, pero no fue posible subir la imagen.';
+            : err?.error?.message || err?.error?.title || 'El vehículo se guardó, pero no fue posible subir la imagen.';
 
         alert(mensaje);
-
-        /*
-         * No cerramos el formulario automáticamente.
-         * Así el usuario puede elegir otra imagen y editar
-         * el vehículo que ya fue creado.
-         */
         this.imagenSeleccionada = null;
         this.imagenPreview = null;
         this.cargarVehiculos();
         this.cdr.detectChanges();
       }
     });
-}
+  }
+
   editar(vehiculo: any): void {
     this.nuevoVehiculo = { ...vehiculo };
 
-    if (
-      !this.nuevoVehiculo.idTipoCombustible &&
-      this.nuevoVehiculo.idCombustible
-    ) {
-      this.nuevoVehiculo.idTipoCombustible =
-        this.nuevoVehiculo.idCombustible;
+    if (!this.nuevoVehiculo.idTipoCombustible && this.nuevoVehiculo.idCombustible) {
+      this.nuevoVehiculo.idTipoCombustible = this.nuevoVehiculo.idCombustible;
     }
 
     this.modoEdicion = true;
@@ -493,22 +436,13 @@ export class Vehiculos implements OnInit {
     this.imagenSeleccionada = null;
     this.imagenPreview = null;
 
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     this.cdr.detectChanges();
   }
 
   eliminar(id?: number): void {
-    if (!id) {
-      return;
-    }
-
-    if (!confirm('¿Deseas eliminar este vehículo?')) {
-      return;
-    }
+    if (!id) return;
+    if (!confirm('¿Deseas eliminar este vehículo?')) return;
 
     this.vehiculoService.eliminarVehiculo(id).subscribe({
       next: () => {
@@ -517,10 +451,7 @@ export class Vehiculos implements OnInit {
       },
       error: (err: any) => {
         console.error('Error al eliminar vehículo:', err);
-
-        alert(
-          'No se pudo eliminar el vehículo. Puede estar relacionado con una renta o inspección.'
-        );
+        alert('No se pudo eliminar el vehículo. Puede estar relacionado con una renta o inspección.');
       }
     });
   }
@@ -535,38 +466,23 @@ export class Vehiculos implements OnInit {
   }
 
   obtenerMarca(idMarca: number): string {
-    const marca = this.marcas.find(
-      (item: any) => Number(item.id) === Number(idMarca)
-    );
-
+    const marca = this.marcas.find((item: any) => Number(item.id) === Number(idMarca));
     return marca ? marca.descripcion : 'N/A';
   }
 
   obtenerModelo(idModelo: number): string {
-    const modelo = this.modelos.find(
-      (item: any) => Number(item.id) === Number(idModelo)
-    );
-
+    const modelo = this.modelos.find((item: any) => Number(item.id) === Number(idModelo));
     return modelo ? modelo.descripcion : 'N/A';
   }
 
   obtenerTipoVehiculo(idTipoVehiculo: number): string {
-    const tipo = this.tiposVehiculos.find(
-      (item: any) => Number(item.id) === Number(idTipoVehiculo)
-    );
-
+    const tipo = this.tiposVehiculos.find((item: any) => Number(item.id) === Number(idTipoVehiculo));
     return tipo ? tipo.descripcion : 'N/A';
   }
 
   obtenerCombustible(vehiculo: any): string {
-    const id =
-      vehiculo.idTipoCombustible ??
-      vehiculo.idCombustible;
-
-    const combustible = this.tiposCombustibles.find(
-      (item: any) => Number(item.id) === Number(id)
-    );
-
+    const id = vehiculo.idTipoCombustible ?? vehiculo.idCombustible;
+    const combustible = this.tiposCombustibles.find((item: any) => Number(item.id) === Number(id));
     return combustible ? combustible.descripcion : 'N/A';
   }
 }
