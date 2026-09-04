@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Auth;
 using RentCar.API.Models;
@@ -12,6 +13,7 @@ namespace RentCar.API.Controllers;
 public sealed class AuthController(RentCarDbContext context, IPasswordHasher<Empleado> hasher, TokenService tokens) : ControllerBase
 {
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login(LoginRequest request, CancellationToken cancellationToken)
     {
