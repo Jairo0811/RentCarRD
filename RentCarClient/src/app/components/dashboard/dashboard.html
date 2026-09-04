@@ -215,7 +215,7 @@
       <div class="recent-cars">
         <div class="recent-car" *ngFor="let v of vehiculosRecientes">
           <div class="car-thumb">
-            <img *ngIf="v.imagenUrl" [src]="'http://localhost:5266' + v.imagenUrl" alt="Vehículo">
+            <img *ngIf="v.imagenUrl" [src]="apiBaseUrl + v.imagenUrl" alt="Vehículo">
             <span *ngIf="!v.imagenUrl">
               <i class="bi bi-car-front-fill"></i>
             </span>

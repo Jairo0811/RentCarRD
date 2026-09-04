@@ -7,38 +7,50 @@
 </p>
 
 <p align="center">
-    <img src="https://img.shields.io/badge/UNAPEC-ISO--715-003B70?style=for-the-badge" alt="UNAPEC ISO-715">
+  <img src="https://img.shields.io/badge/UNAPEC-ISO--715-003B70?style=for-the-badge" alt="UNAPEC ISO-715">
 </p>
 
 <p align="center">
   <strong>Aplicación web para administrar clientes, empleados, vehículos, inspecciones, rentas, devoluciones y reportes.</strong><br>
-  Desarrollada con Angular, ASP.NET Core Web API, Entity Framework Core y Microsoft SQL Server.
+  Angular + ASP.NET Core Web API + Entity Framework Core + Microsoft SQL Server.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Estado-Finalizado-success" alt="Estado del proyecto" />
-  <img src="https://img.shields.io/badge/Versión-1.1-blue" alt="Versión" />
-  <img src="https://img.shields.io/badge/Entrega-Académica%20Completada-success" alt="Entrega académica" />
-  <img src="https://img.shields.io/badge/Proyecto-Académico%20y%20Portafolio-purple" alt="Tipo de proyecto" />
+  <img src="https://img.shields.io/badge/Versión-1.2-blue" alt="Versión" />
+  <img src="https://img.shields.io/badge/Portfolio%20Edition-2026-purple" alt="Portfolio Edition" />
+  <img src="https://img.shields.io/badge/Mantenimiento-Correcciones%20críticas-lightgrey" alt="Maintenance mode" />
 </p>
 
+## 🧊 Estado final — v1.2 Portfolio Edition
+
+**RentCarRD está finalizado.** La versión **1.2** representa el cierre técnico del proyecto académico y su edición definitiva para portafolio.
+
+A partir de esta versión el alcance funcional queda **congelado**. El repositorio entra en **maintenance mode**: únicamente se contemplan correcciones críticas de seguridad, compatibilidad o documentación; no se mantiene un roadmap de expansión funcional ni una evolución hacia SaaS dentro de este repositorio.
+
+La edición 1.2 incorpora el hardening final del proyecto:
+
+- configuración de frontend por entorno, sin URLs de API repetidas en los servicios;
+- configuración backend portable y sin conexiones asociadas a una computadora específica;
+- JWT y contraseñas con hash;
+- autorización requerida por defecto;
+- rate limiting global y específico para autenticación;
+- CORS configurable y validación de HTTPS en producción;
+- HSTS y cabeceras HTTP de seguridad;
+- endpoint público `GET /health`;
+- secretos de desarrollo mediante .NET User Secrets;
+- pipeline CI para backend y frontend;
+- Dependabot para NuGet, npm y GitHub Actions.
+
+> **Propósito:** proyecto académico y pieza de portafolio full-stack. No se presenta como producto SaaS comercial listo para operar sin adaptación adicional.
+
+---
 
 ## 📖 Descripción
 
 **RentCarRD** es una aplicación web orientada a la gestión operativa de empresas de alquiler de vehículos.
 
-El sistema centraliza el registro de clientes, empleados, vehículos, catálogos, inspecciones, rentas y devoluciones. También aplica reglas de negocio para controlar la disponibilidad de la flota, valida los datos relevantes del dominio y genera contratos y reportes financieros en PDF y Excel.
-
-El proyecto utiliza una arquitectura cliente-servidor:
-
-- **Frontend:** Angular y TypeScript.
-- **Backend:** ASP.NET Core Web API y C#.
-- **Persistencia:** Entity Framework Core y Microsoft SQL Server.
-- **Comunicación:** API REST mediante HTTP y JSON.
-
-RentCarRD forma parte de una colección de proyectos académicos desarrollados en la **Universidad APEC (UNAPEC)**, tomando como referencia proyectos propuestos por el profesor **Juan Pablo Valdez Reyes**.
-
----
+Centraliza clientes, empleados, flota, catálogos, inspecciones, rentas y devoluciones. Aplica reglas de negocio para controlar la disponibilidad de vehículos, incorpora validaciones dominicanas de cédula y RNC, calcula importes de renta e ITBIS y genera contratos y reportes en PDF y Excel.
 
 | Información | Detalle |
 |---|---|
@@ -48,108 +60,59 @@ RentCarRD forma parte de una colección de proyectos académicos desarrollados e
 | 👨‍🏫 Profesor | **Juan Pablo Valdez Reyes** |
 | 🏫 Institución | **Universidad APEC (UNAPEC)** |
 | 📅 Período académico | **Mayo - Agosto 2026** |
+| 📦 Edición final | **v1.2 Portfolio Edition** |
 
-
+---
 
 ## 🧭 Continuidad académica
 
-**RentCarRD** forma parte de la colección de proyectos académicos documentados de Francis Jairo Matías Rosario en la Universidad APEC (UNAPEC). Siguiendo el mismo criterio aplicado en EcoSoft, la continuidad se registra únicamente cuando existe una coincidencia verificable por **estudiante** o **profesor**; compartir período académico o una referencia histórica no se considera suficiente por sí solo.
+RentCarRD fue desarrollado como proyecto académico individual por **Francis Jairo Matías Rosario (A00115261)**.
 
-### 👥 Continuidad por estudiante
+El profesor efectivo de **ISO-715** fue **Juan Pablo Valdez Reyes**. Además, RentCarRD comparte con [**MediCore**](https://github.com/Jairo0811/MediCore) y [**CineGest**](https://github.com/Jairo0811/CineGest) un origen documental común: los tres problemas de negocio derivan de enunciados de Proyecto Final de Universidad APEC elaborados por Juan Pablo Valdez Reyes en 2020.
 
-RentCarRD fue desarrollado como proyecto académico individual por **Francis Jairo Matías Rosario (A00115261)**. Por esa razón, no existe un equipo de compañeros dentro de este proyecto que permita establecer una continuidad estudiantil con otro repositorio.
+| Enunciado académico de 2020 | Evolución en el portafolio |
+|---|---|
+| Dispensario Médico | [**MediCore**](https://github.com/Jairo0811/MediCore) |
+| Sistema de Video Club | [**CineGest**](https://github.com/Jairo0811/CineGest) |
+| Sistema de Rentcar | **RentCarRD** |
 
-### 👨‍🏫 Continuidad por profesor
+Esta relación se documenta como **continuidad por origen del enunciado académico**, distinta de la continuidad por profesor de la asignatura cursada.
 
-El profesor de **Desarrollo de Software con Tecnología Open Source 2 (ISO-715)** fue **Juan Pablo Valdez Reyes**. En la colección actual no se ha verificado una segunda asignatura cursada por Francis Jairo Matías Rosario con el mismo profesor.
-
-Aunque no existe una segunda asignatura verificada cursada con Juan Pablo Valdez Reyes, RentCarRD sí comparte con [**MediCore**](https://github.com/Jairo0811/MediCore) y [**CineGest**](https://github.com/Jairo0811/CineGest) un **origen documental común**: los tres problemas de negocio provienen de presentaciones de **Proyecto Final de Universidad APEC elaboradas por Juan Pablo Valdez Reyes en 2020**.
-
-### 📚 Línea académica de Juan Pablo Valdez Reyes
-
-Los documentos de **Dispensario Médico**, **Video Club** y **Rentcar** identifican explícitamente a **Juan Pablo Valdez Reyes** y establecen los requerimientos base que posteriormente dieron origen o sirvieron como referencia para MediCore, CineGest y RentCarRD.
-
-| Orden | Enunciado académico de 2020 | Evolución en el portafolio | Relación con Juan Pablo Valdez Reyes |
-|---:|---|---|---|
-| 1 | Dispensario Médico de UNAPEC | [**MediCore**](https://github.com/Jairo0811/MediCore) | Enunciado de Proyecto Final elaborado por **Juan Pablo Valdez Reyes** |
-| 2 | Sistema de Video Club | [**CineGest**](https://github.com/Jairo0811/CineGest) | Enunciado de Proyecto Final elaborado por **Juan Pablo Valdez Reyes** |
-| 3 | Sistema de Rentcar | **RentCarRD** | Enunciado de Proyecto Final elaborado por **Juan Pablo Valdez Reyes** |
-
-Esta relación se denomina **continuidad por origen del enunciado académico**. Es distinta de la continuidad por profesor de asignatura: Juan Pablo Valdez Reyes sí fue el profesor efectivo de RentCarRD en **ISO-715**, mientras que MediCore y CineGest fueron impartidos en 2026 por **Ing. Omar Antonio De Jesus De La Cruz Gonzalez**.
-
-| Tipo | Estado | Evidencia |
-|---|---|---|
-| 👥 Estudiante | No aplica | Proyecto académico individual |
-| 👨‍🏫 Profesor | No verificado | Solo se ha documentado ISO-715 con Juan Pablo Valdez Reyes |
-| 📚 Origen de enunciado recurrente | Verificado | MediCore, CineGest y RentCarRD parten de presentaciones de Proyecto Final de **Juan Pablo Valdez Reyes (2020)** |
-
-La separación entre estos ejes evita confundir al **autor/origen del enunciado** con el **profesor efectivo de cada asignatura cursada**.
+---
 
 ## 🛠️ Stack tecnológico
 
-### 🎨 Frontend y diseño de interfaces
+### Frontend
 
-<p>
-  <img src="https://skillicons.dev/icons?i=angular,ts,html,css,bootstrap" alt="Angular, TypeScript, HTML, CSS y Bootstrap" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/chartjs/chartjs-original.svg" alt="Chart.js" title="Chart.js" width="48" height="48" />
-</p>
+- **Angular 21**
+- **TypeScript 5.9**
+- HTML5 y CSS3
+- Bootstrap 5
+- SweetAlert2
+- Chart.js + ng2-charts
+- jsPDF + jsPDF AutoTable
+- SheetJS (`xlsx`) para exportación de reportes
 
-<p>
-  <img src="https://img.shields.io/badge/SweetAlert2-Alertas-7066E0?style=flat-square&logo=javascript&logoColor=white" alt="SweetAlert2" />
-  <img src="https://img.shields.io/badge/jsPDF-Reportes%20PDF-F43F5E?style=flat-square&logo=javascript&logoColor=white" alt="jsPDF" />
-  <img src="https://img.shields.io/badge/SheetJS-Excel-217346?style=flat-square&logo=microsoftexcel&logoColor=white" alt="SheetJS" />
-</p>
+### Backend
 
-- **Angular 21:** construcción de la aplicación web SPA.
-- **TypeScript:** lógica, tipado y componentes del cliente.
-- **HTML5:** estructura semántica de las vistas.
-- **CSS3:** estilos personalizados.
-- **Bootstrap 5:** diseño responsivo y componentes visuales.
-- **SweetAlert2:** alertas visuales para mensajes de éxito, error, advertencia e información.
-- **Chart.js y ng2-charts:** gráficos del dashboard.
-- **jsPDF y jsPDF AutoTable:** generación de contratos y reportes PDF.
-- **SheetJS (`xlsx`):** exportación de reportes a Excel.
+- **.NET 10**
+- **ASP.NET Core Web API**
+- C#
+- Entity Framework Core
+- JWT Bearer Authentication
+- PasswordHasher
+- Swagger / OpenAPI
+- ASP.NET Core Rate Limiting
 
-### ⚙️ Backend, frameworks y APIs
+### Datos y herramientas
 
-<p>
-  <img src="https://skillicons.dev/icons?i=dotnet,cs" alt=".NET y C#" />
-</p>
-
-<p>
-  <img src="https://img.shields.io/badge/ASP.NET%20Core-Web%20API-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt="ASP.NET Core Web API" />
-  <img src="https://img.shields.io/badge/Entity%20Framework%20Core-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt="Entity Framework Core" />
-  <img src="https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?style=flat-square&logo=swagger&logoColor=black" alt="Swagger y OpenAPI" />
-</p>
-
-- **ASP.NET Core Web API:** exposición de los endpoints REST.
-- **C#:** reglas de negocio, controladores y servicios del backend.
-- **Entity Framework Core:** acceso, mapeo y persistencia de datos.
-- **HTTP y JSON:** comunicación entre Angular y la API.
-- **Swagger/OpenAPI:** exploración y prueba de endpoints.
-
-### 🗄️ Base de datos y persistencia
-
-<p>
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/microsoftsqlserver/microsoftsqlserver-plain.svg" alt="Microsoft SQL Server" width="48" height="48" />
-</p>
-
-- **Microsoft SQL Server:** base de datos relacional principal.
-- **Migraciones de Entity Framework Core:** evolución controlada del esquema.
-- **Script `RentCarDB.sql`:** creación y preparación inicial de la base de datos.
-- **Almacenamiento local de imágenes:** recursos de vehículos publicados desde el backend.
-
-### 🧰 Herramientas de desarrollo
-
-<p>
-  <img src="https://skillicons.dev/icons?i=npm,visualstudio,vscode,git,github" alt="npm, Visual Studio, Visual Studio Code, Git y GitHub" />
-</p>
-
-- **Visual Studio:** desarrollo y depuración del backend.
-- **Visual Studio Code:** desarrollo del frontend y edición general.
-- **SQL Server Management Studio:** administración y validación de la base de datos.
-- **npm y Angular CLI:** dependencias, compilación y ejecución del frontend.
-- **Git y GitHub:** control de versiones y publicación del proyecto.
+- Microsoft SQL Server
+- Migraciones de Entity Framework Core
+- npm y Angular CLI
+- Visual Studio / Visual Studio Code
+- Git + GitHub
+- GitHub Actions
+- Dependabot
 
 ---
 
@@ -160,89 +123,64 @@ La separación entre estos ejes evita confundir al **autor/origen del enunciado*
 │ Angular + TypeScript     │
 │ Frontend SPA             │
 └────────────┬─────────────┘
-             │ HTTP / JSON
+             │ HTTPS / JSON + JWT
              ▼
 ┌──────────────────────────┐
 │ ASP.NET Core Web API     │
-│ Controladores y reglas   │
+│ Auth + reglas de negocio │
 └────────────┬─────────────┘
              │ Entity Framework Core
              ▼
 ┌──────────────────────────┐
 │ Microsoft SQL Server     │
-│ Persistencia de datos    │
+│ Persistencia             │
 └──────────────────────────┘
 ```
 
-El frontend funciona como una **Single Page Application (SPA)**. La API expone endpoints REST para las operaciones de clientes, empleados, vehículos, catálogos, inspecciones, rentas y devoluciones.
+El frontend utiliza archivos `environment` de Angular para resolver la URL de la API según el entorno. En producción puede utilizar una API servida bajo el mismo origen (`apiBaseUrl: ''`) o adaptarse al host correspondiente.
 
 ---
 
-## ✨ Funcionalidades principales
+## ✨ Funcionalidades
 
 ### 📊 Dashboard ejecutivo
 
-- Indicadores operativos de la empresa.
-- Total de vehículos registrados.
+- Indicadores de flota y clientes.
 - Vehículos disponibles, rentados y no disponibles.
-- Total de clientes.
 - Rentas activas y concluidas.
 - Ingresos acumulados.
-- Últimas rentas registradas.
+- Últimas rentas.
 - Vehículos agregados recientemente.
-- Gráficos y accesos rápidos a los módulos principales.
+- Accesos rápidos a módulos principales.
 
-### 👤 Gestión de clientes
+### 👤 Clientes
 
-- Registro, edición, consulta y eliminación de clientes.
-- Activación e inactivación de registros.
-- Clasificación por tipo de persona:
-  - Persona física.
-  - Persona jurídica.
-- Validación de **cédula dominicana** para personas físicas.
-- Validación de **RNC dominicano** para personas jurídicas.
-- Formato automático del documento según el tipo de persona.
-- Prevención de cédulas y RNC duplicados.
-- Registro y validación del límite de crédito.
-- Restricción de valores negativos.
-- Registro opcional de método de pago ficticio.
-- Detección de Visa, Mastercard, American Express y Discover.
-- Validación de tarjetas mediante algoritmo de Luhn.
-- Validación de fecha de expiración.
-- Visualización de franquicia y últimos cuatro dígitos.
-- El CVV se utiliza únicamente de forma temporal y no se almacena.
+- CRUD de clientes.
+- Persona física y jurídica.
+- Validación de cédula dominicana y RNC.
+- Prevención de documentos duplicados.
+- Límite de crédito y restricciones de valores inválidos.
+- Manejo académico de información no sensible asociada a métodos de pago.
 
-### 👨‍💼 Gestión de empleados
+### 👨‍💼 Empleados y acceso
 
-- Registro, edición y eliminación de empleados.
-- Activación e inactivación de cuentas.
-- Validación del nombre completo.
-- Validación y formato de cédula dominicana.
-- Prevención de cédulas duplicadas.
-- Prevención de usuarios de acceso duplicados.
-- Selección de tanda desde una lista.
-- Validación del porcentaje de comisión.
-- Selección del estado desde una lista.
-- Inicio de sesión para administrador y empleados.
-- Asociación automática del empleado responsable a cada renta.
+- CRUD administrativo de empleados.
+- Activación e inactivación.
+- Usuario único y validación de cédula.
+- Porcentaje de comisión y tanda laboral.
+- Contraseñas almacenadas mediante `PasswordHasher`.
+- Inicio de sesión con JWT.
+- Roles `Admin` y `Empleado`.
+- Asociación del empleado autenticado con las operaciones de renta.
 
-### 🚗 Gestión de vehículos
+### 🚗 Vehículos
 
-- Registro, edición, consulta y eliminación de vehículos.
-- Carga y vista previa de imágenes.
-- Buscador en tiempo real.
+- CRUD de vehículos.
+- Carga y vista previa de imágenes JPG, PNG y WebP.
 - Búsqueda por descripción, marca, modelo, placa, chasis, motor, tipo, combustible y estado.
-- Filtros por estado operativo.
-- Contadores de vehículos disponibles, rentados y no disponibles.
-- Validación de placa alfanumérica.
-- Validación de chasis.
-- Conversión automática de placa, chasis y motor a mayúsculas.
-- Prevención de placas y chasis duplicados.
-- Selección de marca, modelo, tipo de vehículo y combustible desde catálogos.
-- Estados operativos:
-  - `Disponible`.
-  - `Rentado`.
-  - `NoDisponible`.
+- Validaciones de placa y chasis.
+- Prevención de duplicados.
+- Estados `Disponible`, `Rentado` y `NoDisponible`.
 
 ### 📚 Catálogos
 
@@ -251,264 +189,205 @@ El frontend funciona como una **Single Page Application (SPA)**. La API expone e
 - Tipos de vehículos.
 - Tipos de combustible.
 
-Los valores controlados se seleccionan desde listas para evitar inconsistencias y texto libre innecesario.
+### 🔍 Inspecciones
 
-### 🔍 Inspección de flota
-
-- Registro de inspecciones.
-- Asociación con cliente y vehículo.
-- Estado de las gomas.
-- Estado de los cristales.
-- Goma de repuesto.
-- Gato hidráulico.
+- Registro de inspecciones asociado a cliente y vehículo.
+- Gomas, cristales, repuesto y gato hidráulico.
 - Nivel de combustible.
-- Ralladuras.
-- Observaciones generales.
+- Ralladuras y observaciones.
 
-### 🔑 Gestión de rentas
+### 🔑 Rentas
 
 - Registro de contratos de renta.
-- Selección de cliente, empleado y vehículo.
+- Selección de cliente y vehículo.
 - Asociación del empleado autenticado.
-- Validación de cantidad de días y tarifa diaria.
-- Cálculo automático de:
-  - Subtotal.
-  - ITBIS del 18 %.
-  - Total a pagar.
-- Cálculo de la fecha estimada de devolución.
-- Cambio automático del vehículo de `Disponible` a `Rentado`.
-- Restricción para impedir rentar vehículos no disponibles.
-- Generación de contrato profesional en PDF.
-
-### 🔄 Gestión de devoluciones
-
-- Procesamiento de la devolución del vehículo.
-- Cambio automático de la renta a `Concluida`.
-- Registro de la fecha de devolución.
-- Cambio del vehículo devuelto a `NoDisponible`.
-- Bloqueo para impedir que un vehículo devuelto vuelva a rentarse.
-- Conservación del historial completo de la operación.
-
-### 🔔 Alertas y retroalimentación visual
-
-- Mensajes de éxito, error, advertencia e información mediante SweetAlert2.
-- Sustitución de las ventanas genéricas del navegador para las operaciones principales.
-- Estilo visual consistente con la interfaz del sistema.
-- Mensajes más claros para validaciones y resultados de operaciones.
-
-### 📄 Contratos y reportes PDF
-
-- Contrato profesional de renta.
-- Reporte general de rentas.
-- Información de la empresa.
-- Información del cliente.
-- Información del vehículo.
-- Marca, modelo y placa.
-- Información del empleado responsable.
-- Fecha de renta y devolución.
-- Estado de la operación.
 - Tarifa diaria y cantidad de días.
-- Subtotal, ITBIS y total.
-- Resumen financiero.
-- Espacios para firmas del cliente y representante.
-- Formato listo para impresión.
+- Cálculo de subtotal, ITBIS de 18 % y total.
+- Fecha estimada de devolución.
+- Bloqueo de vehículos no disponibles.
+- Cambio automático del estado de la flota.
+- Contrato PDF.
 
-### 📊 Exportación a Excel
+### 🔄 Devoluciones
 
-El reporte de rentas puede exportarse a un archivo `.xlsx` con:
+- Cierre de la renta.
+- Fecha real de devolución.
+- Cambio del vehículo a `NoDisponible`.
+- Conservación del historial de la operación.
 
-- Hoja **Rentas**, con el detalle de las operaciones.
-- Hoja **Resumen**, con indicadores y totales financieros.
-- Subtotal acumulado.
-- ITBIS acumulado.
-- Total general facturado.
+### 📄 Reportes
 
----
-
-## ✅ Validaciones implementadas
-
-RentCarRD aplica validaciones tanto en el frontend como en el backend para proteger la integridad de los datos.
-
-| Módulo | Validaciones principales |
-|---|---|
-| Clientes | Cédula, RNC, documento duplicado, límite de crédito, tarjeta y expiración |
-| Empleados | Nombre, usuario único, cédula, tanda, comisión y estado |
-| Vehículos | Placa, chasis, año, catálogos y estado operativo |
-| Rentas | Cliente, empleado, vehículo, disponibilidad, tarifa y cantidad de días |
-| Finanzas | Subtotal, ITBIS y total calculados automáticamente |
+- Contrato de renta en PDF.
+- Reporte general en PDF.
+- Exportación `.xlsx`.
+- Filtros por fecha, cliente, vehículo y estado.
+- Subtotal, ITBIS y total acumulado.
 
 ---
 
-## 🔐 Roles y acceso
+## 🔐 Seguridad de la edición 1.2
 
-### 👑 Administrador
+La API aplica autenticación de manera predeterminada. Los endpoints públicos se limitan a:
 
-Tiene acceso a:
+- `POST /api/auth/login`
+- `GET /health`
 
-- Dashboard.
-- Clientes.
-- Empleados.
-- Vehículos.
-- Catálogos.
-- Inspecciones.
-- Rentas y devoluciones.
-- Reportes PDF y Excel.
+Controles implementados:
 
-### 👨‍💼 Empleado
+- JWT firmado con validación de issuer, audience, firma y expiración.
+- Contraseñas con hash mediante ASP.NET Core Identity `PasswordHasher`.
+- Administración de empleados restringida al rol `Admin`.
+- Rate limiting global por IP.
+- Rate limiting reforzado para el login.
+- CORS definido mediante configuración.
+- Producción restringida a orígenes HTTPS.
+- HSTS fuera de Development.
+- Redirección HTTPS.
+- `X-Content-Type-Options: nosniff`.
+- `X-Frame-Options: DENY`.
+- `Referrer-Policy: no-referrer`.
+- `Permissions-Policy` restrictiva.
+- JWT y contraseña bootstrap fuera del repositorio.
 
-Puede:
-
-- Registrar clientes.
-- Consultar vehículos.
-- Registrar rentas.
-- Procesar operaciones permitidas.
-- Generar contratos.
-
-Cada renta queda asociada automáticamente al empleado que realizó la operación.
-
-> Las credenciales del entorno académico deben sustituirse antes de utilizar el sistema en producción.
+La guía completa está en [`SECURITY_SETUP.md`](SECURITY_SETUP.md).
 
 ---
 
-## 📂 Estructura del proyecto
+## 📂 Estructura
 
 ```text
-RentCarRD
-│
-├── RentCar.API
-│   └── RentCar.API
-│       ├── Controllers
-│       ├── Helpers
-│       ├── Migrations
-│       ├── Models
-│       ├── Properties
-│       ├── wwwroot
-│       │   └── vehiculos
+RentCarRD/
+├── .github/
+│   ├── dependabot.yml
+│   └── workflows/
+│       └── ci.yml
+├── RentCar.API/
+│   └── RentCar.API/
+│       ├── Auth/
+│       ├── Controllers/
+│       ├── Helpers/
+│       ├── Migrations/
+│       ├── Models/
+│       ├── Properties/
+│       ├── wwwroot/
 │       ├── Program.cs
 │       └── appsettings.json
-│
-├── RentCarClient
-│   ├── public
-│   │   └── images
-│   │       ├── cards
-│   │       └── logo.png
-│   ├── src
-│   │   └── app
-│   │       ├── components
-│   │       ├── services
-│   │       ├── app.routes.ts
-│   │       └── app.config.ts
+├── RentCarClient/
+│   ├── public/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── components/
+│   │   │   └── services/
+│   │   └── environments/
 │   ├── angular.json
-│   ├── package.json
-│   └── tsconfig.app.json
-│
+│   └── package.json
 ├── RentCarDB.sql
+├── SECURITY_SETUP.md
 └── README.md
 ```
 
 ---
 
-## 📋 Requisitos previos
+## 🚀 Ejecución local
 
-Antes de ejecutar el proyecto, instala:
+### Requisitos
 
-- .NET SDK compatible con el backend.
-- Node.js y npm.
-- Angular CLI.
-- Microsoft SQL Server.
-- SQL Server Management Studio.
-- Visual Studio 2022 o Visual Studio Code.
+- .NET SDK 10
+- Node.js compatible con Angular 21
+- npm
+- Microsoft SQL Server o SQL Server LocalDB
 
----
-
-## 🚀 Instalación y ejecución
-
-### 1. Clonar el repositorio
+### 1. Clonar
 
 ```bash
 git clone https://github.com/Jairo0811/RentCarRD.git
 cd RentCarRD
 ```
 
-### 2. Configurar la base de datos
-
-1. Abrir Microsoft SQL Server Management Studio.
-2. Ejecutar el archivo:
-
-```text
-RentCarDB.sql
-```
-
-3. Verificar la cadena de conexión del backend en:
-
-```text
-RentCar.API/RentCar.API/appsettings.json
-```
-
-No publiques credenciales reales en el repositorio.
-
-### 3. Ejecutar el backend
+### 2. Configurar el backend
 
 ```bash
 cd RentCar.API/RentCar.API
 dotnet restore
-dotnet build
-dotnet run
+dotnet user-secrets set "Jwt:Key" "<secreto-aleatorio-de-32-o-mas-caracteres>"
+dotnet ef database update
+dotnet run --launch-profile https
 ```
 
-Swagger estará disponible normalmente en:
+En Development se utiliza por defecto SQL Server LocalDB con la base `RentCarDB`. Para otra instancia, sobrescriba `ConnectionStrings:DefaultConnection` mediante User Secrets o variables de entorno.
+
+API de desarrollo:
 
 ```text
-http://localhost:5266/swagger
+https://localhost:7162
 ```
 
-### 4. Ejecutar el frontend
+Swagger:
 
-En otra terminal, desde la raíz del repositorio:
+```text
+https://localhost:7162/swagger
+```
+
+Health check:
+
+```text
+https://localhost:7162/health
+```
+
+### 3. Configurar el administrador inicial
+
+Si el registro `admin` existe y aún no posee `PasswordHash`, defina temporalmente:
+
+```powershell
+$env:RENTCARRD_BOOTSTRAP_ADMIN_PASSWORD = "<contraseña-de-12-o-mas-caracteres>"
+dotnet run --launch-profile https
+Remove-Item Env:RENTCARRD_BOOTSTRAP_ADMIN_PASSWORD
+```
+
+### 4. Ejecutar Angular
+
+En otra terminal:
 
 ```bash
 cd RentCarClient
-npm install --legacy-peer-deps
-ng serve
+npm ci
+npm start
 ```
 
-La aplicación estará disponible normalmente en:
+Aplicación:
 
 ```text
 http://localhost:4200
 ```
 
-> El modificador `--legacy-peer-deps` evita conflictos de resolución de dependencias en la configuración actual del proyecto.
+Angular utiliza automáticamente `environment.development.ts`, configurado contra `https://localhost:7162`.
 
 ---
 
-## 🧪 Flujo de prueba recomendado
+## 🧪 Validación automatizada
 
-1. Iniciar sesión como administrador.
-2. Registrar o verificar los catálogos.
-3. Registrar un empleado y comprobar las validaciones de usuario, cédula, tanda y comisión.
-4. Registrar un cliente físico con cédula.
-5. Registrar un cliente jurídico con RNC.
-6. Registrar un vehículo con imagen.
-7. Crear una inspección.
-8. Registrar una renta.
-9. Verificar el cálculo de subtotal, ITBIS y total.
-10. Confirmar que el vehículo cambie a `Rentado`.
-11. Generar el contrato PDF.
-12. Exportar el reporte a Excel.
-13. Procesar la devolución.
-14. Verificar que:
-    - la renta aparezca como `Concluida`;
-    - se muestre la fecha de devolución;
-    - el vehículo aparezca como `NoDisponible`;
-    - el vehículo no pueda volver a rentarse;
-    - los reportes reflejen correctamente la operación.
+GitHub Actions ejecuta en cada pull request y en cada push a `main`:
+
+**Backend**
+
+- `dotnet restore`
+- `dotnet build --configuration Release`
+- revisión de paquetes NuGet vulnerables
+
+**Frontend**
+
+- `npm ci`
+- `npm audit --audit-level=high`
+- `npm run build`
+- pruebas unitarias
+
+Dependabot revisa semanalmente dependencias NuGet, npm y GitHub Actions.
 
 ---
 
-## 📊 Estado del proyecto
+## ✅ Estado del proyecto
 
-| Módulo | Estado |
+| Área | Estado |
 |---|:---:|
 | Dashboard | ✅ Finalizado |
 | Clientes | ✅ Finalizado |
@@ -516,51 +395,49 @@ http://localhost:4200
 | Vehículos | ✅ Finalizado |
 | Catálogos | ✅ Finalizado |
 | Inspecciones | ✅ Finalizado |
-| Rentas | ✅ Finalizado |
-| Devoluciones | ✅ Finalizado |
+| Rentas y devoluciones | ✅ Finalizado |
 | Contratos PDF | ✅ Finalizado |
-| Reportes PDF | ✅ Finalizado |
-| Exportación Excel | ✅ Finalizado |
-| Validación de cédula y RNC | ✅ Finalizado |
-| Alertas SweetAlert2 | ✅ Integrado |
-| Login y roles | ✅ Finalizado |
-| API REST | ✅ Finalizado |
-| SQL Server | ✅ Finalizado |
+| Reportes PDF / Excel | ✅ Finalizado |
+| Cédula y RNC | ✅ Finalizado |
+| JWT y hash de contraseñas | ✅ Finalizado |
+| Configuración por entorno | ✅ Finalizado |
+| Hardening HTTP / rate limiting | ✅ Finalizado |
+| CI y Dependabot | ✅ Integrado |
+| Entrega académica | ✅ Completada |
+| Desarrollo funcional | 🧊 Congelado |
+| Estado de mantenimiento | 🔒 Correcciones críticas únicamente |
 
 ---
 
-## 🗺️ Mejoras futuras
+## 🧪 Flujo manual recomendado
 
-- Migración gradual de CSS a SCSS.
-- Migración de confirmaciones nativas restantes a SweetAlert2.
-- Loader global y manejo centralizado de errores HTTP.
-- Reservas y calendario de disponibilidad.
-- Historial de mantenimiento de vehículos.
-- Notificaciones por correo electrónico.
-- Firma digital de contratos.
-- Integración con pasarelas de pago.
-- Recuperación de contraseña.
-- Autenticación con JWT y contraseñas almacenadas mediante hash seguro.
-- Bloqueo temporal por intentos fallidos de inicio de sesión.
-- Pruebas unitarias y de integración.
-- Dockerización del frontend, backend y base de datos.
-- Despliegue en Azure, AWS o infraestructura propia.
-- Evolución hacia una plataforma multiempresa tipo SaaS.
+1. Iniciar sesión como administrador.
+2. Verificar catálogos.
+3. Registrar un empleado.
+4. Registrar clientes físico y jurídico.
+5. Registrar un vehículo con imagen.
+6. Crear una inspección.
+7. Registrar una renta.
+8. Verificar subtotal, ITBIS y total.
+9. Confirmar el cambio del vehículo a `Rentado`.
+10. Generar contrato PDF y reporte Excel/PDF.
+11. Procesar la devolución.
+12. Confirmar renta `Concluida` y vehículo `NoDisponible`.
 
 ---
 
-## ⚠️ Consideraciones de seguridad
+## 🧊 Política de mantenimiento
 
-Este proyecto fue desarrollado con fines académicos y de portafolio. Antes de utilizarlo en un entorno comercial se recomienda:
+La **v1.2 Portfolio Edition** es la última versión funcional planificada de RentCarRD.
 
-- Sustituir las credenciales académicas.
-- Implementar autenticación JWT.
-- Almacenar contraseñas mediante hash y salt.
-- Proteger secretos con variables de entorno o un gestor de secretos.
-- Restringir CORS según el entorno.
-- Utilizar HTTPS.
-- Aplicar autorización por roles en todos los endpoints sensibles.
-- Implementar auditoría y registro de operaciones críticas.
+Se consideran cambios posteriores únicamente cuando sean necesarios para:
+
+- corregir una vulnerabilidad crítica;
+- restaurar compatibilidad con una dependencia o plataforma;
+- corregir un defecto que impida ejecutar la versión documentada;
+- preservar o mejorar documentación técnica sin ampliar el dominio funcional.
+
+No forman parte del alcance futuro de este repositorio reservas online, pagos comerciales, multi-tenancy, facturación fiscal, aplicaciones móviles ni otros módulos orientados a convertirlo en SaaS.
 
 ---
 
@@ -576,5 +453,6 @@ Este proyecto fue desarrollado con fines académicos y de portafolio. Antes de u
 ---
 
 <p align="center">
-  Desarrollado con ❤️ por <strong>Francis Jairo Matías Rosario</strong>
+  <strong>RentCarRD v1.2 — Portfolio Edition</strong><br>
+  Desarrollo funcional finalizado · Maintenance mode
 </p>

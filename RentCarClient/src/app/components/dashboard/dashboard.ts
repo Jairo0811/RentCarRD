@@ -7,6 +7,7 @@ import { RentaService } from '../../services/renta.service';
 import { VehiculoService } from '../../services/vehiculo.service';
 import { ClienteService } from '../../services/cliente.service';
 import { InspeccionService } from '../../services/inspeccion.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-dashboard',
@@ -16,6 +17,7 @@ import { InspeccionService } from '../../services/inspeccion.service';
   styleUrl: './dashboard.css'
 })
 export class DashboardComponent implements OnInit {
+  readonly apiBaseUrl = environment.apiBaseUrl;
 
   vehiculos: any[] = [];
   clientes: any[] = [];
@@ -62,12 +64,9 @@ export class DashboardComponent implements OnInit {
         this.totalVehiculos = this.vehiculos.length;
         this.vehiculosDisponibles = this.vehiculos.filter(v => v.estado === true).length;
         this.vehiculosRentados = this.vehiculos.filter(v => v.estado === false).length;
-
         this.totalClientes = this.clientes.length;
-
         this.rentasActivas = this.rentas.filter(r => r.estado === 'Activa' || r.estado === 'Abierta').length;
         this.rentasConcluidas = this.rentas.filter(r => r.estado === 'Concluida').length;
-
         this.totalInspecciones = this.inspecciones.length;
 
         this.ingresosTotales = this.rentas.reduce((total: number, renta: any) => {

@@ -2,11 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TipoVehiculo } from '../components/tipos-vehiculos/tipos-vehiculos';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class TipoVehiculoService {
-  // Asegúrate de que el puerto coincida con tu backend (5266 o 7112)
-  private apiUrl = 'http://localhost:5266/api/TiposVehiculos'; 
+  private readonly apiUrl = `${environment.apiBaseUrl}/api/TiposVehiculos`;
 
   constructor(private http: HttpClient) { }
 
