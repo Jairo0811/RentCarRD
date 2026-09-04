@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface LoginResponse {
   accessToken: string;
@@ -12,7 +13,8 @@ export interface LoginResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly apiUrl = 'http://localhost:5266/api/auth';
+  private readonly apiUrl = `${environment.apiBaseUrl}/api/auth`;
+
   constructor(private readonly http: HttpClient) {}
 
   login(usuario: string, password: string): Observable<LoginResponse> {
@@ -27,13 +29,20 @@ export class AuthService {
     );
   }
 
-  token(): string | null { return sessionStorage.getItem('accessToken'); }
+  token(): string | null {
+    return typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('accessToken') : null;
+  }
+
   isAuthenticated(): boolean {
+    if (typeof sessionStorage === 'undefined') return false;
     const expires = sessionStorage.getItem('tokenExpiresAt');
     return !!this.token() && !!expires && Date.parse(expires) > Date.now();
   }
+
   logout(): void {
-    sessionStorage.clear();
-    ['rolUsuario', 'idEmpleado', 'nombreUsuario'].forEach(key => localStorage.removeItem(key));
+    if (typeof sessionStorage !== 'undefined') sessionStorage.clear();
+    if (typeof localStorage !== 'undefined') {
+      ['rolUsuario', 'idEmpleado', 'nombreUsuario'].forEach(key => localStorage.removeItem(key));
+    }
   }
 }
