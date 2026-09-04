@@ -1,13 +1,16 @@
+import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 
-import { TipoCombustible } from './tipo-combustible';
+import { TipoCombustibleService } from './tipo-combustible.service';
 
-describe('TipoCombustible', () => {
-  let service: TipoCombustible;
+describe('TipoCombustibleService', () => {
+  let service: TipoCombustibleService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(TipoCombustible);
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient()],
+    });
+    service = TestBed.inject(TipoCombustibleService);
   });
 
   it('should be created', () => {
