@@ -91,7 +91,7 @@ Esta relación se documenta como **continuidad por origen del enunciado académi
 - SweetAlert2
 - Chart.js + ng2-charts
 - jsPDF + jsPDF AutoTable
-- SheetJS (`xlsx`) para exportación de reportes
+- ExcelJS para exportación de reportes `.xlsx`
 
 ### Backend
 
