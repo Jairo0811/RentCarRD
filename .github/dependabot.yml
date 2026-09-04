@@ -4,16 +4,19 @@ updates:
     directory: /RentCar.API/RentCar.API
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    # Portfolio freeze: disable routine version updates; security updates remain available.
+    open-pull-requests-limit: 0
 
   - package-ecosystem: npm
     directory: /RentCarClient
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    # Portfolio freeze: disable routine version updates; security updates remain available.
+    open-pull-requests-limit: 0
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    # Portfolio freeze: no routine action-version churn.
+    open-pull-requests-limit: 0
