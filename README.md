@@ -22,6 +22,12 @@
   <img src="https://img.shields.io/badge/Mantenimiento-Correcciones%20críticas-lightgrey" alt="Maintenance mode" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/Jairo0811/RentCarRD/actions/workflows/ci.yml">
+    <img src="https://github.com/Jairo0811/RentCarRD/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+</p>
+
 ## 🧊 Estado final — v1.2 Portfolio Edition
 
 **RentCarRD está finalizado.** La versión **1.2** representa el cierre técnico del proyecto académico y su edición definitiva para portafolio.
