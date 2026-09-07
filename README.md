@@ -52,6 +52,8 @@ La edición 1.2 incorpora el hardening final del proyecto:
 
 Centraliza clientes, empleados, flota, catálogos, inspecciones, rentas y devoluciones. Aplica reglas de negocio para controlar la disponibilidad de vehículos, incorpora validaciones dominicanas de cédula y RNC, calcula importes de renta e ITBIS y genera contratos y reportes en PDF y Excel.
 
+## 🎓 Información académica
+
 | Información | Detalle |
 |---|---|
 | 👨‍🎓 Estudiante | **Francis Jairo Matías Rosario** |
@@ -80,9 +82,16 @@ Esta relación se documenta como **continuidad por origen del enunciado académi
 
 ---
 
-## 🛠️ Stack tecnológico
+## 🧱 Stack tecnológico
 
-### Frontend
+### 🎨 Frontend
+
+<p>
+  <img src="https://skillicons.dev/icons?i=angular,ts,html,css,bootstrap" alt="Angular, TypeScript, HTML, CSS y Bootstrap" />
+  <img src="https://img.shields.io/badge/Chart.js-Visualización-FF6384?style=flat-square&logo=chartdotjs&logoColor=white" alt="Chart.js" />
+  <img src="https://img.shields.io/badge/jsPDF-PDF-B71C1C?style=flat-square" alt="jsPDF" />
+  <img src="https://img.shields.io/badge/ExcelJS-XLSX-217346?style=flat-square&logo=microsoftexcel&logoColor=white" alt="ExcelJS" />
+</p>
 
 - **Angular 21**
 - **TypeScript 5.9**
@@ -93,7 +102,13 @@ Esta relación se documenta como **continuidad por origen del enunciado académi
 - jsPDF + jsPDF AutoTable
 - ExcelJS para exportación de reportes `.xlsx`
 
-### Backend
+### ⚙️ Backend
+
+<p>
+  <img src="https://skillicons.dev/icons?i=cs,dotnet" alt="C# y .NET" />
+  <img src="https://img.shields.io/badge/ASP.NET%20Core-Web%20API-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt="ASP.NET Core Web API" />
+  <img src="https://img.shields.io/badge/Entity%20Framework%20Core-ORM-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt="Entity Framework Core" />
+</p>
 
 - **.NET 10**
 - **ASP.NET Core Web API**
@@ -104,7 +119,12 @@ Esta relación se documenta como **continuidad por origen del enunciado académi
 - Swagger / OpenAPI
 - ASP.NET Core Rate Limiting
 
-### Datos y herramientas
+### 🗄️ Datos y herramientas
+
+<p>
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/microsoftsqlserver/microsoftsqlserver-plain.svg" width="52" height="52" alt="Microsoft SQL Server" />
+  <img src="https://skillicons.dev/icons?i=git,github,githubactions,vscode" alt="Git, GitHub, GitHub Actions y Visual Studio Code" />
+</p>
 
 - Microsoft SQL Server
 - Migraciones de Entity Framework Core
