@@ -76,7 +76,21 @@ Centraliza clientes, empleados, flota, catálogos, inspecciones, rentas y devolu
 
 RentCarRD fue desarrollado como proyecto académico individual por **Francis Jairo Matías Rosario (A00115261)**.
 
-El profesor efectivo de **ISO-715** fue **Juan Pablo Valdez Reyes**. Además, RentCarRD comparte con [**MediCore**](https://github.com/Jairo0811/MediCore) y [**CineGest**](https://github.com/Jairo0811/CineGest) un origen documental común: los tres problemas de negocio derivan de enunciados de Proyecto Final de Universidad APEC elaborados por Juan Pablo Valdez Reyes en 2020.
+### 👨‍🏫 Continuidad por profesor
+
+El profesor efectivo de **Desarrollo de Software con Tecnología Open Source 2 (ISO-715)** fue **Juan Pablo Valdez Reyes**. En el período académico siguiente, **Septiembre - Diciembre 2026**, el mismo profesor aparece al frente de **Integración de Aplicaciones con Tecnología Propietaria (ISO-810)** y **Integración de Aplicaciones con Tecnología Open Source (ISO-815)**, ambas documentadas mediante [**SOAForge**](https://github.com/Jairo0811/SOA-Forge).
+
+| Orden | Asignatura | Proyecto | Período |
+|---:|---|---|---|
+| 1 | Desarrollo de Software con Tecnología Open Source 2 (ISO-715) | **RentCarRD** | Mayo - Agosto 2026 |
+| 2 | Integración de Aplicaciones con Tecnología Propietaria (ISO-810) | [**SOAForge**](https://github.com/Jairo0811/SOA-Forge) | Septiembre - Diciembre 2026 |
+| 3 | Integración de Aplicaciones con Tecnología Open Source (ISO-815) | [**SOAForge**](https://github.com/Jairo0811/SOA-Forge) | Septiembre - Diciembre 2026 |
+
+Esta relación es **docente, formativa y cronológica**; no implica dependencia técnica entre RentCarRD y SOAForge.
+
+### 📄 Continuidad por origen del enunciado académico
+
+RentCarRD comparte con [**MediCore**](https://github.com/Jairo0811/MediCore) y [**CineGest**](https://github.com/Jairo0811/CineGest) un origen documental común: los tres problemas de negocio derivan de enunciados de Proyecto Final de Universidad APEC elaborados por Juan Pablo Valdez Reyes en 2020.
 
 | Enunciado académico de 2020 | Evolución en el portafolio |
 |---|---|
@@ -84,7 +98,7 @@ El profesor efectivo de **ISO-715** fue **Juan Pablo Valdez Reyes**. Además, Re
 | Sistema de Video Club | [**CineGest**](https://github.com/Jairo0811/CineGest) |
 | Sistema de Rentcar | **RentCarRD** |
 
-Esta relación se documenta como **continuidad por origen del enunciado académico**, distinta de la continuidad por profesor de la asignatura cursada.
+Esta segunda relación se documenta como **continuidad por origen del enunciado académico**, distinta de la continuidad por profesor efectivo de las asignaturas cursadas.
 
 ---
 
