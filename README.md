@@ -78,16 +78,15 @@ RentCarRD fue desarrollado como proyecto académico individual por **Francis Jai
 
 ### 👨‍🏫 Continuidad por profesor
 
-El profesor efectivo de **Desarrollo de Software con Tecnología Open Source 2 (ISO-715)** fue **Juan Pablo Valdez Reyes**. En el período académico siguiente, **Septiembre - Diciembre 2026**, el mismo profesor aparece al frente de **Integración de Aplicaciones con Tecnología Propietaria (ISO-810)** e **Integración de Aplicaciones con Tecnología Open Source (ISO-815)** en [**SOAForge**](https://github.com/Jairo0811/SOA-Forge), y también de **ISO-815** en [**BonitaSoft**](https://github.com/Jairo0811/BonitaSoft).
+El profesor efectivo de **Desarrollo de Software con Tecnología Open Source 2 (ISO-715)** fue **Juan Pablo Valdez Reyes**. En el período académico siguiente, **Septiembre - Diciembre 2026**, el mismo profesor aparece al frente de [**SOAForge**](https://github.com/Jairo0811/SOA-Forge), correspondiente a **Integración de Aplicaciones con Tecnología Propietaria (ISO-810)**, y de [**BonitaSoft**](https://github.com/Jairo0811/BonitaSoft), correspondiente a **Integración de Aplicaciones con Tecnología Open Source (ISO-815)**.
 
 | Orden | Asignatura | Proyecto | Período |
 |---:|---|---|---|
 | 1 | Desarrollo de Software con Tecnología Open Source 2 (ISO-715) | **RentCarRD** | Mayo - Agosto 2026 |
 | 2 | Integración de Aplicaciones con Tecnología Propietaria (ISO-810) | [**SOAForge**](https://github.com/Jairo0811/SOA-Forge) | Septiembre - Diciembre 2026 |
-| 3 | Integración de Aplicaciones con Tecnología Open Source (ISO-815) | [**SOAForge**](https://github.com/Jairo0811/SOA-Forge) | Septiembre - Diciembre 2026 |
-| 4 | Integración de Aplicaciones con Tecnología Open Source (ISO-815) | [**BonitaSoft**](https://github.com/Jairo0811/BonitaSoft) | Septiembre - Diciembre 2026 |
+| 3 | Integración de Aplicaciones con Tecnología Open Source (ISO-815) | [**BonitaSoft**](https://github.com/Jairo0811/BonitaSoft) | Septiembre - Diciembre 2026 |
 
-Las filas 2, 3 y 4 pertenecen al mismo período académico. SOAForge y BonitaSoft son proyectos independientes; BonitaSoft corresponde exclusivamente a **ISO-815**.
+SOAForge y BonitaSoft pertenecen al mismo período académico, pero a **asignaturas distintas**. SOAForge es exclusivamente **ISO-810** y BonitaSoft exclusivamente **ISO-815**.
 
 Esta relación es **docente, formativa y cronológica**; no implica dependencia técnica entre RentCarRD, SOAForge y BonitaSoft.
 
