@@ -1,507 +1,289 @@
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RentCar.API.Domain;
+using RentCar.API.Dtos;
+using RentCar.API.Infrastructure;
 using RentCar.API.Models;
 
-namespace RentCar.API.Controllers
+namespace RentCar.API.Controllers;
+
+/// <summary>
+/// Flota. Consulta para Admin y Empleado (necesaria para registrar rentas);
+/// alta, edición, imágenes y eliminación exclusivas de Admin.
+/// </summary>
+[Route("api/[controller]")]
+[ApiController]
+public partial class VehiculosController(RentCarDbContext context, AlmacenImagenesVehiculos imagenes) : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class VehiculosController : ControllerBase
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Vehiculo>>> GetVehiculos(CancellationToken cancellationToken) =>
+        Ok(await context.Vehiculos.AsNoTracking().OrderByDescending(v => v.Id).ToListAsync(cancellationToken));
+
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Vehiculo>> GetVehiculo(int id, CancellationToken cancellationToken)
     {
-        private const string EstadoDisponible = "Disponible";
-        private const string EstadoRentado = "Rentado";
-        private const string EstadoNoDisponible = "NoDisponible";
-
-        private readonly RentCarDbContext _context;
-        private readonly IWebHostEnvironment _environment;
-
-        public VehiculosController(
-            RentCarDbContext context,
-            IWebHostEnvironment environment)
-        {
-            _context = context;
-            _environment = environment;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Vehiculo>>> GetVehiculos()
-        {
-            var vehiculos = await _context.Vehiculos
-                .AsNoTracking()
-                .OrderByDescending(v => v.Id)
-                .ToListAsync();
-
-            return Ok(vehiculos);
-        }
-
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<Vehiculo>> GetVehiculo(int id)
-        {
-            var vehiculo = await _context.Vehiculos
-                .AsNoTracking()
-                .FirstOrDefaultAsync(v => v.Id == id);
-
-            if (vehiculo == null)
-                return NotFound("El vehículo solicitado no existe.");
-
-            return Ok(vehiculo);
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<Vehiculo>> PostVehiculo(Vehiculo vehiculo)
-        {
-            NormalizarVehiculo(vehiculo);
-
-            var errorValidacion = ValidarVehiculo(vehiculo);
-
-            if (errorValidacion != null)
-                return BadRequest(errorValidacion);
-
-            var placaDuplicada = await _context.Vehiculos.AnyAsync(v =>
-                v.NoPlaca == vehiculo.NoPlaca);
-
-            if (placaDuplicada)
-                return BadRequest("Ya existe un vehículo registrado con esta placa.");
-
-            if (!string.IsNullOrWhiteSpace(vehiculo.NoChasis))
-            {
-                var chasisDuplicado = await _context.Vehiculos.AnyAsync(v =>
-                    v.NoChasis == vehiculo.NoChasis);
-
-                if (chasisDuplicado)
-                {
-                    return BadRequest(
-                        "Ya existe un vehículo registrado con este número de chasis.");
-                }
-            }
-
-            _context.Vehiculos.Add(vehiculo);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(
-                nameof(GetVehiculo),
-                new { id = vehiculo.Id },
-                vehiculo);
-        }
-
-        [HttpPut("{id:int}")]
-        public async Task<IActionResult> PutVehiculo(
-            int id,
-            Vehiculo vehiculo)
-        {
-            if (id != vehiculo.Id)
-                return BadRequest("El ID del vehículo no coincide.");
-
-            var vehiculoActual = await _context.Vehiculos
-                .FirstOrDefaultAsync(v => v.Id == id);
-
-            if (vehiculoActual == null)
-                return NotFound("El vehículo solicitado no existe.");
-
-            NormalizarVehiculo(vehiculo);
-
-            var errorValidacion = ValidarVehiculo(vehiculo);
-
-            if (errorValidacion != null)
-                return BadRequest(errorValidacion);
-
-            var placaDuplicada = await _context.Vehiculos.AnyAsync(v =>
-                v.NoPlaca == vehiculo.NoPlaca &&
-                v.Id != id);
-
-            if (placaDuplicada)
-                return BadRequest("Ya existe otro vehículo registrado con esta placa.");
-
-            if (!string.IsNullOrWhiteSpace(vehiculo.NoChasis))
-            {
-                var chasisDuplicado = await _context.Vehiculos.AnyAsync(v =>
-                    v.NoChasis == vehiculo.NoChasis &&
-                    v.Id != id);
-
-                if (chasisDuplicado)
-                {
-                    return BadRequest(
-                        "Ya existe otro vehículo registrado con este número de chasis.");
-                }
-            }
-
-            /*
-             * No permitimos que una edición manual cambie un vehículo
-             * rentado o devuelto nuevamente a Disponible.
-             */
-            if (
-                string.Equals(
-                    vehiculoActual.EstadoOperacion,
-                    EstadoRentado,
-                    StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(
-                    vehiculoActual.EstadoOperacion,
-                    EstadoNoDisponible,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                vehiculo.EstadoOperacion = vehiculoActual.EstadoOperacion;
-                vehiculo.Estado = false;
-            }
-
-            vehiculoActual.Descripcion = vehiculo.Descripcion;
-            vehiculoActual.NoPlaca = vehiculo.NoPlaca;
-            vehiculoActual.NoChasis = vehiculo.NoChasis;
-            vehiculoActual.NoMotor = vehiculo.NoMotor;
-            vehiculoActual.IdMarca = vehiculo.IdMarca;
-            vehiculoActual.IdModelo = vehiculo.IdModelo;
-            vehiculoActual.IdTipoVehiculo = vehiculo.IdTipoVehiculo;
-            vehiculoActual.IdTipoCombustible = vehiculo.IdTipoCombustible;
-            vehiculoActual.IdCombustible = vehiculo.IdCombustible;
-            vehiculoActual.Estado = vehiculo.Estado;
-            vehiculoActual.EstadoOperacion = vehiculo.EstadoOperacion;
-
-            if (!string.IsNullOrWhiteSpace(vehiculo.ImagenUrl))
-            {
-                vehiculoActual.ImagenUrl = vehiculo.ImagenUrl;
-            }
-
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        [HttpPost("{id:int}/imagen")]
-        public async Task<IActionResult> SubirImagen(
-            int id,
-            [FromForm(Name = "imagen")] IFormFile imagen)
-        {
-            var vehiculo = await _context.Vehiculos.FindAsync(id);
-
-            if (vehiculo == null)
-                return NotFound("Vehículo no encontrado.");
-
-            if (imagen == null || imagen.Length == 0)
-                return BadRequest("No se recibió ninguna imagen.");
-
-            const long tamanoMaximo = 5 * 1024 * 1024;
-
-            if (imagen.Length > tamanoMaximo)
-            {
-                return BadRequest(
-                    "La imagen no puede superar los 5 MB.");
-            }
-
-            var extensionesPermitidas = new[]
-            {
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".webp"
-            };
-
-            var extension = Path
-                .GetExtension(imagen.FileName)
-                .ToLowerInvariant();
-
-            if (!extensionesPermitidas.Contains(extension))
-            {
-                return BadRequest(
-                    "Formato no permitido. Usa JPG, JPEG, PNG o WEBP.");
-            }
-
-            if (!await TieneFirmaDeImagenValida(imagen, extension))
-                return BadRequest("El contenido del archivo no coincide con una imagen permitida.");
-
-            var webRootPath = _environment.WebRootPath;
-
-            if (string.IsNullOrWhiteSpace(webRootPath))
-            {
-                webRootPath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "wwwroot");
-            }
-
-            var carpeta = Path.Combine(
-                webRootPath,
-                "vehiculos");
-
-            Directory.CreateDirectory(carpeta);
-
-            var nombreArchivo = $"{Guid.NewGuid():N}{extension}";
-            var rutaArchivo = Path.Combine(
-                carpeta,
-                nombreArchivo);
-
-            await using (var stream = new FileStream(
-                rutaArchivo,
-                FileMode.Create))
-            {
-                await imagen.CopyToAsync(stream);
-            }
-
-            EliminarImagenAnterior(
-                vehiculo.ImagenUrl,
-                webRootPath,
-                nombreArchivo);
-
-            vehiculo.ImagenUrl =
-                $"/vehiculos/{nombreArchivo}";
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                vehiculo.Id,
-                vehiculo.ImagenUrl
-            });
-        }
-
-        private static async Task<bool> TieneFirmaDeImagenValida(IFormFile archivo, string extension)
-        {
-            var encabezado = new byte[12];
-            await using var stream = archivo.OpenReadStream();
-            var leidos = await stream.ReadAsync(encabezado.AsMemory(0, encabezado.Length));
-            if (leidos < 4) return false;
-            return extension switch
-            {
-                ".jpg" or ".jpeg" => encabezado[0] == 0xFF && encabezado[1] == 0xD8 && encabezado[2] == 0xFF,
-                ".png" => encabezado.Take(8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),
-                ".webp" => leidos >= 12 && System.Text.Encoding.ASCII.GetString(encabezado, 0, 4) == "RIFF" && System.Text.Encoding.ASCII.GetString(encabezado, 8, 4) == "WEBP",
-                _ => false
-            };
-        }
-
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteVehiculo(int id)
-        {
-            var vehiculo = await _context.Vehiculos.FindAsync(id);
-
-            if (vehiculo == null)
-                return NotFound("El vehículo solicitado no existe.");
-
-            var tieneRentas = await _context.Rentas
-                .AnyAsync(r => r.IdVehiculo == id);
-
-            if (tieneRentas)
-            {
-                return BadRequest(
-                    "No se puede eliminar el vehículo porque tiene rentas registradas.");
-            }
-
-            var tieneInspecciones = await _context.Inspecciones
-                .AnyAsync(i => i.IdVehiculo == id);
-
-            if (tieneInspecciones)
-            {
-                return BadRequest(
-                    "No se puede eliminar el vehículo porque tiene inspecciones registradas.");
-            }
-
-            var webRootPath = _environment.WebRootPath;
-
-            if (string.IsNullOrWhiteSpace(webRootPath))
-            {
-                webRootPath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "wwwroot");
-            }
-
-            EliminarImagenAnterior(
-                vehiculo.ImagenUrl,
-                webRootPath);
-
-            _context.Vehiculos.Remove(vehiculo);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private static void NormalizarVehiculo(Vehiculo vehiculo)
-        {
-            vehiculo.Descripcion =
-                vehiculo.Descripcion?.Trim();
-
-            vehiculo.NoPlaca =
-                LimpiarAlfanumerico(vehiculo.NoPlaca);
-
-            vehiculo.NoChasis =
-                LimpiarAlfanumerico(vehiculo.NoChasis);
-
-            vehiculo.NoMotor =
-                LimpiarAlfanumerico(vehiculo.NoMotor);
-
-            if (
-                vehiculo.IdTipoCombustible == null ||
-                vehiculo.IdTipoCombustible <= 0)
-            {
-                vehiculo.IdTipoCombustible =
-                    vehiculo.IdCombustible;
-            }
-
-            if (
-                vehiculo.IdCombustible == null ||
-                vehiculo.IdCombustible <= 0)
-            {
-                vehiculo.IdCombustible =
-                    vehiculo.IdTipoCombustible;
-            }
-
-            vehiculo.EstadoOperacion =
-                NormalizarEstadoOperacion(
-                    vehiculo.EstadoOperacion,
-                    vehiculo.Estado);
-
-            vehiculo.Estado =
-                vehiculo.EstadoOperacion == EstadoDisponible;
-        }
-
-        private static string? ValidarVehiculo(Vehiculo vehiculo)
-        {
-            if (string.IsNullOrWhiteSpace(vehiculo.Descripcion))
-                return "La descripción del vehículo es obligatoria.";
-
-            if (vehiculo.IdMarca == null || vehiculo.IdMarca <= 0)
-                return "Debe seleccionar una marca válida.";
-
-            if (vehiculo.IdModelo == null || vehiculo.IdModelo <= 0)
-                return "Debe seleccionar un modelo válido.";
-
-            if (
-                vehiculo.IdTipoVehiculo == null ||
-                vehiculo.IdTipoVehiculo <= 0)
-            {
-                return "Debe seleccionar un tipo de vehículo válido.";
-            }
-
-            if (
-                vehiculo.IdTipoCombustible == null ||
-                vehiculo.IdTipoCombustible <= 0)
-            {
-                return "Debe seleccionar un tipo de combustible válido.";
-            }
-
-            if (string.IsNullOrWhiteSpace(vehiculo.NoPlaca))
-                return "El número de placa es obligatorio.";
-
-            if (!Regex.IsMatch(
-                vehiculo.NoPlaca,
-                @"^[A-Z0-9]{6,7}$"))
-            {
-                return "La placa debe contener entre 6 y 7 caracteres alfanuméricos.";
-            }
-
-            if (!string.IsNullOrWhiteSpace(vehiculo.NoChasis))
-            {
-                if (!Regex.IsMatch(
-                    vehiculo.NoChasis,
-                    @"^[A-Z0-9]{1,17}$"))
-                {
-                    return "El chasis debe contener únicamente letras y números, con un máximo de 17 caracteres.";
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(vehiculo.NoMotor))
-            {
-                if (!Regex.IsMatch(
-                    vehiculo.NoMotor,
-                    @"^[A-Z0-9]+$"))
-                {
-                    return "El número de motor debe contener únicamente letras y números.";
-                }
-            }
-
-            var estadosPermitidos = new[]
-            {
-                EstadoDisponible,
-                EstadoRentado,
-                EstadoNoDisponible
-            };
-
-            if (!estadosPermitidos.Contains(
-                vehiculo.EstadoOperacion))
-            {
-                return "El estado operativo del vehículo no es válido.";
-            }
-
-            return null;
-        }
-
-        private static string NormalizarEstadoOperacion(
-            string? estadoOperacion,
-            bool? estadoAnterior)
-        {
-            if (string.Equals(
-                estadoOperacion,
-                EstadoRentado,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                return EstadoRentado;
-            }
-
-            if (
-                string.Equals(
-                    estadoOperacion,
-                    EstadoNoDisponible,
-                    StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(
-                    estadoOperacion,
-                    "No Disponible",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return EstadoNoDisponible;
-            }
-
-            if (string.Equals(
-                estadoOperacion,
-                EstadoDisponible,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                return EstadoDisponible;
-            }
-
-            return estadoAnterior == false
-                ? EstadoRentado
-                : EstadoDisponible;
-        }
-
-        private static string? LimpiarAlfanumerico(
-            string? valor)
-        {
-            if (string.IsNullOrWhiteSpace(valor))
-                return null;
-
-            return new string(
-                valor
-                    .ToUpperInvariant()
-                    .Where(char.IsLetterOrDigit)
-                    .ToArray());
-        }
-
-        private static void EliminarImagenAnterior(
-            string? imagenUrl,
-            string webRootPath,
-            string? nuevaImagen = null)
-        {
-            if (string.IsNullOrWhiteSpace(imagenUrl))
-                return;
-
-            var nombreAnterior = Path.GetFileName(imagenUrl);
-
-            if (
-                !string.IsNullOrWhiteSpace(nuevaImagen) &&
-                string.Equals(
-                    nombreAnterior,
-                    nuevaImagen,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            var rutaAnterior = Path.Combine(
-                webRootPath,
-                "vehiculos",
-                nombreAnterior);
-
-            if (System.IO.File.Exists(rutaAnterior))
-            {
-                System.IO.File.Delete(rutaAnterior);
-            }
-        }
+        var vehiculo = await context.Vehiculos.AsNoTracking().FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
+        return vehiculo is null ? NotFound("El vehículo solicitado no existe.") : Ok(vehiculo);
     }
+
+    [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<ActionResult<Vehiculo>> PostVehiculo(VehiculoRequest request, CancellationToken cancellationToken)
+    {
+        Normalizar(request);
+        var error = Validar(request) ?? await ValidarReferencias(request, cancellationToken);
+        if (error is not null)
+        {
+            return BadRequest(error);
+        }
+
+        if (request.EstadoOperacion == EstadosVehiculo.Rentado)
+        {
+            return BadRequest("Un vehículo nuevo no puede registrarse como Rentado; el estado lo asigna el flujo de rentas.");
+        }
+
+        var duplicado = await BuscarDuplicado(request, idActual: null, cancellationToken);
+        if (duplicado is not null)
+        {
+            return Conflict(duplicado);
+        }
+
+        var vehiculo = new Vehiculo();
+        Aplicar(vehiculo, request);
+        vehiculo.EstadoOperacion = request.EstadoOperacion!;
+        vehiculo.Estado = vehiculo.EstadoOperacion == EstadosVehiculo.Disponible;
+
+        context.Vehiculos.Add(vehiculo);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return CreatedAtAction(nameof(GetVehiculo), new { id = vehiculo.Id }, vehiculo);
+    }
+
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> PutVehiculo(int id, VehiculoRequest request, CancellationToken cancellationToken)
+    {
+        var vehiculo = await context.Vehiculos.FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
+        if (vehiculo is null)
+        {
+            return NotFound("El vehículo solicitado no existe.");
+        }
+
+        Normalizar(request);
+        var error = Validar(request) ?? await ValidarReferencias(request, cancellationToken);
+        if (error is not null)
+        {
+            return BadRequest(error);
+        }
+
+        var duplicado = await BuscarDuplicado(request, id, cancellationToken);
+        if (duplicado is not null)
+        {
+            return Conflict(duplicado);
+        }
+
+        var errorEstado = await ValidarCambioEstado(vehiculo, request.EstadoOperacion!, cancellationToken);
+        if (errorEstado is not null)
+        {
+            return Conflict(errorEstado);
+        }
+
+        // ImagenUrl no se toma del cliente: solo cambia mediante el endpoint de carga.
+        Aplicar(vehiculo, request);
+        vehiculo.EstadoOperacion = request.EstadoOperacion!;
+        vehiculo.Estado = vehiculo.EstadoOperacion == EstadosVehiculo.Disponible;
+
+        await context.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/imagen")]
+    [Authorize(Roles = Roles.Admin)]
+    [RequestSizeLimit(AlmacenImagenesVehiculos.TamanoMaximoBytes + 64 * 1024)]
+    public async Task<IActionResult> SubirImagen(int id, [FromForm(Name = "imagen")] IFormFile? imagen, CancellationToken cancellationToken)
+    {
+        var vehiculo = await context.Vehiculos.FindAsync([id], cancellationToken);
+        if (vehiculo is null)
+        {
+            return NotFound("Vehículo no encontrado.");
+        }
+
+        if (imagen is null)
+        {
+            return BadRequest("No se recibió ninguna imagen.");
+        }
+
+        var resultado = await imagenes.GuardarAsync(imagen, cancellationToken);
+        if (!resultado.Exito)
+        {
+            return BadRequest(resultado.Error);
+        }
+
+        var anterior = vehiculo.ImagenUrl;
+        vehiculo.ImagenUrl = AlmacenImagenesVehiculos.Url(resultado.NombreArchivo!);
+
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            // Consistencia archivo ↔ base: si no se guardó la referencia, se descarta el archivo nuevo.
+            imagenes.Eliminar(resultado.NombreArchivo);
+            throw;
+        }
+
+        // Solo tras confirmar la base de datos se elimina la imagen anterior.
+        imagenes.Eliminar(anterior);
+
+        return Ok(new { vehiculo.Id, vehiculo.ImagenUrl });
+    }
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> DeleteVehiculo(int id, CancellationToken cancellationToken)
+    {
+        var vehiculo = await context.Vehiculos.FindAsync([id], cancellationToken);
+        if (vehiculo is null)
+        {
+            return NotFound("El vehículo solicitado no existe.");
+        }
+
+        if (await context.Rentas.AnyAsync(r => r.IdVehiculo == id, cancellationToken))
+        {
+            return Conflict("No se puede eliminar el vehículo porque tiene rentas registradas.");
+        }
+
+        if (await context.Inspecciones.AnyAsync(i => i.IdVehiculo == id, cancellationToken))
+        {
+            return Conflict("No se puede eliminar el vehículo porque tiene inspecciones registradas.");
+        }
+
+        var imagen = vehiculo.ImagenUrl;
+        context.Vehiculos.Remove(vehiculo);
+        await context.SaveChangesAsync(cancellationToken);
+        imagenes.Eliminar(imagen);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Transiciones manuales permitidas:
+    /// - Rentado solo lo asigna/retira el flujo de rentas.
+    /// - Disponible → NoDisponible: retirar de servicio (si no tiene renta activa).
+    /// - NoDisponible → Disponible: solo si el vehículo nunca fue rentado (regla académica).
+    /// </summary>
+    private async Task<string?> ValidarCambioEstado(Vehiculo vehiculo, string nuevoEstado, CancellationToken cancellationToken)
+    {
+        var actual = string.IsNullOrWhiteSpace(vehiculo.EstadoOperacion) ? EstadosVehiculo.Disponible : vehiculo.EstadoOperacion;
+        if (actual == nuevoEstado)
+            return null;
+        if (actual == EstadosVehiculo.Rentado)
+            return "El vehículo está rentado; su estado cambia al procesar la devolución.";
+        if (nuevoEstado == EstadosVehiculo.Rentado)
+            return "El estado Rentado lo asigna únicamente el registro de una renta.";
+        if (nuevoEstado == EstadosVehiculo.Disponible &&
+            await context.Rentas.AnyAsync(r => r.IdVehiculo == vehiculo.Id, cancellationToken))
+            return "Este vehículo ya fue rentado y devuelto; por regla académica no vuelve a estar disponible.";
+        return null;
+    }
+
+    private static void Normalizar(VehiculoRequest r)
+    {
+        r.Descripcion = r.Descripcion?.Trim();
+        r.NoPlaca = LimpiarAlfanumerico(r.NoPlaca);
+        r.NoChasis = LimpiarAlfanumerico(r.NoChasis);
+        r.NoMotor = LimpiarAlfanumerico(r.NoMotor);
+
+        if (r.IdTipoCombustible is null or <= 0)
+            r.IdTipoCombustible = r.IdCombustible;
+        r.IdCombustible = r.IdTipoCombustible;
+
+        r.EstadoOperacion = EstadosVehiculo.Todos.FirstOrDefault(e =>
+            string.Equals(e, r.EstadoOperacion?.Replace(" ", string.Empty), StringComparison.OrdinalIgnoreCase))
+            ?? (string.IsNullOrWhiteSpace(r.EstadoOperacion) ? EstadosVehiculo.Disponible : r.EstadoOperacion);
+    }
+
+    private static string? Validar(VehiculoRequest r)
+    {
+        if (string.IsNullOrWhiteSpace(r.Descripcion))
+            return "La descripción del vehículo es obligatoria.";
+        if (r.IdMarca is null or <= 0)
+            return "Debe seleccionar una marca válida.";
+        if (r.IdModelo is null or <= 0)
+            return "Debe seleccionar un modelo válido.";
+        if (r.IdTipoVehiculo is null or <= 0)
+            return "Debe seleccionar un tipo de vehículo válido.";
+        if (r.IdTipoCombustible is null or <= 0)
+            return "Debe seleccionar un tipo de combustible válido.";
+        if (string.IsNullOrWhiteSpace(r.NoPlaca))
+            return "El número de placa es obligatorio.";
+        if (!Placa().IsMatch(r.NoPlaca))
+            return "La placa debe contener entre 6 y 7 caracteres alfanuméricos.";
+        if (r.NoChasis is not null && !Chasis().IsMatch(r.NoChasis))
+            return "El chasis debe contener únicamente letras y números, con un máximo de 17 caracteres.";
+        if (r.NoMotor is not null && !Motor().IsMatch(r.NoMotor))
+            return "El número de motor debe contener únicamente letras y números (máximo 50).";
+        if (!EstadosVehiculo.Todos.Contains(r.EstadoOperacion))
+            return "El estado operativo del vehículo no es válido.";
+        return null;
+    }
+
+    private async Task<string?> ValidarReferencias(VehiculoRequest r, CancellationToken cancellationToken)
+    {
+        if (!await context.Marcas.AnyAsync(m => m.Id == r.IdMarca, cancellationToken))
+            return "La marca seleccionada no existe.";
+        var modelo = await context.Modelos.AsNoTracking().FirstOrDefaultAsync(m => m.Id == r.IdModelo, cancellationToken);
+        if (modelo is null)
+            return "El modelo seleccionado no existe.";
+        if (modelo.IdMarca != r.IdMarca)
+            return "El modelo seleccionado no pertenece a la marca indicada.";
+        if (!await context.TiposVehiculos.AnyAsync(t => t.Id == r.IdTipoVehiculo, cancellationToken))
+            return "El tipo de vehículo seleccionado no existe.";
+        if (!await context.TiposCombustibles.AnyAsync(t => t.Id == r.IdTipoCombustible, cancellationToken))
+            return "El tipo de combustible seleccionado no existe.";
+        return null;
+    }
+
+    private async Task<string?> BuscarDuplicado(VehiculoRequest r, int? idActual, CancellationToken cancellationToken)
+    {
+        if (await context.Vehiculos.AnyAsync(v => v.NoPlaca == r.NoPlaca && v.Id != idActual, cancellationToken))
+            return "Ya existe un vehículo registrado con esta placa.";
+        if (r.NoChasis is not null &&
+            await context.Vehiculos.AnyAsync(v => v.NoChasis == r.NoChasis && v.Id != idActual, cancellationToken))
+            return "Ya existe un vehículo registrado con este número de chasis.";
+        return null;
+    }
+
+    private static void Aplicar(Vehiculo v, VehiculoRequest r)
+    {
+        v.Descripcion = r.Descripcion;
+        v.NoPlaca = r.NoPlaca;
+        v.NoChasis = r.NoChasis;
+        v.NoMotor = r.NoMotor;
+        v.IdMarca = r.IdMarca;
+        v.IdModelo = r.IdModelo;
+        v.IdTipoVehiculo = r.IdTipoVehiculo;
+        v.IdTipoCombustible = r.IdTipoCombustible;
+        v.IdCombustible = r.IdCombustible;
+    }
+
+    private static string? LimpiarAlfanumerico(string? valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
+            return null;
+        var limpio = new string(valor.ToUpperInvariant().Where(char.IsAsciiLetterOrDigit).ToArray());
+        return limpio.Length == 0 ? null : limpio;
+    }
+
+    [GeneratedRegex("^[A-Z0-9]{6,7}$")]
+    private static partial Regex Placa();
+
+    [GeneratedRegex("^[A-Z0-9]{1,17}$")]
+    private static partial Regex Chasis();
+
+    [GeneratedRegex("^[A-Z0-9]{1,50}$")]
+    private static partial Regex Motor();
 }

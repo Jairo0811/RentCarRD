@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
-
 namespace RentCar.API.Models;
 
 public partial class Empleado
@@ -23,9 +18,6 @@ public partial class Empleado
 
     public string Usuario { get; set; } = string.Empty;
 
-    [JsonIgnore]
+    /// <summary>Hash de ASP.NET Core PasswordHasher. Nunca se expone en respuestas de la API.</summary>
     public string PasswordHash { get; set; } = string.Empty;
-
-    [NotMapped]
-    public string? Password { get; set; }
 }

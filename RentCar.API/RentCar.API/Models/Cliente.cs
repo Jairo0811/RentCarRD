@@ -1,4 +1,4 @@
-﻿namespace RentCar.API.Models;
+namespace RentCar.API.Models;
 
 public partial class Cliente
 {
@@ -6,14 +6,18 @@ public partial class Cliente
 
     public string Nombre { get; set; } = null!;
 
+    /// <summary>Cédula (11 dígitos) o RNC (9 dígitos), sin guiones.</summary>
     public string Cedula { get; set; } = null!;
 
-    public string? NoTarjetaCr { get; set; }
+    /// <summary>
+    /// Método de pago simulado: únicamente los últimos cuatro dígitos de referencia.
+    /// RentCarRD no procesa pagos y nunca recibe ni almacena el número completo (PAN),
+    /// el titular, la fecha de expiración ni el CVV. Se conserva el nombre histórico
+    /// de la columna (NoTarjetaCR) para no perder compatibilidad con la base existente.
+    /// </summary>
+    public string? UltimosDigitosTarjeta { get; set; }
 
-    public string? NombreTitularTarjeta { get; set; }
-
-    public string? FechaExpiracionTarjeta { get; set; }
-
+    /// <summary>Marca del método simulado: VISA, MASTERCARD, AMEX o DISCOVER.</summary>
     public string? TipoTarjeta { get; set; }
 
     public decimal LimiteCredito { get; set; }
