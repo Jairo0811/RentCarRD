@@ -4,38 +4,134 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
+# Mínimo privilegio: el pipeline solo lee el código. No hay despliegue en este workflow.
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: RentCar.API/RentCar.API
+    name: Backend (.NET 10 + SQL Server)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      mssql:
+        # Instancia efímera y aislada solo para pruebas de integración.
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: RentCar_CI_Solo_Pruebas_2026!
+          MSSQL_PID: Developer
+        ports:
+          - 1433:1433
+    env:
+      # Contraseña desechable de un contenedor que solo existe durante este job.
+      CI_SQL_PASSWORD: RentCar_CI_Solo_Pruebas_2026!
+      RENTCARRD_TEST_SQL: Server=localhost,1433;User Id=sa;Password=RentCar_CI_Solo_Pruebas_2026!;TrustServerCertificate=True;Encrypt=True
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           dotnet-version: 10.0.x
-      - run: dotnet restore
-      - run: dotnet build --configuration Release --no-restore
-      - run: dotnet list package --vulnerable --include-transitive
+
+      - name: Restore (incluye auditoría NuGet; vulnerabilidades = error)
+        run: dotnet restore RentCar.API/RentCar.API.slnx
+
+      - name: Build Release
+        run: dotnet build RentCar.API/RentCar.API.slnx --configuration Release --no-restore
+
+      - name: TEMPORAL — volcar snapshot EF regenerado
+        continue-on-error: true
+        shell: bash
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.0.9
+          cd RentCar.API/RentCar.API
+          dotnet ef migrations add SnapshotDump --configuration Release 2>&1 | tail -20
+          git status --porcelain
+          for f in $(git status --porcelain | awk '{print $2}'); do echo "=====FILE $f"; cat "$f" 2>/dev/null || ls -R "$f"; done
+          for f in Migrations/*SnapshotDump*.cs; do echo "=====FILE $f"; cat "$f"; done
+
+      - name: Auditoría NuGet explícita (falla ante paquetes vulnerables)
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet list RentCar.API/RentCar.API.slnx package --vulnerable --include-transitive 2>&1 | tee nuget-audit.txt
+          if grep -qiE "has the following vulnerable packages|tiene los siguientes paquetes vulnerables" nuget-audit.txt; then
+            echo "::error::Se detectaron paquetes NuGet vulnerables."
+            exit 1
+          fi
+
+      - name: Esperar a SQL Server
+        shell: bash
+        run: |
+          for intento in $(seq 1 40); do
+            if docker exec "${{ job.services.mssql.id }}" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$CI_SQL_PASSWORD" -Q "SELECT 1" > /dev/null 2>&1; then
+              echo "SQL Server listo"; exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::SQL Server no respondió a tiempo"; exit 1
+
+      - name: Tests (unitarios + integración contra SQL Server)
+        run: >
+          dotnet test RentCar.API/RentCar.API.slnx --configuration Release --no-build
+          --logger "trx;LogFileName=resultados.trx" --logger "console;verbosity=normal"
+          --results-directory TestResults
+
+      - name: Verificar migraciones EF Core (modelo ↔ snapshot y script idempotente)
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet tool update --global dotnet-ef --version 10.0.9
+          cd RentCar.API/RentCar.API
+          dotnet ef migrations has-pending-model-changes --configuration Release --no-build
+          dotnet ef migrations script --idempotent --configuration Release --no-build --output ../../TestResults/rentcarrd-migraciones-idempotente.sql
+
+      - name: Publicar resultados
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-resultados
+          path: TestResults
+          if-no-files-found: ignore
+          retention-days: 14
 
   frontend:
-    runs-on: ubuntu-latest
+    name: Frontend (Angular 21)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: RentCarClient
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: RentCarClient/package-lock.json
+
       - run: npm ci
-      - run: npm audit --audit-level=high
+
+      - name: Auditoría npm (producción sin vulnerabilidades; altas/críticas sin excepción documentada = error)
+        run: npm run audit:gate
+
+      - name: Inventario completo de npm audit (informativo)
+        run: npm audit --audit-level=none || true
+
       - run: npm run build
-      - run: npm test -- --watch=false
+
+      - run: npm run test:ci

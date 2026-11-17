@@ -1,24 +1,26 @@
 {
   "name": "rent-car-client",
-  "version": "0.0.0",
+  "version": "1.2.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:RentCarClient": "node dist/RentCarClient/server/server.mjs"
+    "serve:ssr:RentCarClient": "node dist/RentCarClient/server/server.mjs",
+    "audit:gate": "node scripts/audit-gate.mjs",
+    "test:ci": "ng test --watch=false"
   },
   "private": true,
   "packageManager": "npm@11.14.1",
   "dependencies": {
     "@angular/cdk": "^21.2.14",
-    "@angular/common": "^21.2.22",
-    "@angular/compiler": "^21.2.22",
-    "@angular/core": "^21.2.22",
-    "@angular/forms": "^21.2.22",
-    "@angular/platform-browser": "^21.2.22",
-    "@angular/router": "^21.2.22",
+    "@angular/common": "^21.2.26",
+    "@angular/compiler": "^21.2.26",
+    "@angular/core": "^21.2.26",
+    "@angular/forms": "^21.2.26",
+    "@angular/platform-browser": "^21.2.26",
+    "@angular/router": "^21.2.26",
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.8",
     "chart.js": "^4.5.1",
@@ -31,14 +33,14 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular/build": "^21.2.23",
-    "@angular/cli": "^21.2.23",
-    "@angular/compiler-cli": "^21.2.22",
+    "@angular/build": "^21.2.30",
+    "@angular/cli": "^21.2.30",
+    "@angular/compiler-cli": "^21.2.26",
     "@types/node": "^20.17.19",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
-    "vitest": "^4.0.8"
+    "vitest": "^4.1.12"
   },
   "overrides": {
     "uuid": "^11.1.1"
