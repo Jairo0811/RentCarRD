@@ -2,17 +2,20 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EmpleadoService } from '../../services/empleado.service';
+import { Observable } from 'rxjs';
+import { Empleado } from '../../interfaces/modelos';
+import { confirmar, mensajeError, notificar } from '../../shared/alertas';
+import { cedulaValida, formatearDocumento, soloDigitos } from '../../shared/documentos';
+import { fechaLocalISO } from '../../shared/fechas';
 
-export interface Empleado {
-  id?: number;
-  nombre: string;
-  cedula: string;
-  usuario: string;
-  password?: string;
-  tandaLabor: string;
-  porcientoComision: number;
-  fechaIngreso: string;
-  estado: boolean;
+export const TANDAS = ['Matutina', 'Vespertina', 'Nocturna'] as const;
+
+/** Misma política que la API: 8–128 caracteres, con al menos una letra y un número. */
+export function validarPassword(password: string | undefined | null, obligatoria: boolean): string | null {
+  if (!password) return obligatoria ? 'La contraseña inicial es obligatoria.' : null;
+  if (password.length < 8 || password.length > 128) return 'La contraseña debe tener entre 8 y 128 caracteres.';
+  if (!/\p{L}/u.test(password) || !/\d/.test(password)) return 'La contraseña debe contener al menos una letra y un número.';
+  return null;
 }
 
 @Component({
@@ -24,8 +27,11 @@ export interface Empleado {
 })
 export class EmpleadosComponent implements OnInit {
   listaEmpleados: Empleado[] = [];
+  readonly tandas = TANDAS;
 
   modoEdicion = false;
+  guardando = false;
+  cargando = true;
 
   mensajeCedula = '';
   cedulaEsValida = false;
@@ -50,88 +56,79 @@ export class EmpleadosComponent implements OnInit {
       password: '',
       tandaLabor: '',
       porcientoComision: 0,
-      fechaIngreso: new Date().toISOString(),
+      fechaIngreso: fechaLocalISO(),
       estado: true
     };
   }
 
   cargarDatos(): void {
     this.empleadoService.getEmpleados().subscribe({
-      next: (data: Empleado[]) => {
+      next: (data) => {
         this.listaEmpleados = [...data];
-        this.cdr.detectChanges();
+        this.cargando = false;
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error al cargar empleados', err);
+      error: (err: unknown) => {
+        this.cargando = false;
+        void notificar(mensajeError(err, 'No se pudieron cargar los empleados.'), 'error');
+        this.cdr.markForCheck();
       }
     });
   }
 
+  /** Devuelve el mensaje de validación o null si el formulario es correcto. */
+  validarFormulario(): string | null {
+    const e = this.empleadoActual;
+    if (!e.nombre?.trim() || !e.cedula || !e.usuario?.trim()) return 'El nombre, el usuario y la cédula son obligatorios.';
+    if (!/^[a-z0-9._-]{3,80}$/.test(e.usuario.trim().toLowerCase())) {
+      return 'El usuario debe tener entre 3 y 80 caracteres: letras minúsculas, números, punto, guion o guion bajo.';
+    }
+    if (!TANDAS.includes(e.tandaLabor as (typeof TANDAS)[number])) return 'Selecciona la tanda laboral.';
+    const comision = Number(e.porcientoComision);
+    if (!Number.isInteger(comision) || comision < 0 || comision > 100) return 'El porcentaje de comisión debe ser un entero entre 0 y 100.';
+    const errorPassword = validarPassword(e.password, !this.modoEdicion);
+    if (errorPassword) return errorPassword;
+    if (!cedulaValida(e.cedula)) return 'La cédula ingresada no es válida.';
+    if (!this.cedulaEsValida) return this.mensajeCedula || 'Debes validar una cédula válida y disponible.';
+    return null;
+  }
+
   guardar(): void {
-    if (!this.empleadoActual.nombre || !this.empleadoActual.cedula || !this.empleadoActual.usuario) {
-      alert('El nombre, usuario y cédula son obligatorios.');
-      return;
-    }
-
-    if (!this.modoEdicion && (!this.empleadoActual.password || this.empleadoActual.password.length < 8)) {
-      alert('La contraseña inicial debe tener al menos 8 caracteres.');
-      return;
-    }
-
-    if (this.modoEdicion && this.empleadoActual.password && this.empleadoActual.password.length < 8) {
-      alert('La nueva contraseña debe tener al menos 8 caracteres.');
-      return;
-    }
-
-    if (Number(this.empleadoActual.porcientoComision) < 0) {
-      alert('El porcentaje de comisión no puede ser negativo.');
-      return;
-    }
-
-    const cedulaLimpia = this.limpiarCedula(this.empleadoActual.cedula);
-
-    if (!this.cedulaValida(cedulaLimpia)) {
-      alert('La cédula ingresada no es válida.');
-      return;
-    }
-
-    if (!this.cedulaEsValida) {
-      alert(this.mensajeCedula || 'Debes validar una cédula válida y disponible.');
+    if (this.guardando) return;
+    const error = this.validarFormulario();
+    if (error) {
+      void notificar(error, 'warning');
       return;
     }
 
     const empleadoEnviar: Empleado = {
       ...this.empleadoActual,
-      cedula: cedulaLimpia,
+      nombre: this.empleadoActual.nombre.trim(),
+      usuario: this.empleadoActual.usuario.trim().toLowerCase(),
+      cedula: soloDigitos(this.empleadoActual.cedula, 11),
       porcientoComision: Number(this.empleadoActual.porcientoComision),
-      fechaIngreso: this.empleadoActual.fechaIngreso || new Date().toISOString()
+      fechaIngreso: (this.empleadoActual.fechaIngreso || fechaLocalISO()).slice(0, 10),
     };
 
-    if (this.modoEdicion) {
-      this.empleadoService.actualizarEmpleado(empleadoEnviar).subscribe({
-        next: () => {
-          alert('Empleado actualizado correctamente.');
-          this.cancelar();
-          this.cargarDatos();
-        },
-        error: (err: any) => {
-          console.error('Error al actualizar empleado', err);
-          alert(err.error || 'Ocurrió un error al actualizar el empleado.');
-        }
-      });
-    } else {
-      this.empleadoService.crearEmpleado(empleadoEnviar).subscribe({
-        next: () => {
-          alert('Empleado guardado con éxito.');
-          this.cancelar();
-          this.cargarDatos();
-        },
-        error: (err: any) => {
-          console.error('Error al guardar empleado', err);
-          alert(err.error || 'Ocurrió un error al guardar el empleado.');
-        }
-      });
-    }
+    this.guardando = true;
+    const editando = this.modoEdicion;
+    const operacion: Observable<unknown> = editando
+      ? this.empleadoService.actualizarEmpleado(empleadoEnviar)
+      : this.empleadoService.crearEmpleado(empleadoEnviar);
+
+    operacion.subscribe({
+      next: () => {
+        this.guardando = false;
+        void notificar(editando ? 'Empleado actualizado correctamente.' : 'Empleado guardado correctamente.', 'success');
+        this.cancelar();
+        this.cargarDatos();
+      },
+      error: (err: unknown) => {
+        this.guardando = false;
+        void notificar(mensajeError(err, editando ? 'Ocurrió un error al actualizar el empleado.' : 'Ocurrió un error al guardar el empleado.'), 'error');
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   editar(empleado: Empleado): void {
@@ -139,56 +136,48 @@ export class EmpleadosComponent implements OnInit {
       ...empleado,
       password: '',
       cedula: this.formatearCedula(empleado.cedula),
-      fechaIngreso: empleado.fechaIngreso || new Date().toISOString()
+      fechaIngreso: (empleado.fechaIngreso || fechaLocalISO()).slice(0, 10)
     };
 
     this.modoEdicion = true;
     this.validarCedulaApi();
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
-  eliminar(id: number | undefined): void {
-    if (!id) return;
+  async eliminar(empleado: Empleado): Promise<void> {
+    if (!empleado.id) return;
+    const confirmado = await confirmar(`Se eliminará al empleado "${empleado.nombre}". Si tiene rentas o inspecciones, inactívelo en su lugar.`, {
+      titulo: '¿Eliminar empleado?',
+      textoConfirmar: 'Eliminar',
+      peligroso: true,
+    });
+    if (!confirmado) return;
 
-    if (!confirm('¿Estás seguro de eliminar este empleado?')) return;
-
-    this.empleadoService.deleteEmpleado(id).subscribe({
+    this.empleadoService.deleteEmpleado(empleado.id).subscribe({
       next: () => {
-        alert('Empleado eliminado correctamente.');
+        void notificar('Empleado eliminado correctamente.', 'success');
         this.cargarDatos();
       },
-      error: (err: any) => {
-        console.error('Error al eliminar empleado', err);
-        alert('No se pudo eliminar el empleado. Puede estar relacionado con una renta.');
-      }
+      error: (err: unknown) => void notificar(mensajeError(err, 'No se pudo eliminar el empleado. Puede estar relacionado con una renta.'), 'error'),
     });
   }
 
   cancelar(): void {
     this.empleadoActual = this.crearEmpleadoVacio();
     this.modoEdicion = false;
+    this.guardando = false;
     this.mensajeCedula = '';
     this.cedulaEsValida = false;
     this.validandoCedula = false;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
   limpiarCedula(cedula: string): string {
-    return (cedula || '').replace(/\D/g, '').slice(0, 11);
+    return soloDigitos(cedula, 11);
   }
 
   formatearCedula(cedula: string): string {
-    const limpia = this.limpiarCedula(cedula);
-
-    if (limpia.length <= 3) {
-      return limpia;
-    }
-
-    if (limpia.length <= 10) {
-      return `${limpia.slice(0, 3)}-${limpia.slice(3)}`;
-    }
-
-    return `${limpia.slice(0, 3)}-${limpia.slice(3, 10)}-${limpia.slice(10, 11)}`;
+    return formatearDocumento(cedula, 'Fisica');
   }
 
   onCedulaInput(): void {
@@ -223,44 +212,19 @@ export class EmpleadosComponent implements OnInit {
     this.validandoCedula = true;
 
     this.empleadoService.validarCedula(cedula, this.empleadoActual.id).subscribe({
-      next: (respuesta: any) => {
+      next: (respuesta) => {
         this.cedulaEsValida = respuesta.esValida;
         this.mensajeCedula = respuesta.mensaje;
         this.validandoCedula = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error validando cédula del empleado', err);
-        this.mensajeCedula = 'No se pudo validar la cédula.';
+      error: (err: unknown) => {
+        this.mensajeCedula = mensajeError(err, 'No se pudo validar la cédula.');
         this.cedulaEsValida = false;
         this.validandoCedula = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     });
-  }
-
-  cedulaValida(cedula: string): boolean {
-    cedula = this.limpiarCedula(cedula);
-
-    if (cedula.length !== 11) return false;
-    if (/^(\d)\1{10}$/.test(cedula)) return false;
-
-    const pesos = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2];
-    let suma = 0;
-
-    for (let i = 0; i < 10; i++) {
-      let valor = Number(cedula[i]) * pesos[i];
-
-      if (valor >= 10) {
-        valor = Math.floor(valor / 10) + (valor % 10);
-      }
-
-      suma += valor;
-    }
-
-    const digitoVerificador = (10 - (suma % 10)) % 10;
-
-    return digitoVerificador === Number(cedula[10]);
   }
 
   formatearCedulaListado(cedula: string): string {

@@ -7,8 +7,8 @@
       <div class="row g-3 align-items-end">
 
         <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">Nombre Completo</label>
-          <input
+          <label class="form-label fw-bold text-muted small" for="empleado-campo-1">Nombre Completo</label>
+          <input id="empleado-campo-1"
             type="text"
             class="form-control form-control-lg"
             [(ngModel)]="empleadoActual.nombre"
@@ -16,22 +16,22 @@
         </div>
 
         <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">
+          <label class="form-label fw-bold text-muted small" for="empleado-campo-2">
             {{ modoEdicion ? 'Nueva contraseña (opcional)' : 'Contraseña inicial' }}
           </label>
-          <input
+          <input id="empleado-campo-2"
             type="password"
             class="form-control form-control-lg"
             [(ngModel)]="empleadoActual.password"
             minlength="8"
             maxlength="128"
             autocomplete="new-password"
-            placeholder="Mínimo 8 caracteres">
+            placeholder="Mín. 8 caracteres con letras y números">
         </div>
 
         <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">Usuario de Acceso</label>
-          <input
+          <label class="form-label fw-bold text-muted small" for="empleado-campo-3">Usuario de Acceso</label>
+          <input id="empleado-campo-3"
             type="text"
             class="form-control form-control-lg border-primary"
             [(ngModel)]="empleadoActual.usuario"
@@ -39,8 +39,8 @@
         </div>
 
         <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">Cédula</label>
-          <input
+          <label class="form-label fw-bold text-muted small" for="empleado-campo-4">Cédula</label>
+          <input id="empleado-campo-4"
             type="text"
             class="form-control form-control-lg"
             [(ngModel)]="empleadoActual.cedula"
@@ -68,8 +68,8 @@
         </div>
 
         <div class="col-md-3">
-          <label class="form-label fw-bold text-muted small">Tanda</label>
-          <select class="form-select form-select-lg" [(ngModel)]="empleadoActual.tandaLabor">
+          <label class="form-label fw-bold text-muted small" for="empleado-campo-5">Tanda</label>
+          <select id="empleado-campo-5" class="form-select form-select-lg" [(ngModel)]="empleadoActual.tandaLabor">
             <option value="">Seleccione...</option>
             <option value="Matutina">Matutina</option>
             <option value="Vespertina">Vespertina</option>
@@ -78,8 +78,8 @@
         </div>
 
         <div class="col-md-3">
-          <label class="form-label fw-bold text-muted small">% Comisión</label>
-          <input
+          <label class="form-label fw-bold text-muted small" for="empleado-campo-6">% Comisión</label>
+          <input id="empleado-campo-6"
             type="number"
             min="0"
             class="form-control form-control-lg"
@@ -88,19 +88,19 @@
         </div>
 
         <div class="col-md-3">
-          <label class="form-label fw-bold text-muted small">Estado</label>
-          <select class="form-select form-select-lg" [(ngModel)]="empleadoActual.estado">
+          <label class="form-label fw-bold text-muted small" for="empleado-campo-7">Estado</label>
+          <select id="empleado-campo-7" class="form-select form-select-lg" [(ngModel)]="empleadoActual.estado">
             <option [ngValue]="true">Activo</option>
             <option [ngValue]="false">Inactivo</option>
           </select>
         </div>
 
         <div class="col-md-3 text-end">
-          <button *ngIf="modoEdicion" class="btn btn-secondary btn-lg me-2" (click)="cancelar()">
+          <button type="button" *ngIf="modoEdicion" class="btn btn-secondary btn-lg me-2" (click)="cancelar()">
             Cancelar
           </button>
 
-          <button class="btn btn-primary btn-lg fw-bold shadow-sm" (click)="guardar()">
+          <button type="button" class="btn btn-primary btn-lg fw-bold shadow-sm" (click)="guardar()" [disabled]="guardando || validandoCedula">
             {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
           </button>
         </div>
@@ -137,11 +137,11 @@
               </span>
             </td>
             <td class="text-center">
-              <button class="btn btn-warning btn-sm me-2" (click)="editar(emp)">
+              <button type="button" class="btn btn-warning btn-sm me-2" (click)="editar(emp)">
                 ✏️ Editar
               </button>
 
-              <button class="btn btn-outline-danger btn-sm" (click)="eliminar(emp.id)">
+              <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminar(emp)">
                 🗑 Eliminar
               </button>
             </td>

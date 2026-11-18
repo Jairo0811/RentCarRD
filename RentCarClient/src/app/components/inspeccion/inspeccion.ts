@@ -1,93 +1,82 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Observable, forkJoin } from 'rxjs';
 
+import { Cliente, Inspeccion, Vehiculo } from '../../interfaces/modelos';
+import { AuthService } from '../../services/auth.service';
+import { ClienteService } from '../../services/cliente.service';
 import { InspeccionService } from '../../services/inspeccion.service';
 import { VehiculoService } from '../../services/vehiculo.service';
-import { ClienteService } from '../../services/cliente.service';
+import { confirmar, mensajeError, notificar } from '../../shared/alertas';
+import { fechaLocalISO, formatearFecha } from '../../shared/fechas';
 
-export interface Inspeccion {
-  id?: number;
-  idTransaccion?: number;
-  idVehiculo: number | null;
-  idCliente: number | null;
-  tieneRalladuras: boolean;
-  cantidadCombustible: string;
-  tieneGomaRespuesta: boolean;
-  tieneGato: boolean;
-  tieneRoturasCristal: boolean;
-  estadoGomasDD: boolean;
-  estadoGomasDI: boolean;
-  estadoGomasTD: boolean;
-  estadoGomasTI: boolean;
-  fecha: string;
-  idEmpleadoInspeccion: number | null;
-  estado: boolean;
-}
+export const NIVELES_COMBUSTIBLE = ['1/4', '1/2', '3/4', 'Lleno'] as const;
 
+/** Neumáticos: claves que la API espera (antes se enviaban "estadoGomasXX" y se perdían). */
+export const NEUMATICOS = [
+  { clave: 'gomaDelanteraIzquierda', etiqueta: 'Delantera izquierda' },
+  { clave: 'gomaDelanteraDerecha', etiqueta: 'Delantera derecha' },
+  { clave: 'gomaTraseraIzquierda', etiqueta: 'Trasera izquierda' },
+  { clave: 'gomaTraseraDerecha', etiqueta: 'Trasera derecha' },
+] as const;
+
+/**
+ * Inspección de flota (solo Admin: la ruta tiene guard por rol y la API responde 403 a otros roles).
+ * El inspector no se envía: la API lo toma del JWT y lo conserva al editar.
+ */
 @Component({
   selector: 'app-inspeccion',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './inspeccion.html'
+  imports: [FormsModule],
+  templateUrl: './inspeccion.html',
 })
 export class InspeccionComponent implements OnInit {
+  private readonly inspeccionService = inject(InspeccionService);
+  private readonly vehiculoService = inject(VehiculoService);
+  private readonly clienteService = inject(ClienteService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  readonly esAdmin = inject(AuthService).esAdmin;
 
-  inspecciones: any[] = [];
-  vehiculos: any[] = [];
-  clientes: any[] = [];
+  readonly niveles = NIVELES_COMBUSTIBLE;
+  readonly neumaticos = NEUMATICOS;
+  readonly hoy = fechaLocalISO();
+
+  inspecciones: Inspeccion[] = [];
+  vehiculos: Vehiculo[] = [];
+  clientes: Cliente[] = [];
   modoEdicion = false;
+  cargando = true;
+  guardando = false;
+  errorCarga = '';
 
   inspeccionActual: Inspeccion = this.resetForm();
 
-  constructor(
-    private inspeccionService: InspeccionService,
-    private vehiculoService: VehiculoService,
-    private clienteService: ClienteService,
-    private cdr: ChangeDetectorRef
-  ) {}
-
-  get rolActual(): string | null {
-    return localStorage.getItem('rolUsuario');
-  }
-
   ngOnInit(): void {
-    if (this.rolActual !== 'admin') {
-      return;
+    if (this.esAdmin()) {
+      this.cargarDatos();
     }
-
-    setTimeout(() => this.cargarDatos(), 0);
   }
 
   cargarDatos(): void {
-    this.inspeccionService.getInspecciones().subscribe({
-      next: (data: any[]) => {
-        this.inspecciones = [...data];
-        this.cdr.detectChanges();
+    this.cargando = true;
+    this.errorCarga = '';
+    forkJoin({
+      inspecciones: this.inspeccionService.getInspecciones(),
+      vehiculos: this.vehiculoService.getVehiculos(),
+      clientes: this.clienteService.getClientes(),
+    }).subscribe({
+      next: ({ inspecciones, vehiculos, clientes }) => {
+        this.inspecciones = [...inspecciones];
+        this.vehiculos = [...vehiculos];
+        this.clientes = [...clientes];
+        this.cargando = false;
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error cargando inspecciones', err);
-      }
-    });
-
-    this.vehiculoService.getVehiculos().subscribe({
-      next: (data: any[]) => {
-        this.vehiculos = [...data];
-        this.cdr.detectChanges();
+      error: (error: unknown) => {
+        this.cargando = false;
+        this.errorCarga = mensajeError(error, 'No se pudieron cargar las inspecciones.');
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error cargando vehículos', err);
-      }
-    });
-
-    this.clienteService.getClientes().subscribe({
-      next: (data: any[]) => {
-        this.clientes = [...data];
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error cargando clientes', err);
-      }
     });
   }
 
@@ -100,126 +89,100 @@ export class InspeccionComponent implements OnInit {
       tieneGomaRespuesta: true,
       tieneGato: true,
       tieneRoturasCristal: false,
-      estadoGomasDD: true,
-      estadoGomasDI: true,
-      estadoGomasTD: true,
-      estadoGomasTI: true,
-      fecha: new Date().toISOString(),
-      idEmpleadoInspeccion: 1,
-      estado: true
+      gomaDelanteraDerecha: true,
+      gomaDelanteraIzquierda: true,
+      gomaTraseraDerecha: true,
+      gomaTraseraIzquierda: true,
+      fecha: fechaLocalISO(),
+      estado: true,
     };
   }
 
   guardarInspeccion(): void {
-    if (this.rolActual !== 'admin') {
+    const { idVehiculo, idCliente, cantidadCombustible, fecha } = this.inspeccionActual;
+    if (!idVehiculo || !idCliente || !cantidadCombustible) {
+      void notificar('Selecciona el vehículo, el cliente y el nivel de combustible.', 'warning');
       return;
     }
-
-    if (
-      !this.inspeccionActual.idVehiculo ||
-      !this.inspeccionActual.idCliente ||
-      !this.inspeccionActual.cantidadCombustible
-    ) {
-      alert('Selecciona el vehículo, el cliente y el nivel de combustible.');
+    if (fecha && fecha.slice(0, 10) > this.hoy) {
+      void notificar('La fecha de inspección no puede estar en el futuro.', 'warning');
       return;
     }
+    if (this.guardando) return;
+    this.guardando = true;
 
-    const inspeccionEnviar = {
+    const inspeccion: Inspeccion = {
       ...this.inspeccionActual,
-      idVehiculo: Number(this.inspeccionActual.idVehiculo),
-      idCliente: Number(this.inspeccionActual.idCliente),
-      idEmpleadoInspeccion: 1,
-      fecha: this.inspeccionActual.fecha || new Date().toISOString(),
-      estado: true
+      idVehiculo: Number(idVehiculo),
+      idCliente: Number(idCliente),
+      fecha: (fecha || this.hoy).slice(0, 10),
     };
 
-    if (this.modoEdicion) {
-      this.inspeccionService.actualizarInspeccion(inspeccionEnviar).subscribe({
-        next: () => {
-          alert('Inspección actualizada correctamente.');
-          this.cancelar();
-          this.cargarDatos();
-        },
-        error: (err: any) => {
-          console.error('Error al actualizar inspección', err);
-          alert('Ocurrió un error al actualizar la inspección.');
-        }
-      });
-    } else {
-      this.inspeccionService.crearInspeccion(inspeccionEnviar).subscribe({
-        next: () => {
-          alert('Inspección registrada correctamente.');
-          this.cancelar();
-          this.cargarDatos();
-        },
-        error: (err: any) => {
-          console.error('Error al guardar inspección', err);
-          alert('Ocurrió un error al guardar la inspección.');
-        }
-      });
-    }
+    const editando = this.modoEdicion && !!inspeccion.idTransaccion;
+    const operacion: Observable<unknown> = editando
+      ? this.inspeccionService.actualizarInspeccion(inspeccion)
+      : this.inspeccionService.crearInspeccion(inspeccion);
+
+    operacion.subscribe({
+      next: () => {
+        this.guardando = false;
+        void notificar(editando ? 'Inspección actualizada correctamente.' : 'Inspección registrada correctamente.', 'success');
+        this.cancelar();
+        this.cargarDatos();
+      },
+      error: (err: unknown) => {
+        this.guardando = false;
+        void notificar(mensajeError(err, 'Ocurrió un error al guardar la inspección.'), 'error');
+        this.cdr.markForCheck();
+      },
+    });
   }
 
-  editar(inspeccion: any): void {
-    this.inspeccionActual = {
-      id: inspeccion.id,
-      idTransaccion: inspeccion.idTransaccion,
-      idVehiculo: inspeccion.idVehiculo,
-      idCliente: inspeccion.idCliente,
-      tieneRalladuras: inspeccion.tieneRalladuras,
-      cantidadCombustible: inspeccion.cantidadCombustible,
-      tieneGomaRespuesta: inspeccion.tieneGomaRespuesta,
-      tieneGato: inspeccion.tieneGato,
-      tieneRoturasCristal: inspeccion.tieneRoturasCristal,
-      estadoGomasDD: inspeccion.estadoGomasDD,
-      estadoGomasDI: inspeccion.estadoGomasDI,
-      estadoGomasTD: inspeccion.estadoGomasTD,
-      estadoGomasTI: inspeccion.estadoGomasTI,
-      fecha: inspeccion.fecha,
-      idEmpleadoInspeccion: inspeccion.idEmpleadoInspeccion,
-      estado: inspeccion.estado
-    };
-
+  editar(inspeccion: Inspeccion): void {
+    this.inspeccionActual = { ...inspeccion, fecha: (inspeccion.fecha ?? '').slice(0, 10) };
     this.modoEdicion = true;
-    this.cdr.detectChanges();
   }
 
-  eliminar(inspeccion: any): void {
-    const id = inspeccion.idTransaccion ?? inspeccion.id;
-
-    if (!id) {
-      return;
-    }
-
-    if (!confirm('¿Deseas eliminar esta inspección?')) {
-      return;
-    }
+  async eliminar(inspeccion: Inspeccion): Promise<void> {
+    const id = inspeccion.idTransaccion;
+    if (!id) return;
+    const confirmado = await confirmar(`Se eliminará la inspección #${id}. Esta acción no se puede deshacer.`, {
+      titulo: '¿Eliminar inspección?',
+      textoConfirmar: 'Eliminar',
+      peligroso: true,
+    });
+    if (!confirmado) return;
 
     this.inspeccionService.eliminarInspeccion(id).subscribe({
       next: () => {
-        alert('Inspección eliminada correctamente.');
+        void notificar('Inspección eliminada correctamente.', 'success');
         this.cargarDatos();
       },
-      error: (err: any) => {
-        console.error('Error al eliminar inspección', err);
-        alert('No se pudo eliminar la inspección.');
-      }
+      error: (err: unknown) => void notificar(mensajeError(err, 'No se pudo eliminar la inspección.'), 'error'),
     });
   }
 
   cancelar(): void {
     this.inspeccionActual = this.resetForm();
     this.modoEdicion = false;
-    this.cdr.detectChanges();
+    this.guardando = false;
+    this.cdr.markForCheck();
   }
 
-  obtenerVehiculo(idVehiculo: number): string {
-    const vehiculo = this.vehiculos.find(v => Number(v.id) === Number(idVehiculo));
+  obtenerVehiculo(idVehiculo: number | null): string {
+    const vehiculo = this.vehiculos.find((v) => v.id === Number(idVehiculo));
     return vehiculo ? `${vehiculo.descripcion} - ${vehiculo.noPlaca}` : 'N/A';
   }
 
-  obtenerCliente(idCliente: number): string {
-    const cliente = this.clientes.find(c => Number(c.id) === Number(idCliente));
-    return cliente ? cliente.nombre : 'N/A';
+  obtenerCliente(idCliente: number | null): string {
+    return this.clientes.find((c) => c.id === Number(idCliente))?.nombre ?? 'N/A';
+  }
+
+  neumaticosEnBuenEstado(i: Inspeccion): number {
+    return NEUMATICOS.filter((n) => i[n.clave]).length;
+  }
+
+  fecha(valor: string | null | undefined): string {
+    return formatearFecha(valor, 'N/D');
   }
 }

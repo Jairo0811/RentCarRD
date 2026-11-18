@@ -1,322 +1,203 @@
-<div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-    <h2 class="fw-bold text-dark">
-      <span class="text-primary me-2">🔑</span>
+<section class="container mt-4" aria-labelledby="rentas-titulo">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-2 border-bottom">
+    <h1 class="h3 fw-bold text-dark mb-0" id="rentas-titulo">
+      <span class="text-primary me-2" aria-hidden="true">🔑</span>
       Gestión de Rentas
-    </h2>
+    </h1>
 
-    <button class="btn btn-lg fw-bold shadow-sm" [ngClass]="mostrarFormulario ? 'btn-danger' : 'btn-primary'" (click)="
-        mostrarFormulario
-          ? cancelarFormulario()
-          : (mostrarFormulario = true)
-      ">
-      {{
-      mostrarFormulario
-      ? '✖ Cancelar Operación'
-      : '+ Registrar Nueva Renta'
-      }}
-    </button>
+    @if (mostrarFormulario) {
+      <button type="button" class="btn btn-lg btn-danger fw-bold shadow-sm" (click)="cancelarFormulario()">✖ Cancelar operación</button>
+    } @else {
+      <button type="button" class="btn btn-lg btn-primary fw-bold shadow-sm" (click)="abrirFormulario()" [disabled]="cargando">+ Registrar nueva renta</button>
+    }
   </div>
 
-  <!-- Formulario de renta -->
-  <div *ngIf="mostrarFormulario" class="card shadow border-0 mb-5 rounded-4 animate__animated animate__fadeIn">
-    <div class="card-header bg-light border-0 pt-4 pb-2 px-4">
-      <h5 class="mb-0 fw-bold text-secondary">
-        📝 Contrato de Renta
-      </h5>
-    </div>
+  @if (mostrarFormulario) {
+    <form class="card shadow border-0 mb-5 rounded-4" (ngSubmit)="guardarRenta()" novalidate aria-labelledby="renta-form-titulo">
+      <div class="card-header bg-light border-0 pt-4 pb-2 px-4">
+        <h2 class="h5 mb-0 fw-bold text-secondary" id="renta-form-titulo">📝 Contrato de renta</h2>
+      </div>
 
-    <div class="card-body p-4">
-      <div class="row g-4 align-items-center">
-
-        <!-- Vehículo -->
-        <div class="col-md-6">
-          <label class="form-label fw-bold text-muted small">
-            Vehículo Disponible
-          </label>
-
-          <select [(ngModel)]="nuevaRenta.idVehiculo" class="form-select form-select-lg bg-light border-0 shadow-sm">
-            <option [ngValue]="0">
-              🚗 Elige un vehículo disponible...
-            </option>
-
-            <option *ngFor="let v of vehiculosDisponibles" [ngValue]="v.id">
-              {{ v.descripcion }} - Placa: {{ v.noPlaca }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Cliente -->
-        <div class="col-md-6">
-          <label class="form-label fw-bold text-muted small">
-            Cliente
-          </label>
-
-          <select [(ngModel)]="nuevaRenta.idCliente" class="form-select form-select-lg bg-light border-0 shadow-sm">
-            <option [ngValue]="0">
-              👤 Elige un cliente registrado...
-            </option>
-
-            <option *ngFor="let c of clientes" [ngValue]="c.id">
-              {{ c.nombre }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Fecha -->
-        <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">
-            Fecha de Renta
-          </label>
-
-          <input type="date" [(ngModel)]="nuevaRenta.fechaRenta" class="form-control form-control-lg shadow-sm" />
-        </div>
-
-        <!-- Días -->
-        <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">
-            Días a Rentar
-          </label>
-
-          <input type="number" min="1" [(ngModel)]="nuevaRenta.cantidadDias"
-            class="form-control form-control-lg shadow-sm" />
-        </div>
-
-        <!-- Tarifa -->
-        <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">
-            Tarifa por Día
-          </label>
-
-          <div class="input-group input-group-lg shadow-sm">
-            <span class="input-group-text bg-white border-end-0">
-              RD$
-            </span>
-
-            <input type="number" min="1" [(ngModel)]="nuevaRenta.montoXDia" class="form-control border-start-0" />
+      <div class="card-body p-4">
+        <div class="row g-4 align-items-start">
+          <div class="col-md-6">
+            <label class="form-label fw-bold text-muted small" for="renta-vehiculo">Vehículo disponible</label>
+            <select id="renta-vehiculo" name="idVehiculo" required [(ngModel)]="nuevaRenta.idVehiculo" class="form-select form-select-lg bg-light border-0 shadow-sm" aria-describedby="renta-vehiculo-ayuda">
+              <option [ngValue]="null">🚗 Elige un vehículo disponible…</option>
+              @for (v of vehiculosDisponibles; track v.id) {
+                <option [ngValue]="v.id">{{ v.descripcion }} — Placa: {{ v.noPlaca }}</option>
+              }
+            </select>
+            <small id="renta-vehiculo-ayuda" class="text-muted d-block mt-1">
+              @if (vehiculosDisponibles.length === 0) {
+                No hay vehículos disponibles para renta.
+              } @else {
+                Solo se muestran vehículos disponibles que nunca han sido rentados.
+              }
+            </small>
           </div>
-        </div>
 
-        <!-- Resumen financiero -->
-        <div class="col-12">
-          <div class="card border-0 bg-light shadow-sm rounded-4">
-            <div class="card-body p-4">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  <h5 class="fw-bold text-secondary mb-1">
-                    💰 Resumen Financiero
-                  </h5>
+          <div class="col-md-6">
+            <label class="form-label fw-bold text-muted small" for="renta-cliente">Cliente</label>
+            <select id="renta-cliente" name="idCliente" required [(ngModel)]="nuevaRenta.idCliente" class="form-select form-select-lg bg-light border-0 shadow-sm">
+              <option [ngValue]="null">👤 Elige un cliente activo…</option>
+              @for (c of clientesActivos; track c.id) {
+                <option [ngValue]="c.id">{{ c.nombre }}</option>
+              }
+            </select>
+          </div>
 
-                  <small class="text-muted">
-                    El ITBIS se calcula automáticamente al 18%.
-                  </small>
-                </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold text-muted small" for="renta-fecha">Fecha de renta</label>
+            <input type="date" id="renta-fecha" name="fechaRenta" required [(ngModel)]="nuevaRenta.fechaRenta" class="form-control form-control-lg shadow-sm" />
+          </div>
 
-                <span class="badge text-bg-primary px-3 py-2">
-                  ITBIS 18%
-                </span>
-              </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold text-muted small" for="renta-dias">Días a rentar</label>
+            <input type="number" id="renta-dias" name="cantidadDias" min="1" [max]="diasMaximos" step="1" required [(ngModel)]="nuevaRenta.cantidadDias" class="form-control form-control-lg shadow-sm" />
+          </div>
 
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <div class="p-3 bg-white rounded-3 border h-100">
-                    <span class="text-muted fw-bold small text-uppercase d-block">
-                      Subtotal
-                    </span>
+          <div class="col-md-4">
+            <label class="form-label fw-bold text-muted small" for="renta-tarifa">Tarifa por día</label>
+            <div class="input-group input-group-lg shadow-sm">
+              <span class="input-group-text bg-white border-end-0">RD$</span>
+              <input type="number" id="renta-tarifa" name="montoXDia" min="0.01" step="0.01" required [(ngModel)]="nuevaRenta.montoXDia" class="form-control border-start-0" placeholder="0.00" />
+            </div>
+          </div>
 
-                    <h4 class="mb-0 text-secondary fw-bolder">
-                      {{
-                      obtenerSubtotalFormulario()
-                      | currency: 'DOP' : 'RD$ ' : '1.2-2'
-                      }}
-                    </h4>
+          <div class="col-12">
+            <div class="card border-0 bg-light shadow-sm rounded-4" aria-live="polite">
+              <div class="card-body p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                  <div>
+                    <h3 class="h5 fw-bold text-secondary mb-1">💰 Resumen financiero</h3>
+                    <small class="text-muted">Vista previa: el ITBIS académico (18 %) y el total definitivo los calcula el servidor.</small>
                   </div>
+                  <span class="badge text-bg-primary px-3 py-2">ITBIS 18%</span>
                 </div>
 
-                <div class="col-md-4">
-                  <div class="p-3 bg-white rounded-3 border h-100">
-                    <span class="text-muted fw-bold small text-uppercase d-block">
-                      ITBIS (18%)
-                    </span>
-
-                    <h4 class="mb-0 text-warning fw-bolder">
-                      {{
-                      obtenerItbisFormulario()
-                      | currency: 'DOP' : 'RD$ ' : '1.2-2'
-                      }}
-                    </h4>
+                <dl class="row g-3 mb-0">
+                  <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 border h-100">
+                      <dt class="text-muted fw-bold small text-uppercase">Subtotal</dt>
+                      <dd class="h4 mb-0 text-secondary fw-bolder">{{ desgloseFormulario.subtotal | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</dd>
+                    </div>
                   </div>
-                </div>
-
-                <div class="col-md-4">
-                  <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 h-100">
-                    <span class="text-success fw-bold small text-uppercase d-block">
-                      Total a Pagar
-                    </span>
-
-                    <h4 class="mb-0 text-success fw-bolder">
-                      {{
-                      obtenerTotalFormulario()
-                      | currency: 'DOP' : 'RD$ ' : '1.2-2'
-                      }}
-                    </h4>
+                  <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 border h-100">
+                      <dt class="text-muted fw-bold small text-uppercase">ITBIS (18%)</dt>
+                      <dd class="h4 mb-0 texto-itbis fw-bolder">{{ desgloseFormulario.itbis | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</dd>
+                    </div>
                   </div>
-                </div>
+                  <div class="col-md-4">
+                    <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 h-100">
+                      <dt class="text-success fw-bold small text-uppercase">Total del contrato</dt>
+                      <dd class="h4 mb-0 text-success fw-bolder">{{ desgloseFormulario.total | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</dd>
+                    </div>
+                  </div>
+                </dl>
               </div>
             </div>
           </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-bold text-muted small" for="renta-comentario">Comentarios y observaciones</label>
+            <textarea id="renta-comentario" name="comentario" maxlength="1000" [(ngModel)]="nuevaRenta.comentario" class="form-control shadow-sm" rows="2" placeholder="Estado de entrega, accesorios incluidos, notas…"></textarea>
+          </div>
         </div>
 
-        <!-- Comentarios -->
-        <div class="col-md-12">
-          <label class="form-label fw-bold text-muted small">
-            Comentarios y Observaciones
-          </label>
-
-          <textarea [(ngModel)]="nuevaRenta.comentario" class="form-control shadow-sm" rows="2"
-            placeholder="Estado de entrega, accesorios incluidos, notas..."></textarea>
+        <div class="mt-4 pt-3 border-top text-end">
+          <button type="submit" class="btn btn-success btn-lg px-5 fw-bold shadow-sm rounded-pill" [disabled]="guardando">
+            @if (guardando) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Procesando…
+            } @else {
+              Confirmar y procesar renta
+            }
+          </button>
         </div>
       </div>
+    </form>
+  }
 
-      <div class="mt-4 pt-3 border-top text-end">
-        <button (click)="guardarRenta()" class="btn btn-success btn-lg px-5 fw-bold shadow-sm rounded-pill">
-          Confirmar y Procesar Renta
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tabla -->
   <div class="card shadow border-0 rounded-4 overflow-hidden">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
+        <caption class="visually-hidden">Rentas registradas</caption>
         <thead class="table-dark">
           <tr>
-            <th class="py-3 px-4"># Renta</th>
-            <th>Fecha de Renta</th>
-            <th>Fecha de Devolución</th>
-            <th>Vehículo</th>
-            <th>Tarifa/Día</th>
-            <th>Días</th>
-            <th>Subtotal</th>
-            <th>ITBIS</th>
-            <th>Total</th>
-            <th>Estado</th>
-            <th class="text-center">Acciones</th>
+            <th scope="col" class="py-3 px-4"># Renta</th>
+            <th scope="col">Fecha de renta</th>
+            <th scope="col">Devolución prevista</th>
+            <th scope="col">Devolución real</th>
+            <th scope="col">Vehículo</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Empleado</th>
+            <th scope="col">Tarifa/día</th>
+            <th scope="col">Días</th>
+            <th scope="col">Subtotal</th>
+            <th scope="col">ITBIS</th>
+            <th scope="col">Total</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="text-center">Acciones</th>
           </tr>
         </thead>
 
         <tbody>
-          <tr *ngFor="let r of rentas">
-            <td class="px-4 fw-bold text-secondary">
-              #{{ r.noRenta }}
-            </td>
-
-            <td>
-              {{ r.fechaRenta | date: 'dd/MM/yyyy' }}
-            </td>
-
-            <td>
-              <span [ngClass]="
-                  r.fechaDevolucion
-                    ? 'text-success fw-bold'
-                    : 'text-muted'
-                ">
-                {{
-                r.fechaDevolucion
-                ? (r.fechaDevolucion
-                | date: 'dd/MM/yyyy')
-                : 'Pendiente'
-                }}
-              </span>
-            </td>
-
-            <td>
-              <div class="fw-semibold text-dark">
-                {{
-                obtenerVehiculoRenta(r)?.descripcion ||
-                'Vehículo no disponible'
-                }}
-              </div>
-
-              <small class="text-muted">
-                Placa:
-                {{
-                obtenerVehiculoRenta(r)?.noPlaca ||
-                'N/D'
-                }}
-              </small>
-            </td>
-
-            <td>
-              {{
-              obtenerMontoDia(r)
-              | currency: 'DOP' : 'RD$ ' : '1.2-2'
-              }}
-            </td>
-
-            <td>
-              <span class="badge bg-light text-dark border">
-                {{ r.cantidadDias }} días
-              </span>
-            </td>
-
-            <td class="fw-semibold text-secondary">
-              {{
-              obtenerSubtotal(r)
-              | currency: 'DOP' : 'RD$ ' : '1.2-2'
-              }}
-            </td>
-
-            <td class="fw-semibold text-warning">
-              {{
-              obtenerItbis(r)
-              | currency: 'DOP' : 'RD$ ' : '1.2-2'
-              }}
-            </td>
-
-            <td class="fw-bolder text-success">
-              {{
-              obtenerTotal(r)
-              | currency: 'DOP' : 'RD$ ' : '1.2-2'
-              }}
-            </td>
-
-            <td>
-              <span class="badge rounded-pill px-3 py-2" [ngClass]="
-                  r.estado === 'Activa'
-                    ? 'text-bg-warning shadow-sm'
-                    : 'text-bg-success shadow-sm'
-                ">
-                {{
-                r.estado === 'Activa'
-                ? '🚗 En Ruta'
-                : '✅ Concluida'
-                }}
-              </span>
-            </td>
-
-            <td>
-              <div class="d-flex gap-2 justify-content-center">
-                <button class="btn btn-sm btn-outline-secondary fw-bold" (click)="imprimirFactura(r.noRenta)">
-                  🖨️ Imprimir
-                </button>
-
-                <button *ngIf="r.estado === 'Activa'" (click)="devolverVehiculo(r.noRenta)"
-                  class="btn btn-sm btn-danger fw-bold shadow-sm">
-                  🔙 Devolver
-                </button>
-              </div>
-            </td>
-          </tr>
-
-          <tr *ngIf="rentas.length === 0">
-            <td colspan="11" class="text-center py-5 text-muted">
-              No hay rentas registradas en el sistema.
-            </td>
-          </tr>
+          @if (cargando) {
+            <tr><td colspan="14" class="text-center py-5"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cargando rentas…</td></tr>
+          } @else if (errorCarga) {
+            <tr><td colspan="14" class="text-center py-5 text-danger" role="alert">{{ errorCarga }} <button type="button" class="btn btn-link btn-sm" (click)="cargarDatos()">Reintentar</button></td></tr>
+          } @else {
+            @for (r of rentas; track r.noRenta) {
+              <tr>
+                <td class="px-4 fw-bold text-secondary">#{{ r.noRenta }}</td>
+                <td>{{ fecha(r.fechaRenta, 'N/D') }}</td>
+                <td>
+                  {{ fecha(r.fechaDevolucionPrevista, 'N/D') }}
+                  @if (estaAtrasada(r)) {
+                    <span class="badge text-bg-danger ms-1">Vencida</span>
+                  }
+                </td>
+                <td>
+                  <span [class.text-success]="r.fechaDevolucion" [class.fw-bold]="r.fechaDevolucion" [class.text-muted]="!r.fechaDevolucion">{{ fecha(r.fechaDevolucion) }}</span>
+                </td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ obtenerVehiculoRenta(r)?.descripcion || 'Vehículo no disponible' }}</div>
+                  <small class="text-muted">Placa: {{ obtenerVehiculoRenta(r)?.noPlaca || 'N/D' }}</small>
+                </td>
+                <td>{{ obtenerNombreCliente(r.idCliente) }}</td>
+                <td>{{ r.nombreEmpleado }}</td>
+                <td>{{ r.montoXDia | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</td>
+                <td><span class="badge bg-light text-dark border">{{ r.cantidadDias }} días</span></td>
+                <td class="fw-semibold text-secondary">{{ desglose(r).subtotal | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</td>
+                <td class="fw-semibold texto-itbis">{{ desglose(r).itbis | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</td>
+                <td class="fw-bolder text-success">{{ desglose(r).total | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</td>
+                <td>
+                  <span class="badge rounded-pill px-3 py-2 shadow-sm" [class.text-bg-warning]="r.estado === 'Activa'" [class.text-bg-success]="r.estado !== 'Activa'">
+                    <span aria-hidden="true">{{ r.estado === 'Activa' ? '🚗 ' : '✅ ' }}</span>{{ r.estado === 'Activa' ? 'En ruta' : 'Concluida' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn btn-sm btn-outline-secondary fw-bold text-nowrap" (click)="imprimirContrato(r)" [disabled]="procesando.has(r.noRenta)" [attr.aria-label]="'Imprimir contrato de la renta ' + r.noRenta">🖨️ Contrato</button>
+                    @if (r.estado === 'Activa') {
+                      <button type="button" class="btn btn-sm btn-danger fw-bold shadow-sm text-nowrap" (click)="devolverVehiculo(r)" [disabled]="procesando.has(r.noRenta)" [attr.aria-label]="'Procesar devolución de la renta ' + r.noRenta">
+                        @if (procesando.has(r.noRenta)) {
+                          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        } @else {
+                          🔙 Devolver
+                        }
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="14" class="text-center py-5 text-muted">No hay rentas registradas en el sistema.</td></tr>
+            }
+          }
         </tbody>
       </table>
     </div>
   </div>
-</div>
+</section>

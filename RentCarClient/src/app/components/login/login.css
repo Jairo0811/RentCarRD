@@ -1,0 +1,8 @@
+/* Ancho máximo de 400 px (como en v1.2) sin desbordar en pantallas pequeñas. */
+.login-tarjeta {
+  max-width: 400px;
+}
+
+.login-logo {
+  max-width: min(300px, 100%);
+}

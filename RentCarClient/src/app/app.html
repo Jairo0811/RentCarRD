@@ -1,97 +1,106 @@
-<nav *ngIf="router.url !== '/login'" class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow">
-  <div class="container">
-    <a class="navbar-brand fw-bold d-flex align-items-center gap-1" routerLink="/dashboard">
-      <span class="text-primary">RentCar</span><span class="text-danger">RD</span>
-    </a>
+<a class="visually-hidden-focusable btn btn-primary position-absolute m-2" href="#contenido-principal">Saltar al contenido</a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+@if (mostrarNavegacion()) {
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow" aria-label="Navegación principal">
+    <div class="container">
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-1" [routerLink]="auth.inicio()" (click)="cerrarMenu()">
+        <span class="text-primary">RentCar</span><span class="text-danger">RD</span>
+      </a>
 
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto align-items-center">
+      <button
+        class="navbar-toggler"
+        type="button"
+        aria-controls="navbarPrincipal"
+        [attr.aria-expanded]="menuAbierto"
+        aria-label="Mostrar u ocultar el menú"
+        (click)="alternarMenu()"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-        <li class="nav-item" *ngIf="rolActual === 'admin'">
-          <a class="nav-link" routerLink="/dashboard" routerLinkActive="text-primary fw-bold">
-            Dashboard
-          </a>
-        </li>
-
-        <li class="nav-item dropdown" *ngIf="rolActual === 'admin' || rolActual === 'empleado'" >
-          <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">
-            Catálogos
-          </a>
-          <ul class="dropdown-menu dropdown-menu-dark">
-            <li><a class="dropdown-item" routerLink="/marcas">Marcas</a></li>
-            <li><a class="dropdown-item" routerLink="/modelos">Modelos</a></li>
-            <li><a class="dropdown-item" routerLink="/tipos-vehiculos">Tipos de Vehículos</a></li>
-            <li><a class="dropdown-item" routerLink="/tipos-combustibles">Tipos de Combustibles</a></li>
-          </ul>
-        </li>
-
-        <li class="nav-item dropdown" *ngIf="rolActual === 'admin' || rolActual === 'empleado'">
-          <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">
-            Gestión
-          </a>
-          <ul class="dropdown-menu dropdown-menu-dark">
-            <li *ngIf="rolActual === 'admin'">
-              <a class="dropdown-item" routerLink="/empleados">Empleados</a>
+      <div class="collapse navbar-collapse" [class.show]="menuAbierto" id="navbarPrincipal">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+          @if (esAdmin()) {
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/dashboard" routerLinkActive="active fw-semibold" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Dashboard</a>
             </li>
+          }
 
-            <li>
-              <a class="dropdown-item" routerLink="/clientes">Clientes</a>
+          <li class="nav-item dropdown">
+            <button class="nav-link dropdown-toggle btn btn-link" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Catálogos
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              <li><a class="dropdown-item" routerLink="/marcas" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Marcas</a></li>
+              <li><a class="dropdown-item" routerLink="/modelos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Modelos</a></li>
+              <li><a class="dropdown-item" routerLink="/tipos-vehiculos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Tipos de vehículos</a></li>
+              <li><a class="dropdown-item" routerLink="/tipos-combustibles" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Tipos de combustible</a></li>
+            </ul>
+          </li>
+
+          <li class="nav-item dropdown">
+            <button class="nav-link dropdown-toggle btn btn-link" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Gestión
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              @if (esAdmin()) {
+                <li><a class="dropdown-item" routerLink="/empleados" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Empleados</a></li>
+              }
+              <li><a class="dropdown-item" routerLink="/clientes" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Clientes</a></li>
+              @if (esAdmin()) {
+                <li><a class="dropdown-item" routerLink="/vehiculos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Vehículos</a></li>
+              }
+            </ul>
+          </li>
+
+          <li class="nav-item dropdown">
+            <button class="nav-link dropdown-toggle btn btn-link" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Operaciones
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              @if (esAdmin()) {
+                <li><a class="dropdown-item" routerLink="/inspeccion" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Inspección de flota</a></li>
+              }
+              <li><a class="dropdown-item" routerLink="/rentas" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Rentas y devoluciones</a></li>
+            </ul>
+          </li>
+
+          @if (esAdmin()) {
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/reportes" routerLinkActive="active fw-semibold" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Reportes</a>
             </li>
+          }
 
-            <li *ngIf="rolActual === 'admin'">
-              <a class="dropdown-item" routerLink="/vehiculos">Vehículos</a>
-            </li>
-          </ul>
-        </li>
-
-        <li class="nav-item dropdown" *ngIf="rolActual === 'admin' || rolActual === 'empleado'">
-          <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">
-            Operaciones
-          </a>
-          <ul class="dropdown-menu dropdown-menu-dark">
-            <li *ngIf="rolActual === 'admin'">
-              <a class="dropdown-item" routerLink="/inspeccion">Inspección de Flota</a>
-            </li>
-
-            <li>
-              <a class="dropdown-item" routerLink="/rentas">Rentas y Devoluciones</a>
-            </li>
-          </ul>
-        </li>
-
-        <li class="nav-item" *ngIf="rolActual === 'admin'">
-          <a class="nav-link" routerLink="/reportes" routerLinkActive="text-primary fw-bold">
-            Reportes
-          </a>
-        </li>
-
-        <li class="nav-item ms-lg-3">
-          <button class="btn btn-outline-danger btn-sm" (click)="cerrarSesion()">
-            🚪 Salir
-          </button>
-        </li>
-
-      </ul>
+          <li class="nav-item ms-lg-3 d-flex align-items-center gap-2 py-2 py-lg-0">
+            @if (nombreUsuario()) {
+              <span class="text-white-50 small text-truncate usuario-actual" [title]="nombreUsuario()">
+                {{ nombreUsuario() }} · {{ esAdmin() ? 'Admin' : 'Empleado' }}
+              </span>
+            }
+            <button class="btn btn-outline-danger btn-sm" type="button" (click)="cerrarSesion()">
+              <span aria-hidden="true">🚪</span> Cerrar sesión
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
+}
 
-<main class="container mb-5 animate__animated animate__fadeIn" style="min-height: 70vh">
+<main id="contenido-principal" class="container mb-5" style="min-height: 70vh" tabindex="-1">
   <router-outlet></router-outlet>
 </main>
 
-<footer *ngIf="router.url !== '/login'" class="bg-dark text-white py-4 mt-auto border-top border-secondary">
-  <div class="container">
-    <div class="row align-items-center">
-      <div class="col-md-6">
-        <h6 class="text-uppercase fw-bold mb-1 text-white">FRANCIS JAIRO MATIAS ROSARIO</h6>
-        <p class="mb-0 text-primary fw-bold">Matrícula: A00115261</p>
-        <p class="mb-0 text-info fw-bold">2026</p>
+@if (mostrarNavegacion()) {
+  <footer class="bg-dark text-white py-4 mt-auto border-top border-secondary">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <h2 class="h6 text-uppercase fw-bold mb-1 text-white">FRANCIS JAIRO MATIAS ROSARIO</h2>
+          <p class="mb-0 text-primary fw-bold">Matrícula: A00115261</p>
+          <p class="mb-0 text-info fw-bold">2026 · RentCarRD v1.2.1</p>
+        </div>
       </div>
     </div>
-  </div>
-</footer>
+  </footer>
+}

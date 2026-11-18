@@ -1,495 +1,264 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
-
-import { RentaService } from '../../services/renta.service';
-import { ClienteService } from '../../services/cliente.service';
-import { VehiculoService } from '../../services/vehiculo.service';
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+import { Cliente, Renta, Vehiculo } from '../../interfaces/modelos';
+import { ClienteService } from '../../services/cliente.service';
+import { RentaService } from '../../services/renta.service';
+import { VehiculoService } from '../../services/vehiculo.service';
+import { mensajeError, notificar } from '../../shared/alertas';
+import { cargarLogoBase64 } from '../../shared/contrato-pdf';
+import { EMPRESA_DEMO } from '../../shared/empresa-demo';
+import { formatearFecha, marcaDeTiempo } from '../../shared/fechas';
+import { desgloseRenta, formatoRD } from '../../shared/montos';
+import {
+  FILTROS_VACIOS,
+  FiltrosReporte,
+  ResumenReporte,
+  descargarArchivo,
+  filtrarRentas,
+  llenarLibroReporte,
+  nombreCliente,
+  nombreVehiculo,
+  rangoInvalido,
+  resumirRentas,
+} from './reportes.logica';
+
+/** Reportes de rentas con exportación PDF y Excel (solo Admin: guard por rol en la ruta). */
 @Component({
   selector: 'app-reportes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, CurrencyPipe],
   templateUrl: './reportes.html',
 })
 export class ReportesComponent implements OnInit {
-  private readonly tasaItbis = 0.18;
+  private readonly rentaService = inject(RentaService);
+  private readonly clienteService = inject(ClienteService);
+  private readonly vehiculoService = inject(VehiculoService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  todasLasRentas: any[] = [];
-  clientes: any[] = [];
-  vehiculos: any[] = [];
+  readonly empresa = EMPRESA_DEMO;
 
-  filtroFechaDesde = '';
-  filtroFechaHasta = '';
-  filtroCliente = '';
-  filtroVehiculo = '';
-  filtroEstado = '';
+  todasLasRentas: Renta[] = [];
+  clientes: Cliente[] = [];
+  vehiculos: Vehiculo[] = [];
+  filtros: FiltrosReporte = { ...FILTROS_VACIOS };
 
-  empresa = {
-    nombre: 'RentCarRD',
-    subtitulo: 'Alquiler de Vehículos',
-    rnc: '1-31-98765-4',
-    direccion: 'Av. Winston Churchill #45, Santo Domingo, República Dominicana',
-    telefono: '(809) 555-2026',
-    correo: 'info@rentcarrd.com',
-  };
-
-  constructor(
-    private rentaService: RentaService,
-    private clienteService: ClienteService,
-    private vehiculoService: VehiculoService,
-    private router: Router,
-    private cdr: ChangeDetectorRef,
-  ) {}
-
-  get rolActual(): string | null {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return null;
-    }
-
-    return localStorage.getItem('rolUsuario');
-  }
+  cargando = true;
+  errorCarga = '';
+  exportando = false;
 
   ngOnInit(): void {
-    if (this.rolActual !== 'admin') {
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    setTimeout(() => this.cargarDatos(), 0);
+    this.cargarDatos();
   }
 
   cargarDatos(): void {
+    this.cargando = true;
+    this.errorCarga = '';
     forkJoin({
       rentas: this.rentaService.getRentas(),
       clientes: this.clienteService.getClientes(),
       vehiculos: this.vehiculoService.getVehiculos(),
     }).subscribe({
-      next: ({ rentas, clientes, vehiculos }: any) => {
+      next: ({ rentas, clientes, vehiculos }) => {
         this.todasLasRentas = [...rentas];
         this.clientes = [...clientes];
         this.vehiculos = [...vehiculos];
-        this.cdr.detectChanges();
+        this.cargando = false;
+        this.cdr.markForCheck();
       },
-      error: (error: any) => {
-        console.error('Error al cargar los datos del reporte.', error);
-        alert('No fue posible cargar la información de reportes.');
+      error: (error: unknown) => {
+        this.cargando = false;
+        this.errorCarga = mensajeError(error, 'No fue posible cargar la información de reportes.');
+        this.cdr.markForCheck();
       },
     });
   }
 
-  get rentasFiltradas(): any[] {
-    return this.todasLasRentas.filter((renta: any) => {
-      const fechaRenta = this.convertirFecha(renta.fechaRenta);
-      if (!fechaRenta) return false;
-
-      const fechaDesde = this.filtroFechaDesde
-        ? this.crearFechaLocal(this.filtroFechaDesde, false)
-        : null;
-      const fechaHasta = this.filtroFechaHasta
-        ? this.crearFechaLocal(this.filtroFechaHasta, true)
-        : null;
-
-      const cumpleFechaDesde = fechaDesde ? fechaRenta >= fechaDesde : true;
-      const cumpleFechaHasta = fechaHasta ? fechaRenta <= fechaHasta : true;
-      const cumpleCliente = this.filtroCliente
-        ? Number(renta.idCliente) === Number(this.filtroCliente)
-        : true;
-      const cumpleVehiculo = this.filtroVehiculo
-        ? Number(renta.idVehiculo) === Number(this.filtroVehiculo)
-        : true;
-      const cumpleEstado = this.filtroEstado
-        ? this.normalizarTexto(renta.estado) === this.normalizarTexto(this.filtroEstado)
-        : true;
-
-      return cumpleFechaDesde && cumpleFechaHasta && cumpleCliente && cumpleVehiculo && cumpleEstado;
-    });
+  get rangoInvalido(): boolean {
+    return rangoInvalido(this.filtros);
   }
 
-  get cantidadRentasActivas(): number {
-    return this.rentasFiltradas.filter((renta: any) => this.esRentaActiva(renta)).length;
+  get rentasFiltradas(): Renta[] {
+    return this.rangoInvalido ? [] : filtrarRentas(this.todasLasRentas, this.filtros);
   }
 
-  get cantidadRentasConcluidas(): number {
-    return this.rentasFiltradas.filter((renta: any) => this.esRentaConcluida(renta)).length;
+  get resumen(): ResumenReporte {
+    return resumirRentas(this.rentasFiltradas);
   }
 
-  get totalSubtotalGenerado(): number {
-    return this.rentasFiltradas.reduce(
-      (acumulado: number, renta: any) => acumulado + this.obtenerSubtotal(renta),
-      0,
-    );
+  desglose(renta: Renta) {
+    return desgloseRenta(renta);
   }
 
-  get totalItbisGenerado(): number {
-    return this.rentasFiltradas.reduce(
-      (acumulado: number, renta: any) => acumulado + this.obtenerItbis(renta),
-      0,
-    );
+  obtenerCliente(id: number): string {
+    return nombreCliente(this.clientes, id);
   }
 
-  get totalMontoGenerado(): number {
-    return this.rentasFiltradas.reduce(
-      (acumulado: number, renta: any) => acumulado + this.obtenerTotal(renta),
-      0,
-    );
+  obtenerVehiculo(id: number): string {
+    return nombreVehiculo(this.vehiculos, id);
   }
 
-  obtenerMontoDia(renta: any): number {
-    return Number(renta?.montoXDia ?? renta?.montoXdia ?? 0);
-  }
-
-  obtenerSubtotal(renta: any): number {
-    const subtotalGuardado = Number(renta?.subtotal ?? 0);
-    if (subtotalGuardado > 0) return subtotalGuardado;
-    return this.obtenerMontoDia(renta) * Number(renta?.cantidadDias ?? 0);
-  }
-
-  obtenerItbis(renta: any): number {
-    const itbisGuardado = Number(renta?.itbis ?? 0);
-    if (itbisGuardado > 0) return itbisGuardado;
-    return this.redondearMonto(this.obtenerSubtotal(renta) * this.tasaItbis);
-  }
-
-  obtenerTotal(renta: any): number {
-    const totalGuardado = Number(renta?.total ?? 0);
-    const tieneDesglosePersistido =
-      Number(renta?.subtotal ?? 0) > 0 || Number(renta?.itbis ?? 0) > 0;
-
-    if (totalGuardado > 0 && tieneDesglosePersistido) return totalGuardado;
-    return this.redondearMonto(this.obtenerSubtotal(renta) + this.obtenerItbis(renta));
-  }
-
-  obtenerCliente(idCliente: number): string {
-    const cliente = this.clientes.find((item: any) => Number(item.id) === Number(idCliente));
-    return cliente ? cliente.nombre : `Cliente ID ${idCliente}`;
-  }
-
-  obtenerVehiculo(idVehiculo: number): string {
-    const vehiculo = this.vehiculos.find((item: any) => Number(item.id) === Number(idVehiculo));
-    if (!vehiculo) return `Vehículo ID ${idVehiculo}`;
-
-    const placa = vehiculo.noPlaca ?? vehiculo.placa ?? '';
-    return placa ? `${vehiculo.descripcion} - ${placa}` : vehiculo.descripcion;
-  }
-
-  formatearFecha(fecha: string | Date | null | undefined): string {
-    if (!fecha) return 'Pendiente';
-    const valor = this.convertirFecha(fecha);
-    return valor ? valor.toLocaleDateString('es-DO') : 'Pendiente';
-  }
-
-  formatoRD(valor: number): string {
-    return `RD$ ${Number(valor || 0).toLocaleString('es-DO', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  fecha(valor: string | null | undefined, vacio = 'Pendiente'): string {
+    return formatearFecha(valor, vacio);
   }
 
   limpiarFiltros(): void {
-    this.filtroFechaDesde = '';
-    this.filtroFechaHasta = '';
-    this.filtroCliente = '';
-    this.filtroVehiculo = '';
-    this.filtroEstado = '';
-    this.cdr.detectChanges();
+    this.filtros = { ...FILTROS_VACIOS };
   }
 
-  cargarLogoBase64(): Promise<string | null> {
-    return fetch('images/logo-rentcarrd.png')
-      .then((response) => {
-        if (!response.ok) throw new Error('No fue posible cargar el logo.');
-        return response.blob();
-      })
-      .then(
-        (blob) =>
-          new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = () => reject(new Error('No fue posible convertir el logo.'));
-            reader.readAsDataURL(blob);
-          }),
-      )
-      .catch((error) => {
-        console.warn('El reporte se generará sin logo.', error);
-        return null;
-      });
+  private descripcionFiltros() {
+    return {
+      desde: this.filtros.desde ? formatearFecha(this.filtros.desde) : '',
+      hasta: this.filtros.hasta ? formatearFecha(this.filtros.hasta) : '',
+      cliente: this.filtros.idCliente ? this.obtenerCliente(Number(this.filtros.idCliente)) : 'Todos',
+      vehiculo: this.filtros.idVehiculo ? this.obtenerVehiculo(Number(this.filtros.idVehiculo)) : 'Todos',
+      estado: this.filtros.estado,
+    };
+  }
+
+  private puedeExportar(): boolean {
+    if (this.exportando) return false;
+    if (this.rangoInvalido) {
+      void notificar('La fecha "desde" no puede ser posterior a la fecha "hasta".', 'warning');
+      return false;
+    }
+    if (this.rentasFiltradas.length === 0) {
+      void notificar('No existen rentas con los filtros seleccionados.', 'info');
+      return false;
+    }
+    return true;
   }
 
   async imprimirReporte(): Promise<void> {
-    if (this.rentasFiltradas.length === 0) {
-      alert('No existen rentas para generar el reporte.');
-      return;
+    if (!this.puedeExportar()) return;
+    this.exportando = true;
+    try {
+      const rentas = this.rentasFiltradas;
+      const resumen = resumirRentas(rentas);
+      const filtros = this.descripcionFiltros();
+      const ahora = new Date();
+      const logoBase64 = await cargarLogoBase64();
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }) as jsPDF & { lastAutoTable?: { finalY: number } };
+
+      if (logoBase64) doc.addImage(logoBase64, 'PNG', 14, 10, 25, 25);
+      doc.setFontSize(20);
+      doc.setTextColor(25, 66, 120);
+      doc.text(EMPRESA_DEMO.nombre, 44, 17);
+      doc.setFontSize(10);
+      doc.setTextColor(90, 90, 90);
+      doc.text(EMPRESA_DEMO.subtitulo, 44, 23);
+      doc.text(`RNC: ${EMPRESA_DEMO.rnc}`, 44, 29);
+      doc.text(EMPRESA_DEMO.direccion, 44, 35);
+      doc.text(`Tel.: ${EMPRESA_DEMO.telefono}`, 210, 23);
+      doc.text(`Correo: ${EMPRESA_DEMO.correo}`, 210, 29);
+      doc.setDrawColor(25, 66, 120);
+      doc.setLineWidth(0.8);
+      doc.line(14, 42, 282, 42);
+      doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Reporte de Rentas y Consultas', 148, 53, { align: 'center' });
+
+      autoTable(doc, {
+        startY: 60,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [25, 66, 120], textColor: 255 },
+        head: [['Fecha de generación', 'Fecha desde', 'Fecha hasta', 'Cliente', 'Vehículo', 'Estado']],
+        body: [[ahora.toLocaleString('es-DO'), filtros.desde || 'Todas', filtros.hasta || 'Todas', filtros.cliente, filtros.vehiculo, filtros.estado || 'Todos']],
+      });
+
+      autoTable(doc, {
+        startY: (doc.lastAutoTable?.finalY ?? 70) + 8,
+        theme: 'striped',
+        styles: { fontSize: 7, cellPadding: 2 },
+        headStyles: { fillColor: [33, 37, 41], textColor: 255 },
+        head: [['No.', 'Fecha renta', 'Dev. prevista', 'Dev. real', 'Cliente', 'Vehículo', 'Días', 'Tarifa', 'Subtotal', 'ITBIS (18%)', 'Total', 'Estado']],
+        body: rentas.map((renta) => {
+          const d = desgloseRenta(renta);
+          return [
+            `#${renta.noRenta}`,
+            formatearFecha(renta.fechaRenta, 'N/D'),
+            formatearFecha(renta.fechaDevolucionPrevista, 'N/D'),
+            formatearFecha(renta.fechaDevolucion),
+            this.obtenerCliente(renta.idCliente),
+            this.obtenerVehiculo(renta.idVehiculo),
+            String(renta.cantidadDias),
+            formatoRD(renta.montoXDia),
+            formatoRD(d.subtotal),
+            formatoRD(d.itbis),
+            formatoRD(d.total),
+            renta.estado,
+          ];
+        }),
+        columnStyles: {
+          0: { cellWidth: 12 },
+          6: { halign: 'center' },
+          7: { halign: 'right' },
+          8: { halign: 'right' },
+          9: { halign: 'right' },
+          10: { halign: 'right' },
+          11: { halign: 'center' },
+        },
+      });
+
+      autoTable(doc, {
+        startY: (doc.lastAutoTable?.finalY ?? 100) + 10,
+        theme: 'grid',
+        styles: { fontSize: 9, halign: 'center' },
+        headStyles: { fillColor: [25, 66, 120], textColor: 255 },
+        head: [['Rentas encontradas', 'Activas', 'Concluidas', 'Subtotal contratado', 'ITBIS (18%)', 'Total contratado']],
+        body: [[resumen.cantidad, resumen.activas, resumen.concluidas, formatoRD(resumen.subtotal), formatoRD(resumen.itbis), formatoRD(resumen.total)]],
+      });
+
+      const paginas = doc.getNumberOfPages();
+      for (let pagina = 1; pagina <= paginas; pagina++) {
+        doc.setPage(pagina);
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text(EMPRESA_DEMO.aviso, 148, 193, { align: 'center' });
+        doc.text(`Generado por Francis Jairo Matías Rosario - RentCarRD | ${ahora.toLocaleString('es-DO')}`, 148, 198, { align: 'center' });
+        doc.text(`Página ${pagina} de ${paginas}`, 282, 198, { align: 'right' });
+      }
+
+      doc.save(`Reporte_Rentas_${marcaDeTiempo(ahora)}.pdf`);
+    } catch {
+      void notificar('No se pudo generar el reporte PDF.', 'error');
+    } finally {
+      this.exportando = false;
+      this.cdr.markForCheck();
     }
-
-    const logoBase64 = await this.cargarLogoBase64();
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-    if (logoBase64) {
-      doc.addImage(logoBase64, 'PNG', 14, 10, 25, 25);
-    }
-
-    doc.setFontSize(20);
-    doc.setTextColor(25, 66, 120);
-    doc.text(this.empresa.nombre, 44, 17);
-    doc.setFontSize(10);
-    doc.setTextColor(90, 90, 90);
-    doc.text(this.empresa.subtitulo, 44, 23);
-    doc.text(`RNC: ${this.empresa.rnc}`, 44, 29);
-    doc.text(this.empresa.direccion, 44, 35);
-    doc.text(`Tel.: ${this.empresa.telefono}`, 220, 23);
-    doc.text(`Correo: ${this.empresa.correo}`, 220, 29);
-    doc.setDrawColor(25, 66, 120);
-    doc.setLineWidth(0.8);
-    doc.line(14, 42, 282, 42);
-    doc.setFontSize(16);
-    doc.setTextColor(0, 0, 0);
-    doc.text('Reporte de Rentas y Consultas', 148, 53, { align: 'center' });
-
-    autoTable(doc, {
-      startY: 60,
-      theme: 'grid',
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [25, 66, 120], textColor: 255 },
-      head: [['Fecha de Generación', 'Fecha Desde', 'Fecha Hasta', 'Cliente', 'Vehículo', 'Estado']],
-      body: [[
-        new Date().toLocaleString('es-DO'),
-        this.filtroFechaDesde || 'Todas',
-        this.filtroFechaHasta || 'Todas',
-        this.obtenerDescripcionFiltroCliente(),
-        this.obtenerDescripcionFiltroVehiculo(),
-        this.filtroEstado || 'Todos',
-      ]],
-    });
-
-    autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 8,
-      theme: 'striped',
-      styles: { fontSize: 7, cellPadding: 2 },
-      headStyles: { fillColor: [33, 37, 41], textColor: 255 },
-      head: [[
-        'No.', 'Fecha Renta', 'Fecha Devolución', 'Cliente', 'Vehículo', 'Días',
-        'Tarifa', 'Subtotal', 'ITBIS (18%)', 'Total', 'Estado',
-      ]],
-      body: this.rentasFiltradas.map((renta: any) => [
-        `#${renta.noRenta ?? renta.id}`,
-        this.formatearFecha(renta.fechaRenta),
-        this.formatearFecha(renta.fechaDevolucion),
-        this.obtenerCliente(renta.idCliente),
-        this.obtenerVehiculo(renta.idVehiculo),
-        String(renta.cantidadDias ?? 0),
-        this.formatoRD(this.obtenerMontoDia(renta)),
-        this.formatoRD(this.obtenerSubtotal(renta)),
-        this.formatoRD(this.obtenerItbis(renta)),
-        this.formatoRD(this.obtenerTotal(renta)),
-        renta.estado ?? 'N/A',
-      ]),
-      columnStyles: {
-        0: { cellWidth: 13 },
-        1: { cellWidth: 19 },
-        2: { cellWidth: 22 },
-        3: { cellWidth: 31 },
-        4: { cellWidth: 38 },
-        5: { cellWidth: 10, halign: 'center' },
-        6: { cellWidth: 24, halign: 'right' },
-        7: { cellWidth: 24, halign: 'right' },
-        8: { cellWidth: 22, halign: 'right' },
-        9: { cellWidth: 24, halign: 'right' },
-        10: { cellWidth: 18, halign: 'center' },
-      },
-    });
-
-    autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 10,
-      theme: 'grid',
-      styles: { fontSize: 9, halign: 'center' },
-      headStyles: { fillColor: [25, 66, 120], textColor: 255 },
-      head: [['Rentas Encontradas', 'Rentas Activas', 'Rentas Concluidas', 'Subtotal', 'ITBIS', 'Total Generado']],
-      body: [[
-        this.rentasFiltradas.length,
-        this.cantidadRentasActivas,
-        this.cantidadRentasConcluidas,
-        this.formatoRD(this.totalSubtotalGenerado),
-        this.formatoRD(this.totalItbisGenerado),
-        this.formatoRD(this.totalMontoGenerado),
-      ]],
-    });
-
-    const paginas = doc.getNumberOfPages();
-    for (let pagina = 1; pagina <= paginas; pagina++) {
-      doc.setPage(pagina);
-      doc.setFontSize(8);
-      doc.setTextColor(120, 120, 120);
-      doc.text(
-        `Generado por Francis Jairo Matías Rosario - RentCarRD | ${new Date().toLocaleString('es-DO')}`,
-        148,
-        198,
-        { align: 'center' },
-      );
-      doc.text(`Página ${pagina} de ${paginas}`, 282, 198, { align: 'right' });
-    }
-
-    doc.save(`Reporte_Rentas_${this.generarMarcaTiempo()}.pdf`);
   }
 
   async exportarExcel(): Promise<void> {
-    if (this.rentasFiltradas.length === 0) {
-      alert('No existen rentas para exportar a Excel.');
-      return;
+    if (!this.puedeExportar()) return;
+    this.exportando = true;
+    try {
+      const ahora = new Date();
+      const modulo = await import('exceljs/dist/exceljs.min.js');
+      const ExcelJS = modulo.default;
+      const libro = new ExcelJS.Workbook();
+      llenarLibroReporte(libro, {
+        rentas: this.rentasFiltradas,
+        clientes: this.clientes,
+        vehiculos: this.vehiculos,
+        filtros: this.descripcionFiltros(),
+        generadoEn: ahora,
+      });
+
+      const contenido = await libro.xlsx.writeBuffer();
+      descargarArchivo(
+        new Blob([contenido], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+        `Reporte_Rentas_${marcaDeTiempo(ahora)}.xlsx`,
+      );
+    } catch {
+      void notificar('No se pudo generar el archivo de Excel.', 'error');
+    } finally {
+      this.exportando = false;
+      this.cdr.markForCheck();
     }
-
-    const datosRentas = this.rentasFiltradas.map((renta: any) => ({
-      'No. Renta': renta.noRenta ?? renta.id,
-      'Fecha de Renta': this.formatearFecha(renta.fechaRenta),
-      'Fecha de Devolución': this.formatearFecha(renta.fechaDevolucion),
-      Cliente: this.obtenerCliente(renta.idCliente),
-      Vehículo: this.obtenerVehiculo(renta.idVehiculo),
-      'Cantidad de Días': Number(renta.cantidadDias ?? 0),
-      'Tarifa por Día': this.obtenerMontoDia(renta),
-      Subtotal: this.obtenerSubtotal(renta),
-      'ITBIS (18%)': this.obtenerItbis(renta),
-      'Total a Pagar': this.obtenerTotal(renta),
-      Estado: renta.estado ?? 'N/A',
-    }));
-
-    const datosResumen = [
-      { Indicador: 'Fecha de generación', Valor: new Date().toLocaleString('es-DO') },
-      { Indicador: 'Fecha desde', Valor: this.filtroFechaDesde || 'Todas' },
-      { Indicador: 'Fecha hasta', Valor: this.filtroFechaHasta || 'Todas' },
-      { Indicador: 'Cliente', Valor: this.obtenerDescripcionFiltroCliente() },
-      { Indicador: 'Vehículo', Valor: this.obtenerDescripcionFiltroVehiculo() },
-      { Indicador: 'Estado', Valor: this.filtroEstado || 'Todos' },
-      { Indicador: 'Rentas encontradas', Valor: this.rentasFiltradas.length },
-      { Indicador: 'Rentas activas', Valor: this.cantidadRentasActivas },
-      { Indicador: 'Rentas concluidas', Valor: this.cantidadRentasConcluidas },
-      { Indicador: 'Subtotal general', Valor: this.totalSubtotalGenerado },
-      { Indicador: 'ITBIS general', Valor: this.totalItbisGenerado },
-      { Indicador: 'Total general', Valor: this.totalMontoGenerado },
-    ];
-
-    const excelModule = await import('exceljs/dist/exceljs.min.js');
-    const ExcelJS = excelModule.default;
-    const libro = new ExcelJS.Workbook();
-    libro.creator = 'RentCarRD';
-    libro.created = new Date();
-
-    const hojaRentas = libro.addWorksheet('Rentas');
-    hojaRentas.columns = [
-      { header: 'No. Renta', key: 'No. Renta', width: 12 },
-      { header: 'Fecha de Renta', key: 'Fecha de Renta', width: 17 },
-      { header: 'Fecha de Devolución', key: 'Fecha de Devolución', width: 21 },
-      { header: 'Cliente', key: 'Cliente', width: 30 },
-      { header: 'Vehículo', key: 'Vehículo', width: 38 },
-      { header: 'Cantidad de Días', key: 'Cantidad de Días', width: 18 },
-      { header: 'Tarifa por Día', key: 'Tarifa por Día', width: 18 },
-      { header: 'Subtotal', key: 'Subtotal', width: 18 },
-      { header: 'ITBIS (18%)', key: 'ITBIS (18%)', width: 18 },
-      { header: 'Total a Pagar', key: 'Total a Pagar', width: 18 },
-      { header: 'Estado', key: 'Estado', width: 15 },
-    ];
-    hojaRentas.addRows(datosRentas);
-    this.formatearHojaExcel(hojaRentas, [7, 8, 9, 10]);
-
-    const hojaResumen = libro.addWorksheet('Resumen');
-    hojaResumen.columns = [
-      { header: 'Indicador', key: 'Indicador', width: 24 },
-      { header: 'Valor', key: 'Valor', width: 40 },
-    ];
-    hojaResumen.addRows(datosResumen);
-    this.formatearHojaExcel(hojaResumen, [2]);
-
-    const contenido = await libro.xlsx.writeBuffer();
-    const bytes = new Uint8Array(contenido);
-    const url = URL.createObjectURL(
-      new Blob([bytes.buffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      }),
-    );
-
-    const enlace = document.createElement('a');
-    enlace.href = url;
-    enlace.download = `Reporte_Rentas_${this.generarMarcaTiempo()}.xlsx`;
-    enlace.click();
-    URL.revokeObjectURL(url);
-  }
-
-  private obtenerDescripcionFiltroCliente(): string {
-    return this.filtroCliente ? this.obtenerCliente(Number(this.filtroCliente)) : 'Todos';
-  }
-
-  private obtenerDescripcionFiltroVehiculo(): string {
-    return this.filtroVehiculo ? this.obtenerVehiculo(Number(this.filtroVehiculo)) : 'Todos';
-  }
-
-  private esRentaActiva(renta: any): boolean {
-    const estado = this.normalizarTexto(renta?.estado);
-    return estado === 'activa' || estado === 'abierta';
-  }
-
-  private esRentaConcluida(renta: any): boolean {
-    return this.normalizarTexto(renta?.estado) === 'concluida';
-  }
-
-  private normalizarTexto(valor: unknown): string {
-    return String(valor ?? '').trim().toLowerCase();
-  }
-
-  private redondearMonto(valor: number): number {
-    return Number(Number(valor || 0).toFixed(2));
-  }
-
-  private convertirFecha(valor: string | Date | null | undefined): Date | null {
-    if (!valor) return null;
-    if (valor instanceof Date) return Number.isNaN(valor.getTime()) ? null : valor;
-
-    const fecha = new Date(valor);
-    return Number.isNaN(fecha.getTime()) ? null : fecha;
-  }
-
-  private crearFechaLocal(fechaIso: string, finDelDia: boolean): Date {
-    const [anio, mes, dia] = fechaIso.split('-').map(Number);
-    return finDelDia
-      ? new Date(anio, mes - 1, dia, 23, 59, 59, 999)
-      : new Date(anio, mes - 1, dia, 0, 0, 0, 0);
-  }
-
-  private generarMarcaTiempo(): string {
-    const ahora = new Date();
-    const anio = ahora.getFullYear();
-    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-    const dia = String(ahora.getDate()).padStart(2, '0');
-    const hora = String(ahora.getHours()).padStart(2, '0');
-    const minuto = String(ahora.getMinutes()).padStart(2, '0');
-    const segundo = String(ahora.getSeconds()).padStart(2, '0');
-    return `${anio}${mes}${dia}_${hora}${minuto}${segundo}`;
-  }
-
-  private formatearHojaExcel(hoja: any, columnasMonetarias: number[]): void {
-    hoja.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    hoja.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF0D6EFD' },
-    };
-    hoja.views = [{ state: 'frozen', ySplit: 1 }];
-    hoja.autoFilter = {
-      from: { row: 1, column: 1 },
-      to: { row: Math.max(1, hoja.rowCount), column: hoja.columnCount },
-    };
-
-    hoja.eachRow((fila: any, numeroFila: number) => {
-      if (numeroFila === 1) return;
-      for (const columna of columnasMonetarias) {
-        const celda = fila.getCell(columna);
-        if (typeof celda.value === 'number') {
-          celda.numFmt = '"RD$" #,##0.00';
-        }
-      }
-    });
   }
 }

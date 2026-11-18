@@ -1,137 +1,145 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
-import { RentaService } from '../../services/renta.service';
-import { VehiculoService } from '../../services/vehiculo.service';
+import { Cliente, EstadoVehiculo, Renta, Vehiculo, estadoOperativo } from '../../interfaces/modelos';
 import { ClienteService } from '../../services/cliente.service';
 import { InspeccionService } from '../../services/inspeccion.service';
+import { RentaService } from '../../services/renta.service';
+import { VehiculoService } from '../../services/vehiculo.service';
 import { environment } from '../../../environments/environment';
+import { mensajeError } from '../../shared/alertas';
+import { Desglose, desgloseRenta, formatoRD, sumarDesgloses } from '../../shared/montos';
+
+export interface IndicadoresFlota {
+  total: number;
+  disponibles: number;
+  rentados: number;
+  noDisponibles: number;
+}
+
+export interface IndicadoresRentas {
+  activas: number;
+  concluidas: number;
+  /** Suma de subtotal, ITBIS y total pactados en todas las rentas (no son cobros). */
+  contratado: Desglose;
+  /** Mismo desglose, solo de rentas concluidas. */
+  contratadoConcluidas: Desglose;
+}
+
+/** Cuenta la flota por su estado operativo real (EstadoOperacion), no por el booleano heredado. */
+export function indicadoresFlota(vehiculos: Vehiculo[]): IndicadoresFlota {
+  const cuenta: Record<EstadoVehiculo, number> = { Disponible: 0, Rentado: 0, NoDisponible: 0 };
+  for (const vehiculo of vehiculos) {
+    cuenta[estadoOperativo(vehiculo)]++;
+  }
+  return { total: vehiculos.length, disponibles: cuenta.Disponible, rentados: cuenta.Rentado, noDisponibles: cuenta.NoDisponible };
+}
+
+/**
+ * Indicadores de rentas. El importe usa los valores persistidos por la API (subtotal + ITBIS del
+ * 18 %). RentCarRD no tiene módulo de cobros, así que se presenta como "importe contratado" y
+ * nunca como ingresos cobrados.
+ */
+export function indicadoresRentas(rentas: Renta[]): IndicadoresRentas {
+  const concluidas = rentas.filter((renta) => renta.estado === 'Concluida');
+  return {
+    activas: rentas.filter((renta) => renta.estado === 'Activa').length,
+    concluidas: concluidas.length,
+    contratado: sumarDesgloses(rentas.map(desgloseRenta)),
+    contratadoConcluidas: sumarDesgloses(concluidas.map(desgloseRenta)),
+  };
+}
+
+export function porcentaje(parte: number, total: number): number {
+  return total > 0 ? Math.round((parte / total) * 100) : 0;
+}
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [RouterLink],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css'
+  styleUrl: './dashboard.css',
 })
 export class DashboardComponent implements OnInit {
+  private readonly rentaService = inject(RentaService);
+  private readonly vehiculoService = inject(VehiculoService);
+  private readonly clienteService = inject(ClienteService);
+  private readonly inspeccionService = inject(InspeccionService);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   readonly apiBaseUrl = environment.apiBaseUrl;
+  readonly formatoRD = formatoRD;
+  readonly estadoOperativo = estadoOperativo;
 
-  vehiculos: any[] = [];
-  clientes: any[] = [];
-  rentas: any[] = [];
-  inspecciones: any[] = [];
+  cargando = true;
+  errorCarga = '';
 
-  totalVehiculos = 0;
-  vehiculosDisponibles = 0;
-  vehiculosRentados = 0;
+  vehiculos: Vehiculo[] = [];
+  clientes: Cliente[] = [];
+  flota: IndicadoresFlota = { total: 0, disponibles: 0, rentados: 0, noDisponibles: 0 };
+  rentasIndicadores: IndicadoresRentas = indicadoresRentas([]);
   totalClientes = 0;
-  rentasActivas = 0;
-  rentasConcluidas = 0;
   totalInspecciones = 0;
-  ingresosTotales = 0;
 
-  ultimasRentas: any[] = [];
-  vehiculosRecientes: any[] = [];
-
-  constructor(
-    private rentaService: RentaService,
-    private vehiculoService: VehiculoService,
-    private clienteService: ClienteService,
-    private inspeccionService: InspeccionService,
-    private cdr: ChangeDetectorRef
-  ) {}
+  ultimasRentas: Renta[] = [];
+  vehiculosRecientes: Vehiculo[] = [];
 
   ngOnInit(): void {
-    setTimeout(() => this.cargarDashboard(), 0);
+    this.cargarDashboard();
   }
 
   cargarDashboard(): void {
+    this.cargando = true;
+    this.errorCarga = '';
     forkJoin({
       vehiculos: this.vehiculoService.getVehiculos(),
       clientes: this.clienteService.getClientes(),
       rentas: this.rentaService.getRentas(),
-      inspecciones: this.inspeccionService.getInspecciones()
+      inspecciones: this.inspeccionService.getInspecciones(),
     }).subscribe({
-      next: ({ vehiculos, clientes, rentas, inspecciones }: any) => {
+      next: ({ vehiculos, clientes, rentas, inspecciones }) => {
         this.vehiculos = [...vehiculos];
         this.clientes = [...clientes];
-        this.rentas = [...rentas];
-        this.inspecciones = [...inspecciones];
-
-        this.totalVehiculos = this.vehiculos.length;
-        this.vehiculosDisponibles = this.vehiculos.filter(v => v.estado === true).length;
-        this.vehiculosRentados = this.vehiculos.filter(v => v.estado === false).length;
-        this.totalClientes = this.clientes.length;
-        this.rentasActivas = this.rentas.filter(r => r.estado === 'Activa' || r.estado === 'Abierta').length;
-        this.rentasConcluidas = this.rentas.filter(r => r.estado === 'Concluida').length;
-        this.totalInspecciones = this.inspecciones.length;
-
-        this.ingresosTotales = this.rentas.reduce((total: number, renta: any) => {
-          const monto = Number(renta.montoXDia ?? renta.montoXdia ?? 0);
-          const dias = Number(renta.cantidadDias ?? 0);
-          return total + (monto * dias);
-        }, 0);
-
-        this.ultimasRentas = [...this.rentas]
-          .sort((a, b) => Number(b.noRenta ?? 0) - Number(a.noRenta ?? 0))
-          .slice(0, 5);
-
-        this.vehiculosRecientes = [...this.vehiculos]
-          .sort((a, b) => Number(b.id ?? 0) - Number(a.id ?? 0))
-          .slice(0, 4);
-
-        this.cdr.detectChanges();
+        this.flota = indicadoresFlota(vehiculos);
+        this.rentasIndicadores = indicadoresRentas(rentas);
+        this.totalClientes = clientes.length;
+        this.totalInspecciones = inspecciones.length;
+        this.ultimasRentas = [...rentas].sort((a, b) => b.noRenta - a.noRenta).slice(0, 5);
+        this.vehiculosRecientes = [...vehiculos].sort((a, b) => Number(b.id ?? 0) - Number(a.id ?? 0)).slice(0, 4);
+        this.cargando = false;
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error cargando dashboard', err);
-      }
+      error: (error: unknown) => {
+        this.cargando = false;
+        this.errorCarga = mensajeError(error, 'No se pudo cargar el panel.');
+        this.cdr.markForCheck();
+      },
     });
   }
 
   obtenerCliente(idCliente: number): string {
-    const cliente = this.clientes.find(c => Number(c.id) === Number(idCliente));
-    return cliente ? cliente.nombre : 'N/A';
+    return this.clientes.find((c) => c.id === idCliente)?.nombre ?? 'N/A';
   }
 
   obtenerVehiculo(idVehiculo: number): string {
-    const vehiculo = this.vehiculos.find(v => Number(v.id) === Number(idVehiculo));
-    return vehiculo ? vehiculo.descripcion : 'N/A';
+    return this.vehiculos.find((v) => v.id === idVehiculo)?.descripcion ?? 'N/A';
   }
 
-  obtenerMontoDia(renta: any): number {
-    return Number(renta.montoXDia ?? renta.montoXdia ?? 0);
+  totalRenta(renta: Renta): number {
+    return desgloseRenta(renta).total;
   }
 
-  obtenerTotal(renta: any): number {
-    return this.obtenerMontoDia(renta) * Number(renta.cantidadDias ?? 0);
+  porcentaje(parte: number): number {
+    return porcentaje(parte, this.flota.total);
   }
 
-  formatoRD(valor: number): string {
-    return `RD$ ${Number(valor || 0).toLocaleString('es-DO', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
-  }
-
-  porcentajeDisponibles(): number {
-    if (this.totalVehiculos === 0) return 0;
-    return Math.round((this.vehiculosDisponibles / this.totalVehiculos) * 100);
-  }
-
-  porcentajeRentados(): number {
-    if (this.totalVehiculos === 0) return 0;
-    return Math.round((this.vehiculosRentados / this.totalVehiculos) * 100);
+  etiquetaEstado(estado: EstadoVehiculo): string {
+    return estado === 'NoDisponible' ? 'No disponible' : estado;
   }
 
   fechaActual(): string {
-    return new Date().toLocaleDateString('es-DO', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return new Date().toLocaleDateString('es-DO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   }
 }

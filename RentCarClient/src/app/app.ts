@@ -1,47 +1,49 @@
-import { Component } from '@angular/core';
-import { RouterOutlet, RouterModule, Router } from '@angular/router';
+import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterModule, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   templateUrl: './app.html',
+  styleUrl: './app.css',
 })
 export class App {
-  constructor(public router: Router) {}
+  private readonly router = inject(Router);
+  readonly auth = inject(AuthService);
 
-  get rolActual(): string | null {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return null;
-    }
+  private readonly urlActual = toSignal(
+    this.router.events.pipe(
+      filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd),
+      map((evento) => evento.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
 
-    return localStorage.getItem('rolUsuario');
+  readonly mostrarNavegacion = computed(() => !!this.auth.sesion() && !this.urlActual().startsWith('/login'));
+  readonly esAdmin = this.auth.esAdmin;
+  readonly nombreUsuario = this.auth.nombre;
+  readonly anio = new Date().getFullYear();
+
+  menuAbierto = false;
+
+  alternarMenu(): void {
+    this.menuAbierto = !this.menuAbierto;
   }
 
-  get idEmpleadoActual(): number | null {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return null;
-    }
-
-    const valor = localStorage.getItem('idEmpleado');
-
-    return valor ? Number(valor) : null;
-  }
-
-  get nombreUsuarioActual(): string {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return '';
-    }
-
-    return localStorage.getItem('nombreUsuario') ?? '';
+  cerrarMenu(): void {
+    this.menuAbierto = false;
   }
 
   cerrarSesion(): void {
-    localStorage.removeItem('rolUsuario');
-    localStorage.removeItem('idEmpleado');
-    localStorage.removeItem('nombreUsuario');
-
-    this.router.navigateByUrl('/login');
+    // AuthService.logout() elimina el JWT, su expiración y el resto de claves de RentCarRD
+    // (incluidas las heredadas de v1.2 en localStorage), sin tocar datos de otras aplicaciones.
+    this.auth.logout();
+    this.cerrarMenu();
+    void this.router.navigateByUrl('/login');
   }
 }

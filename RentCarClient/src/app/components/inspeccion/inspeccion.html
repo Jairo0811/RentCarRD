@@ -1,176 +1,155 @@
-<div class="container mt-4" *ngIf="rolActual === 'admin'">
-  <h2 class="fw-bold text-secondary">Proceso de Inspección de Flota</h2>
-  <hr>
+@if (esAdmin()) {
+  <section class="container mt-4" aria-labelledby="inspeccion-titulo">
+    <h1 class="h3 fw-bold text-secondary" id="inspeccion-titulo">Proceso de Inspección de Flota</h1>
+    <hr />
 
-  <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-dark text-white pt-3 pb-2">
-      <h5 class="fw-bold">
-        {{ modoEdicion ? 'Editar Inspección' : 'Formulario de Inspección Física' }}
-      </h5>
-    </div>
+    <form class="card shadow-sm border-0 mb-4" (ngSubmit)="guardarInspeccion()" novalidate>
+      <div class="card-header bg-dark text-white pt-3 pb-2">
+        <h2 class="h5 fw-bold">{{ modoEdicion ? 'Editar inspección' : 'Formulario de inspección física' }}</h2>
+      </div>
 
-    <div class="card-body bg-light p-4">
-      <div class="row g-4">
+      <div class="card-body bg-light p-4">
+        <div class="row g-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold text-muted small" for="insp-vehiculo">Vehículo</label>
+            <select id="insp-vehiculo" name="idVehiculo" required class="form-select form-select-lg" [(ngModel)]="inspeccionActual.idVehiculo">
+              <option [ngValue]="null">Seleccione vehículo…</option>
+              @for (v of vehiculos; track v.id) {
+                <option [ngValue]="v.id">{{ v.descripcion }} - {{ v.noPlaca }}</option>
+              }
+            </select>
+          </div>
 
-        <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">Vehículo</label>
-          <select class="form-select form-select-lg" [(ngModel)]="inspeccionActual.idVehiculo">
-            <option [ngValue]="null">Seleccione Vehículo...</option>
-            <option *ngFor="let v of vehiculos" [ngValue]="v.id">
-              {{ v.descripcion }} - {{ v.noPlaca }}
-            </option>
-          </select>
-        </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold text-muted small" for="insp-cliente">Cliente</label>
+            <select id="insp-cliente" name="idCliente" required class="form-select form-select-lg" [(ngModel)]="inspeccionActual.idCliente">
+              <option [ngValue]="null">Seleccione cliente…</option>
+              @for (c of clientes; track c.id) {
+                <option [ngValue]="c.id">{{ c.nombre }}</option>
+              }
+            </select>
+          </div>
 
-        <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">Cliente</label>
-          <select class="form-select form-select-lg" [(ngModel)]="inspeccionActual.idCliente">
-            <option [ngValue]="null">Seleccione Cliente...</option>
-            <option *ngFor="let c of clientes" [ngValue]="c.id">
-              {{ c.nombre }} - {{ c.cedula }}
-            </option>
-          </select>
-        </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold text-muted small" for="insp-combustible">Nivel de combustible</label>
+            <select id="insp-combustible" name="cantidadCombustible" required class="form-select form-select-lg border-primary" [(ngModel)]="inspeccionActual.cantidadCombustible">
+              <option value="">Seleccione…</option>
+              @for (n of niveles; track n) {
+                <option [value]="n">{{ n }}</option>
+              }
+            </select>
+          </div>
 
-        <div class="col-md-4">
-          <label class="form-label fw-bold text-muted small">Nivel de Combustible</label>
-          <select class="form-select form-select-lg border-primary" [(ngModel)]="inspeccionActual.cantidadCombustible">
-            <option value="">Seleccione...</option>
-            <option value="1/4">1/4</option>
-            <option value="1/2">1/2</option>
-            <option value="3/4">3/4</option>
-            <option value="Lleno">Lleno</option>
-          </select>
-        </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold text-muted small" for="insp-fecha">Fecha</label>
+            <input type="date" id="insp-fecha" name="fecha" class="form-control form-control-lg" [max]="hoy" [(ngModel)]="inspeccionActual.fecha" />
+          </div>
 
-        <div class="col-md-12 mt-4">
-          <h6 class="fw-bold text-secondary mb-3">Estado Exterior y Equipamiento</h6>
-
-          <div class="d-flex flex-wrap gap-4">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneRalladuras">
-              <label class="form-check-label fw-medium text-danger">Tiene Ralladuras</label>
+          <fieldset class="col-md-12 mt-4">
+            <legend class="h6 fw-bold text-secondary mb-3">Estado exterior y equipamiento</legend>
+            <div class="d-flex flex-wrap gap-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="insp-ralladuras" name="tieneRalladuras" [(ngModel)]="inspeccionActual.tieneRalladuras" />
+                <label class="form-check-label fw-medium" for="insp-ralladuras">Tiene ralladuras</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="insp-cristal" name="tieneRoturasCristal" [(ngModel)]="inspeccionActual.tieneRoturasCristal" />
+                <label class="form-check-label fw-medium" for="insp-cristal">Roturas en cristal</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="insp-repuesto" name="tieneGomaRespuesta" [(ngModel)]="inspeccionActual.tieneGomaRespuesta" />
+                <label class="form-check-label fw-medium" for="insp-repuesto">Goma de repuesto</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="insp-gato" name="tieneGato" [(ngModel)]="inspeccionActual.tieneGato" />
+                <label class="form-check-label fw-medium" for="insp-gato">Gato hidráulico</label>
+              </div>
             </div>
+          </fieldset>
 
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneRoturasCristal">
-              <label class="form-check-label fw-medium text-danger">Roturas en Cristal</label>
+          <fieldset class="col-md-12 mt-4">
+            <legend class="h6 fw-bold text-secondary mb-1">Neumáticos en buen estado</legend>
+            <p class="small text-muted mb-3">Marque los neumáticos que están en buen estado.</p>
+            <div class="d-flex flex-wrap gap-4">
+              @for (n of neumaticos; track n.clave) {
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" [id]="'insp-' + n.clave" [name]="n.clave" [(ngModel)]="inspeccionActual[n.clave]" />
+                  <label class="form-check-label" [for]="'insp-' + n.clave">{{ n.etiqueta }}</label>
+                </div>
+              }
             </div>
+          </fieldset>
 
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneGomaRespuesta">
-              <label class="form-check-label fw-medium text-success">Goma de Repuesto</label>
-            </div>
-
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.tieneGato">
-              <label class="form-check-label fw-medium text-success">Gato Hidráulico</label>
-            </div>
+          <div class="col-md-12 mt-5 text-end">
+            @if (modoEdicion) {
+              <button type="button" class="btn btn-secondary btn-lg me-2" (click)="cancelar()">Cancelar</button>
+            }
+            <button type="submit" class="btn btn-success btn-lg px-5 fw-bold shadow-sm" [disabled]="guardando">
+              @if (guardando) {
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              }
+              {{ modoEdicion ? 'Actualizar inspección' : 'Registrar inspección' }}
+            </button>
           </div>
         </div>
+      </div>
+    </form>
 
-        <div class="col-md-12 mt-4">
-          <h6 class="fw-bold text-secondary mb-3">Estado de los Neumáticos</h6>
-
-          <div class="d-flex flex-wrap gap-4">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.estadoGomasDI">
-              <label class="form-check-label">Delantera Izquierda</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.estadoGomasDD">
-              <label class="form-check-label">Delantera Derecha</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.estadoGomasTI">
-              <label class="form-check-label">Trasera Izquierda</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" [(ngModel)]="inspeccionActual.estadoGomasTD">
-              <label class="form-check-label">Trasera Derecha</label>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-12 mt-5 text-end">
-          <button *ngIf="modoEdicion" class="btn btn-secondary btn-lg me-2" (click)="cancelar()">
-            Cancelar
-          </button>
-
-          <button class="btn btn-success btn-lg px-5 fw-bold shadow-sm" (click)="guardarInspeccion()">
-            {{ modoEdicion ? 'Actualizar Inspección' : 'Registrar Inspección' }}
-          </button>
-        </div>
-
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white">
+        <h2 class="h5 fw-bold text-secondary mb-0">Historial de inspecciones</h2>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <caption class="visually-hidden">Historial de inspecciones</caption>
+          <thead class="table-dark">
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Vehículo</th>
+              <th scope="col">Cliente</th>
+              <th scope="col">Combustible</th>
+              <th scope="col">Ralladuras</th>
+              <th scope="col">Cristal</th>
+              <th scope="col">Neumáticos OK</th>
+              <th scope="col">Fecha</th>
+              <th scope="col" class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (cargando) {
+              <tr><td colspan="9" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cargando…</td></tr>
+            } @else if (errorCarga) {
+              <tr><td colspan="9" class="text-center py-4 text-danger" role="alert">{{ errorCarga }} <button type="button" class="btn btn-link btn-sm" (click)="cargarDatos()">Reintentar</button></td></tr>
+            } @else {
+              @for (i of inspecciones; track i.idTransaccion) {
+                <tr>
+                  <td class="fw-bold">#{{ i.idTransaccion }}</td>
+                  <td>{{ obtenerVehiculo(i.idVehiculo) }}</td>
+                  <td>{{ obtenerCliente(i.idCliente) }}</td>
+                  <td>{{ i.cantidadCombustible }}</td>
+                  <td><span class="badge" [class.text-bg-danger]="i.tieneRalladuras" [class.text-bg-success]="!i.tieneRalladuras">{{ i.tieneRalladuras ? 'Sí' : 'No' }}</span></td>
+                  <td><span class="badge" [class.text-bg-danger]="i.tieneRoturasCristal" [class.text-bg-success]="!i.tieneRoturasCristal">{{ i.tieneRoturasCristal ? 'Con rotura' : 'Bien' }}</span></td>
+                  <td>{{ neumaticosEnBuenEstado(i) }}/4</td>
+                  <td>{{ fecha(i.fecha) }}</td>
+                  <td class="text-center text-nowrap">
+                    <button type="button" class="btn btn-warning btn-sm me-2" (click)="editar(i)" [attr.aria-label]="'Editar inspección ' + i.idTransaccion">✏️ Editar</button>
+                    <button type="button" class="btn btn-danger btn-sm" (click)="eliminar(i)" [attr.aria-label]="'Eliminar inspección ' + i.idTransaccion">🗑 Eliminar</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="9" class="text-center py-4 text-muted">No hay inspecciones registradas.</td></tr>
+              }
+            }
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
-
-  <div class="card shadow-sm border-0">
-    <div class="card-header bg-white">
-      <h5 class="fw-bold text-secondary mb-0">Historial de Inspecciones</h5>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-dark">
-          <tr>
-            <th>#</th>
-            <th>Vehículo</th>
-            <th>Cliente</th>
-            <th>Combustible</th>
-            <th>Ralladuras</th>
-            <th>Cristal</th>
-            <th>Fecha</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr *ngFor="let i of inspecciones">
-            <td class="fw-bold">#{{ i.idTransaccion || i.id }}</td>
-            <td>{{ obtenerVehiculo(i.idVehiculo) }}</td>
-            <td>{{ obtenerCliente(i.idCliente) }}</td>
-            <td>{{ i.cantidadCombustible }}</td>
-            <td>
-              <span class="badge" [ngClass]="i.tieneRalladuras ? 'text-bg-danger' : 'text-bg-success'">
-                {{ i.tieneRalladuras ? 'Sí' : 'No' }}
-              </span>
-            </td>
-            <td>
-              <span class="badge" [ngClass]="i.tieneRoturasCristal ? 'text-bg-danger' : 'text-bg-success'">
-                {{ i.tieneRoturasCristal ? 'Con rotura' : 'Bien' }}
-              </span>
-            </td>
-            <td>{{ i.fecha | date:'dd/MM/yyyy' }}</td>
-            <td class="text-center">
-              <button class="btn btn-warning btn-sm me-2" (click)="editar(i)">
-                ✏️ Editar
-              </button>
-
-              <button class="btn btn-danger btn-sm" (click)="eliminar(i)">
-                🗑 Eliminar
-              </button>
-            </td>
-          </tr>
-
-          <tr *ngIf="inspecciones.length === 0">
-            <td colspan="8" class="text-center py-4 text-muted">
-              No hay inspecciones registradas.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  </section>
+} @else {
+  <div class="container mt-5 text-center">
+    <div class="alert alert-danger d-inline-block p-4 shadow-sm" role="alert">
+      <h1 class="h4 fw-bold mb-2">🚫 Acceso restringido</h1>
+      <p class="mb-0">Tu rol no tiene permisos para auditar vehículos.</p>
     </div>
   </div>
-</div>
-
-<div class="container mt-5 text-center" *ngIf="rolActual !== 'admin'">
-  <div class="alert alert-danger d-inline-block p-4 shadow-sm">
-    <h4 class="fw-bold mb-2">🚫 Acceso Restringido</h4>
-    <p class="mb-0">Tu rol de empleado no tiene permisos para auditar vehículos.</p>
-  </div>
-</div>
+}

@@ -1,0 +1,92 @@
+<section class="container mt-4" [attr.aria-labelledby]="idCampo + '-titulo'">
+  <h1 class="h3 fw-bold text-secondary mb-4" [id]="idCampo + '-titulo'">{{ titulo }}</h1>
+
+  @if (puedeEditar()) {
+    <form class="card shadow-sm border-0 mb-4 bg-light" (ngSubmit)="guardar()">
+      <div class="card-body p-4">
+        <div class="row align-items-end g-3">
+          <div class="col-md-5">
+            <label class="form-label fw-bold" [for]="idCampo">{{ etiqueta }}</label>
+            <input
+              type="text"
+              class="form-control"
+              [id]="idCampo"
+              name="descripcion"
+              maxlength="100"
+              required
+              [(ngModel)]="actual.descripcion"
+              [placeholder]="ejemplo"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" role="switch" [id]="idCampo + '-estado'" name="estado" [(ngModel)]="actual.estado" />
+              <label class="form-check-label" [for]="idCampo + '-estado'">{{ actual.estado ? 'Activo' : 'Inactivo' }}</label>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <button type="submit" class="btn fw-bold w-100" [class.btn-warning]="modoEdicion" [class.btn-primary]="!modoEdicion" [disabled]="guardando">
+              @if (guardando) {
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              }
+              {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
+            </button>
+          </div>
+
+          @if (modoEdicion) {
+            <div class="col-md-2">
+              <button type="button" class="btn btn-secondary fw-bold w-100" (click)="cancelar()">Cancelar</button>
+            </div>
+          }
+        </div>
+      </div>
+    </form>
+  } @else {
+    <p class="alert alert-info small" role="note">Consulta de solo lectura: inicie sesión con un rol autorizado para editar catálogos.</p>
+  }
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <caption class="visually-hidden">{{ titulo }} registrados</caption>
+        <thead class="table-dark">
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Descripción</th>
+            <th scope="col">Estado</th>
+            @if (puedeEditar()) {
+              <th scope="col" class="text-center">Acciones</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando) {
+            <tr><td colspan="4" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cargando…</td></tr>
+          } @else if (errorCarga) {
+            <tr><td colspan="4" class="text-center py-4 text-danger" role="alert">{{ errorCarga }} <button type="button" class="btn btn-link btn-sm" (click)="cargar()">Reintentar</button></td></tr>
+          } @else {
+            @for (item of items; track item.id) {
+              <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.descripcion }}</td>
+                <td>
+                  <span class="badge" [class.bg-success]="item.estado" [class.bg-secondary]="!item.estado">{{ item.estado ? 'Activo' : 'Inactivo' }}</span>
+                </td>
+                @if (puedeEditar()) {
+                  <td class="text-center text-nowrap">
+                    <button type="button" class="btn btn-warning btn-sm fw-bold me-1" (click)="editar(item)" [attr.aria-label]="'Editar ' + item.descripcion">✏️ Editar</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminar(item)" [attr.aria-label]="'Eliminar ' + item.descripcion">🗑️ Eliminar</button>
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="text-center py-4 text-muted">No hay registros.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

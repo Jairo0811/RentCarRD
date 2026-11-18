@@ -1,308 +1,217 @@
-<div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-secondary">Gestión de Clientes</h2>
+<section class="container mt-4" aria-labelledby="clientes-titulo">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <h1 class="h3 fw-bold text-secondary mb-0" id="clientes-titulo">Gestión de Clientes</h1>
 
-    <button
-      class="btn fw-bold shadow-sm"
-      [ngClass]="mostrarFormulario ? 'btn-outline-danger' : 'btn-success'"
-      (click)="mostrarFormulario ? cancelar() : (mostrarFormulario = true)"
-    >
-      {{ mostrarFormulario ? 'Cancelar Operación' : '+ Nuevo Cliente' }}
-    </button>
+    @if (mostrarFormulario) {
+      <button type="button" class="btn btn-outline-danger fw-bold shadow-sm" (click)="cancelar()">Cancelar operación</button>
+    } @else {
+      <button type="button" class="btn btn-success fw-bold shadow-sm" (click)="abrirFormulario()">+ Nuevo cliente</button>
+    }
   </div>
 
-  <div *ngIf="mostrarFormulario" class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-      <h5 class="text-primary fw-bold">
-        {{ modoEdicion ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}
-      </h5>
-    </div>
+  @if (mostrarFormulario) {
+    <form class="card shadow-sm border-0 mb-4" (ngSubmit)="guardarCliente()" novalidate>
+      <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+        <h2 class="h5 text-primary fw-bold">{{ modoEdicion ? 'Editar cliente' : 'Registrar nuevo cliente' }}</h2>
+      </div>
 
-    <div class="card-body p-4">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label text-muted small fw-bold">
-            {{ tipoPersonaActual === 'Juridica' ? 'Razón Social' : 'Nombre Completo' }}
-          </label>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-bold" for="cliente-nombre">
+              {{ tipoPersonaActual === 'Juridica' ? 'Razón social' : 'Nombre completo' }}
+            </label>
+            <input
+              type="text"
+              id="cliente-nombre"
+              name="nombre"
+              maxlength="150"
+              required
+              autocomplete="off"
+              [(ngModel)]="nuevoCliente.nombre"
+              [placeholder]="tipoPersonaActual === 'Juridica' ? 'Ej: Empresa Demo SRL' : 'Ej: Ana Pérez'"
+              class="form-control form-control-lg"
+            />
+          </div>
 
-          <input
-            type="text"
-            [(ngModel)]="nuevoCliente.nombre"
-            [placeholder]="tipoPersonaActual === 'Juridica' ? 'Ej: RentCar Dominicana SRL' : 'Ej: Jairo Matías'"
-            class="form-control form-control-lg"
-          />
-        </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-bold" for="cliente-tipo">Tipo de persona</label>
+            <select id="cliente-tipo" name="tipoPersona" [(ngModel)]="nuevoCliente.tipoPersona" (change)="onTipoPersonaChange()" class="form-select form-select-lg" aria-describedby="cliente-tipo-ayuda">
+              <option value="Fisica">Física</option>
+              <option value="Juridica">Jurídica</option>
+            </select>
+            <small id="cliente-tipo-ayuda" class="text-muted d-block mt-1">Persona física utiliza cédula; persona jurídica utiliza RNC.</small>
+          </div>
 
-        <div class="col-md-6">
-          <label class="form-label text-muted small fw-bold">Tipo de Persona</label>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-bold" for="cliente-documento">{{ nombreDocumento }}</label>
+            <input
+              type="text"
+              id="cliente-documento"
+              name="cedula"
+              required
+              [(ngModel)]="nuevoCliente.cedula"
+              (input)="onCedulaInput()"
+              (blur)="validarCedulaApi()"
+              [placeholder]="placeholderDocumento"
+              class="form-control form-control-lg"
+              [class.is-valid]="cedulaEsValida"
+              [class.is-invalid]="mensajeCedula && !cedulaEsValida"
+              [attr.maxlength]="longitudMaximaDocumento"
+              [attr.aria-invalid]="mensajeCedula && !cedulaEsValida ? 'true' : null"
+              aria-describedby="cliente-documento-formato cliente-documento-estado"
+              inputmode="numeric"
+              autocomplete="off"
+            />
+            <small id="cliente-documento-formato" class="text-muted d-block mt-1">Formato requerido: {{ placeholderDocumento }}</small>
+            <div id="cliente-documento-estado" aria-live="polite">
+              @if (validandoCedula) {
+                <small class="text-primary fw-bold d-block mt-1">Validando {{ nombreDocumento.toLowerCase() }}…</small>
+              }
+              @if (mensajeCedula) {
+                <small class="fw-bold d-block mt-1" [class.text-success]="cedulaEsValida" [class.text-danger]="!cedulaEsValida">
+                  <span aria-hidden="true">{{ cedulaEsValida ? '✔' : '✖' }}</span> {{ mensajeCedula }}
+                </small>
+              }
+            </div>
+          </div>
 
-          <select
-            [(ngModel)]="nuevoCliente.tipoPersona"
-            (change)="onTipoPersonaChange()"
-            class="form-select form-select-lg"
-          >
-            <option value="Fisica">Física</option>
-            <option value="Juridica">Jurídica</option>
-          </select>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-bold" for="cliente-limite">Límite de crédito (RD$)</label>
+            <input type="number" id="cliente-limite" name="limiteCredito" min="0" step="0.01" [(ngModel)]="nuevoCliente.limiteCredito" placeholder="0.00" class="form-control form-control-lg" aria-describedby="cliente-limite-ayuda" />
+            <small id="cliente-limite-ayuda" class="text-muted d-block mt-1">Debe ser igual o mayor que cero.</small>
+          </div>
 
-          <small class="text-muted d-block mt-1">
-            Persona física utiliza cédula; persona jurídica utiliza RNC.
-          </small>
-        </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-bold" for="cliente-estado">Estado en el sistema</label>
+            <select id="cliente-estado" name="estado" [(ngModel)]="nuevoCliente.estado" class="form-select form-select-lg">
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </div>
 
-        <div class="col-md-6">
-          <label class="form-label text-muted small fw-bold">{{ nombreDocumento }}</label>
+          <div class="col-12 mt-4">
+            <fieldset class="card border-0 bg-light shadow-sm">
+              <div class="card-body p-4">
+                <legend class="h5 fw-bold text-secondary mb-1">💳 Método de pago simulado <span class="fw-normal small text-muted">(opcional)</span></legend>
+                <p class="small text-muted mb-3" id="pago-ayuda">
+                  RentCarRD no procesa pagos. Para la demostración académica solo se registran la marca y
+                  <strong>4 dígitos ficticios de referencia</strong>. No introduzca datos de tarjetas reales:
+                  no se solicita número completo, titular, fecha de expiración ni CVV.
+                </p>
 
-          <input
-            type="text"
-            [(ngModel)]="nuevoCliente.cedula"
-            (input)="onCedulaInput()"
-            (blur)="validarCedulaApi()"
-            [placeholder]="placeholderDocumento"
-            class="form-control form-control-lg"
-            [ngClass]="{
-              'is-valid': cedulaEsValida,
-              'is-invalid': mensajeCedula && !cedulaEsValida
-            }"
-            [attr.maxlength]="longitudMaximaDocumento"
-            inputmode="numeric"
-          />
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted small" for="cliente-marca">Marca</label>
+                    <select id="cliente-marca" name="tipoTarjeta" [(ngModel)]="nuevoCliente.tipoTarjeta" class="form-select form-select-lg" aria-describedby="pago-ayuda">
+                      <option [ngValue]="null">Sin método de pago</option>
+                      @for (marca of marcas; track marca) {
+                        <option [ngValue]="marca">{{ marca }}</option>
+                      }
+                    </select>
+                  </div>
 
-          <small class="text-muted d-block mt-1">
-            Formato requerido: {{ placeholderDocumento }}
-          </small>
-
-          <small *ngIf="validandoCedula" class="text-primary fw-bold d-block mt-1">
-            Validando {{ nombreDocumento.toLowerCase() }}...
-          </small>
-
-          <small
-            *ngIf="mensajeCedula"
-            class="fw-bold d-block mt-1"
-            [ngClass]="cedulaEsValida ? 'text-success' : 'text-danger'"
-          >
-            {{ cedulaEsValida ? '✔' : '✖' }} {{ mensajeCedula }}
-          </small>
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label text-muted small fw-bold">Límite de Crédito (RD$)</label>
-
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            [(ngModel)]="nuevoCliente.limiteCredito"
-            placeholder="0.00"
-            class="form-control form-control-lg"
-          />
-
-          <small class="text-muted d-block mt-1">
-            Debe ser igual o mayor que cero.
-          </small>
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label text-muted small fw-bold">Estado en el Sistema</label>
-
-          <select [(ngModel)]="nuevoCliente.estado" class="form-select form-select-lg">
-            <option [ngValue]="true">Activo</option>
-            <option [ngValue]="false">Inactivo</option>
-          </select>
-        </div>
-
-        <div class="col-12 mt-4">
-          <div class="card border-0 bg-light shadow-sm">
-            <div class="card-body p-4">
-              <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                  <h5 class="fw-bold text-secondary mb-1">💳 Método de Pago</h5>
-                  <small class="text-muted">
-                    Los datos son ficticios y se utilizan únicamente para fines académicos.
-                  </small>
-                </div>
-
-                <img
-                  *ngIf="obtenerLogoTarjeta(identificarTarjeta(nuevoCliente.noTarjetaCr))"
-                  [src]="obtenerLogoTarjeta(identificarTarjeta(nuevoCliente.noTarjetaCr))"
-                  alt="Logo de tarjeta"
-                  style="width: 52px; height: 28px; object-fit: contain"
-                />
-              </div>
-
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label fw-bold text-muted small">Nombre del Titular</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="nuevoCliente.nombreTitularTarjeta"
-                    class="form-control form-control-lg"
-                    placeholder="Como aparece en la tarjeta"
-                  />
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label fw-bold text-muted small">Número de Tarjeta</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="nuevoCliente.noTarjetaCr"
-                    (input)="onNumeroTarjetaInput()"
-                    class="form-control form-control-lg"
-                    placeholder="0000 0000 0000 0000"
-                    maxlength="19"
-                    inputmode="numeric"
-                  />
-
-                  <small
-                    *ngIf="nuevoCliente.noTarjetaCr"
-                    class="d-block mt-1"
-                    [ngClass]="numeroTarjetaValido() ? 'text-success' : 'text-danger'"
-                  >
-                    {{ numeroTarjetaValido() ? '✔ Número de tarjeta válido' : '✖ Número de tarjeta inválido' }}
-                  </small>
-                </div>
-
-                <div class="col-md-3">
-                  <label class="form-label fw-bold text-muted small">Fecha de Expiración</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="nuevoCliente.fechaExpiracionTarjeta"
-                    (input)="onFechaExpiracionInput()"
-                    class="form-control form-control-lg"
-                    [ngClass]="{
-                      'is-valid': nuevoCliente.fechaExpiracionTarjeta && fechaExpiracionValida(nuevoCliente.fechaExpiracionTarjeta),
-                      'is-invalid': nuevoCliente.fechaExpiracionTarjeta && nuevoCliente.fechaExpiracionTarjeta.length === 5 && !fechaExpiracionValida(nuevoCliente.fechaExpiracionTarjeta)
-                    }"
-                    placeholder="MM/AA"
-                    maxlength="5"
-                    inputmode="numeric"
-                  />
-                </div>
-
-                <div class="col-md-3">
-                  <label class="form-label fw-bold text-muted small">CVV</label>
-                  <input
-                    type="password"
-                    [(ngModel)]="cvvTemporal"
-                    (input)="onCvvInput()"
-                    class="form-control form-control-lg"
-                    [ngClass]="{
-                      'is-valid': cvvTemporal && cvvValido(),
-                      'is-invalid': cvvTemporal && !cvvValido()
-                    }"
-                    placeholder="•••"
-                    maxlength="3"
-                    inputmode="numeric"
-                  />
-                  <small class="text-muted d-block mt-1">El CVV no se almacena.</small>
-                </div>
-
-                <div class="col-md-6">
-                  <div *ngIf="tieneDatosTarjeta()" class="border rounded-3 bg-white p-3 h-100">
-                    <small class="text-muted text-uppercase fw-bold">Resumen de la tarjeta</small>
-                    <div class="mt-2">
-                      <strong>{{ nuevoCliente.nombreTitularTarjeta || 'Titular no indicado' }}</strong>
-                    </div>
-                    <div class="text-muted">{{ nuevoCliente.noTarjetaCr || 'Número no indicado' }}</div>
-                    <div class="d-flex justify-content-between mt-2">
-                      <span>Vence: <strong>{{ nuevoCliente.fechaExpiracionTarjeta || 'MM/AA' }}</strong></span>
-                      <span>{{ identificarTarjeta(nuevoCliente.noTarjetaCr) || 'Tarjeta' }}</span>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted small" for="cliente-digitos">Últimos 4 dígitos (ficticios)</label>
+                    <div class="input-group input-group-lg">
+                      <span class="input-group-text" aria-hidden="true">••••</span>
+                      <input
+                        type="text"
+                        id="cliente-digitos"
+                        name="ultimosDigitosTarjeta"
+                        [(ngModel)]="nuevoCliente.ultimosDigitosTarjeta"
+                        (input)="onUltimosDigitosInput()"
+                        class="form-control"
+                        placeholder="0000"
+                        maxlength="4"
+                        pattern="[0-9]{4}"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        [disabled]="!nuevoCliente.tipoTarjeta"
+                        aria-describedby="pago-ayuda"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </fieldset>
           </div>
         </div>
-      </div>
 
-      <div class="mt-4 d-flex justify-content-end gap-2">
-        <button *ngIf="modoEdicion" class="btn btn-secondary btn-lg" (click)="cancelar()">
-          Cancelar
-        </button>
-
-        <button class="btn btn-primary btn-lg px-5 fw-bold shadow-sm" (click)="guardarCliente()">
-          {{ modoEdicion ? 'Actualizar Cliente' : 'Guardar Cliente' }}
-        </button>
+        <div class="mt-4 d-flex flex-wrap justify-content-end gap-2">
+          <button type="button" class="btn btn-secondary btn-lg" (click)="cancelar()">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm" [disabled]="guardando || validandoCedula">
+            @if (guardando) {
+              <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            }
+            {{ modoEdicion ? 'Actualizar cliente' : 'Guardar cliente' }}
+          </button>
+        </div>
       </div>
-    </div>
-  </div>
+    </form>
+  }
 
   <div class="card shadow-sm border-0">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover table-striped mb-0 align-middle">
+          <caption class="visually-hidden">Clientes registrados</caption>
           <thead class="table-dark">
             <tr>
-              <th class="py-3 px-4">Nombre / Razón Social</th>
-              <th class="py-3">Documento</th>
-              <th class="py-3">Tipo</th>
-              <th class="py-3">Límite de Crédito</th>
-              <th class="py-3">Tarjeta</th>
-              <th class="py-3">Estado</th>
-              <th class="py-3 text-center">Acciones</th>
+              <th scope="col" class="py-3 px-4">Nombre / Razón social</th>
+              <th scope="col" class="py-3">Documento</th>
+              <th scope="col" class="py-3">Tipo</th>
+              <th scope="col" class="py-3">Límite de crédito</th>
+              <th scope="col" class="py-3">Método simulado</th>
+              <th scope="col" class="py-3">Estado</th>
+              <th scope="col" class="py-3 text-center">Acciones</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr *ngFor="let c of clientes">
-              <td class="px-4 fw-bold text-secondary">{{ c.nombre }}</td>
-
-              <td>
-                <span class="badge text-bg-light border me-2">
-                  {{ c.tipoPersona === 'Juridica' ? 'RNC' : 'Cédula' }}
-                </span>
-                <span class="text-muted">
-                  {{ formatearCedulaListado(c.cedula, c.tipoPersona) }}
-                </span>
-              </td>
-
-              <td>
-                <span class="badge text-bg-secondary">
-                  {{ c.tipoPersona === 'Juridica' ? 'Jurídica' : 'Física' }}
-                </span>
-              </td>
-
-              <td class="fw-bold text-success">
-                {{ c.limiteCredito | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
-              </td>
-
-              <td>
-                <div *ngIf="c.noTarjetaCr; else sinTarjeta" class="d-flex align-items-center gap-1">
-                  <img
-                    *ngIf="obtenerLogoTarjeta(c.tipoTarjeta || identificarTarjeta(c.noTarjetaCr))"
-                    [src]="obtenerLogoTarjeta(c.tipoTarjeta || identificarTarjeta(c.noTarjetaCr))"
-                    alt="Tarjeta"
-                    style="width: 34px; height: 18px; object-fit: contain"
-                  />
-                  <span class="small fw-semibold">•••• {{ limpiarNumeroTarjeta(c.noTarjetaCr).slice(-4) }}</span>
-                </div>
-
-                <ng-template #sinTarjeta>
-                  <span class="text-muted small">Sin tarjeta</span>
-                </ng-template>
-              </td>
-
-              <td>
-                <span class="badge rounded-pill" [ngClass]="c.estado ? 'text-bg-success' : 'text-bg-danger'">
-                  {{ c.estado ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-
-              <td class="text-center">
-                <button class="btn btn-warning btn-sm me-2" (click)="editar(c)">✏️ Editar</button>
-                <button class="btn btn-danger btn-sm" (click)="eliminar(c.id)">🗑 Eliminar</button>
-              </td>
-            </tr>
-
-            <tr *ngIf="clientes.length === 0">
-              <td colspan="7" class="text-center py-5 text-muted">
-                No hay clientes registrados.
-              </td>
-            </tr>
+            @if (cargando) {
+              <tr><td colspan="7" class="text-center py-5"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cargando clientes…</td></tr>
+            } @else if (errorCarga) {
+              <tr><td colspan="7" class="text-center py-5 text-danger" role="alert">{{ errorCarga }} <button type="button" class="btn btn-link btn-sm" (click)="cargarClientes()">Reintentar</button></td></tr>
+            } @else {
+              @for (c of clientes; track c.id) {
+                <tr>
+                  <td class="px-4 fw-bold text-secondary">{{ c.nombre }}</td>
+                  <td>
+                    <span class="badge text-bg-light border me-2">{{ c.tipoPersona === 'Juridica' ? 'RNC' : 'Cédula' }}</span>
+                    <span class="text-muted">{{ formatearDocumentoListado(c) }}</span>
+                  </td>
+                  <td><span class="badge text-bg-secondary">{{ c.tipoPersona === 'Juridica' ? 'Jurídica' : 'Física' }}</span></td>
+                  <td class="fw-bold text-success">{{ c.limiteCredito | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</td>
+                  <td>
+                    @if (c.ultimosDigitosTarjeta) {
+                      <div class="d-flex align-items-center gap-1">
+                        @if (obtenerLogoTarjeta(c.tipoTarjeta)) {
+                          <img [src]="obtenerLogoTarjeta(c.tipoTarjeta)" [alt]="c.tipoTarjeta" width="34" height="18" style="object-fit: contain" />
+                        } @else {
+                          <span class="small text-muted">{{ c.tipoTarjeta }}</span>
+                        }
+                        <span class="small fw-semibold"><span class="visually-hidden">terminación </span>•••• {{ c.ultimosDigitosTarjeta }}</span>
+                      </div>
+                    } @else {
+                      <span class="text-muted small">Sin método</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="badge rounded-pill" [class.text-bg-success]="c.estado" [class.text-bg-danger]="!c.estado">{{ c.estado ? 'Activo' : 'Inactivo' }}</span>
+                  </td>
+                  <td class="text-center text-nowrap">
+                    <button type="button" class="btn btn-warning btn-sm me-2" (click)="editar(c)" [attr.aria-label]="'Editar ' + c.nombre">✏️ Editar</button>
+                    <button type="button" class="btn btn-danger btn-sm" (click)="eliminar(c)" [attr.aria-label]="'Eliminar ' + c.nombre">🗑 Eliminar</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="text-center py-5 text-muted">No hay clientes registrados.</td></tr>
+              }
+            }
           </tbody>
         </table>
       </div>
     </div>
   </div>
-</div>
+</section>
