@@ -45,6 +45,13 @@ con un mensaje explícito (`THROW`). Nunca corrige ni borra datos en silencio.
 | 50003 | Estados fuera de `Activa/Concluida` o `Disponible/Rentado/NoDisponible`. | Normalice esos valores manualmente. |
 | 50004 | `Empleados.Usuario` con más de 100 caracteres. | Acorte esos usuarios. |
 
+### Dato histórico que no se modifica
+
+En v1.2, al procesar una devolución se guardaba en `Rentas.FechaDevolucion` la fecha **prevista**
+(`FechaRenta + CantidadDias`), no la fecha real. Desde v1.2.1 esa columna guarda la fecha real y
+la prevista se calcula. Las rentas concluidas antes de v1.2.1 conservan el valor que tenían: la
+fecha real de esas devoluciones nunca se registró y no puede reconstruirse.
+
 ## Antes de migrar una base existente: respaldo
 
 ```sql

@@ -276,7 +276,7 @@ El frontend utiliza archivos `environment` de Angular para resolver la URL de la
 | Disponibilidad | Solo se renta un vehículo `Disponible`, a un cliente activo. |
 | **Sin re-renta (regla académica)** | Un vehículo que ya tuvo una renta —activa o concluida— no vuelve a rentarse; al devolverse queda `NoDisponible` y no puede volver a `Disponible`. Se conserva tal como en v1.2 (ver nota). |
 | Importes | Subtotal = tarifa × días; ITBIS académico = 18 % del subtotal; total = subtotal + ITBIS. Cada importe se redondea a 2 decimales con redondeo comercial (mitades hacia arriba), igual en API y frontend. Tarifa: RD$ 0.01–1,000,000; días: 1–365. |
-| Fechas | `FechaRenta` la indica el usuario; `fechaDevolucionPrevista` = fecha de renta + días (calculada); `FechaDevolucion` es la fecha **real** en que se procesa la devolución. |
+| Fechas | `FechaRenta` la indica el usuario; `fechaDevolucionPrevista` = fecha de renta + días (calculada); `FechaDevolucion` es la fecha **real** en que se procesa la devolución. En rentas concluidas con v1.2, `FechaDevolucion` contiene la fecha prevista (así la guardaba esa versión); no se modifica porque la fecha real nunca se registró. |
 | Concurrencia | Dos solicitudes simultáneas no pueden rentar el mismo vehículo ni devolver dos veces la misma renta: token de concurrencia optimista e índice único filtrado (una renta activa por vehículo). La solicitud perdedora recibe `409`. |
 | Historial | Las rentas no se eliminan. Clientes, empleados, vehículos y catálogos con registros relacionados no se eliminan (`409`); se inactivan. |
 
