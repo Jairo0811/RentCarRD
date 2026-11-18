@@ -60,6 +60,7 @@ jobs:
           dotnet ef migrations add SnapshotDump --configuration Release
           mkdir -p ../../TestResults/ef-dump
           cp Migrations/*SnapshotDump* Migrations/RentCarDbContextModelSnapshot.cs ../../TestResults/ef-dump/
+          for f in ../../TestResults/ef-dump/*; do echo "=====FILE $(basename "$f")"; cat "$f"; echo; echo "=====END"; done
           git checkout -- Migrations/RentCarDbContextModelSnapshot.cs
           rm -f Migrations/*SnapshotDump*
 
