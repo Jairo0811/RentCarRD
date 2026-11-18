@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Domain;
@@ -8,9 +7,12 @@ using RentCar.API.Models;
 namespace RentCar.API.Controllers;
 
 /// <summary>
-/// Comportamiento común de catálogos: consulta para cualquier usuario autenticado,
-/// escritura solo para Admin, descripción obligatoria y única (sin distinguir mayúsculas),
+/// Comportamiento común de catálogos: descripción obligatoria y única (sin distinguir mayúsculas),
 /// 404 consistente y eliminación bloqueada (409) cuando el registro está en uso.
+///
+/// Permisos: como en v1.2, Admin y Empleado gestionan catálogos (el menú "Catálogos" de la
+/// interfaz está disponible para ambos roles). La API exige un usuario autenticado y activo
+/// (política global + validación del empleado en cada solicitud).
 /// </summary>
 [ApiController]
 public abstract class CatalogoSimpleController<T>(RentCarDbContext context) : ControllerBase
@@ -39,7 +41,6 @@ public abstract class CatalogoSimpleController<T>(RentCarDbContext context) : Co
     }
 
     [HttpPost]
-    [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<CatalogoResponse>> Crear(CatalogoRequest request, CancellationToken cancellationToken)
     {
         var descripcion = request.Descripcion?.Trim() ?? string.Empty;
@@ -55,7 +56,6 @@ public abstract class CatalogoSimpleController<T>(RentCarDbContext context) : Co
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Actualizar(int id, CatalogoRequest request, CancellationToken cancellationToken)
     {
         var item = await Context.Set<T>().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
@@ -75,7 +75,6 @@ public abstract class CatalogoSimpleController<T>(RentCarDbContext context) : Co
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
     {
         var item = await Context.Set<T>().FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
@@ -149,7 +148,6 @@ public sealed class ModelosController(RentCarDbContext context) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<ModeloResponse>> Crear(ModeloRequest request, CancellationToken cancellationToken)
     {
         var error = await Validar(request, idActual: null, cancellationToken);
@@ -164,7 +162,6 @@ public sealed class ModelosController(RentCarDbContext context) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Actualizar(int id, ModeloRequest request, CancellationToken cancellationToken)
     {
         var modelo = await context.Modelos.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
@@ -187,7 +184,6 @@ public sealed class ModelosController(RentCarDbContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
     {
         var modelo = await context.Modelos.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);

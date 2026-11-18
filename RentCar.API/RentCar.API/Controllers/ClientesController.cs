@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentCar.API.Domain;
@@ -9,7 +8,8 @@ using RentCar.API.Models;
 namespace RentCar.API.Controllers;
 
 /// <summary>
-/// Clientes. Admin y Empleado pueden consultar, registrar y editar; solo Admin elimina.
+/// Clientes. Admin y Empleado pueden consultar, registrar, editar y eliminar (permisos de v1.2).
+/// La eliminación se bloquea (409) si el cliente tiene rentas o inspecciones: debe inactivarse.
 ///
 /// Privacidad: RentCarRD no procesa pagos. El "método de pago" es una referencia simulada
 /// (marca + últimos 4 dígitos). No se reciben ni almacenan PAN, titular, expiración ni CVV.
@@ -132,7 +132,6 @@ public partial class ClientesController(RentCarDbContext context) : ControllerBa
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> DeleteCliente(int id, CancellationToken cancellationToken)
     {
         var cliente = await context.Clientes.FindAsync([id], cancellationToken);

@@ -46,9 +46,29 @@ public class SeguridadTests(RentCarApiFactory api)
 
         await (await empleado.GetAsync("/api/empleados")).AssertEstadoAsync(HttpStatusCode.Forbidden);
         await (await empleado.GetAsync("/api/inspecciones")).AssertEstadoAsync(HttpStatusCode.Forbidden);
-        await (await empleado.PostAsJsonAsync("/api/marcas", new { descripcion = "Intento" })).AssertEstadoAsync(HttpStatusCode.Forbidden);
+        await (await empleado.PostAsJsonAsync("/api/inspecciones", new { idVehiculo = 1, idCliente = 1, cantidadCombustible = "Lleno" })).AssertEstadoAsync(HttpStatusCode.Forbidden);
         await (await empleado.PostAsJsonAsync("/api/vehiculos", new { descripcion = "Intento" })).AssertEstadoAsync(HttpStatusCode.Forbidden);
-        await (await empleado.DeleteAsync("/api/clientes/1")).AssertEstadoAsync(HttpStatusCode.Forbidden);
+        await (await empleado.PutAsJsonAsync("/api/vehiculos/1", new { descripcion = "Intento" })).AssertEstadoAsync(HttpStatusCode.Forbidden);
+        await (await empleado.DeleteAsync("/api/vehiculos/1")).AssertEstadoAsync(HttpStatusCode.Forbidden);
+        await (await empleado.DeleteAsync("/api/rentas/1")).AssertEstadoAsync(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Empleado_conserva_las_operaciones_de_v12_sobre_catalogos_y_clientes()
+    {
+        // En v1.2 el menú Catálogos y la gestión de clientes estaban disponibles para Empleado;
+        // v1.2.1 conserva esos permisos (sin cambios funcionales no solicitados).
+        var admin = await api.AdminAsync();
+        var (_, usuario, password) = await Datos.CrearEmpleadoAsync(admin);
+        var empleado = await api.ClienteAutenticadoAsync(usuario, password);
+
+        var marca = await empleado.CrearIdAsync("/api/marcas", new { descripcion = $"Marca empleado {Datos.Siguiente()}" });
+        await (await empleado.PutAsJsonAsync($"/api/marcas/{marca}", new { descripcion = $"Marca editada {Datos.Siguiente()}", estado = true }))
+            .AssertEstadoAsync(HttpStatusCode.NoContent);
+        await (await empleado.DeleteAsync($"/api/marcas/{marca}")).AssertEstadoAsync(HttpStatusCode.NoContent);
+
+        var cliente = await Datos.CrearClienteAsync(empleado);
+        await (await empleado.DeleteAsync($"/api/clientes/{cliente}")).AssertEstadoAsync(HttpStatusCode.NoContent);
     }
 
     [Fact]
