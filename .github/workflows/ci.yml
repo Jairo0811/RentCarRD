@@ -50,20 +50,6 @@ jobs:
       - name: Build Release
         run: dotnet build RentCar.API/RentCar.API.slnx --configuration Release --no-restore
 
-      - name: TEMPORAL — volcar snapshot EF regenerado
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          dotnet tool install --global dotnet-ef --version 10.0.15
-          cd RentCar.API/RentCar.API
-          dotnet ef migrations add SnapshotDump --configuration Release
-          mkdir -p ../../TestResults/ef-dump
-          cp Migrations/*SnapshotDump* Migrations/RentCarDbContextModelSnapshot.cs ../../TestResults/ef-dump/
-          for f in ../../TestResults/ef-dump/*; do echo "=====FILE $(basename "$f")"; cat "$f"; echo; echo "=====END"; done
-          git checkout -- Migrations/RentCarDbContextModelSnapshot.cs
-          rm -f Migrations/*SnapshotDump*
-
       - name: Auditoría NuGet explícita (falla ante paquetes vulnerables)
         shell: bash
         run: |

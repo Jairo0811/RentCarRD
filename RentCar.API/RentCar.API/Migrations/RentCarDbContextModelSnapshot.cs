@@ -17,7 +17,7 @@ namespace RentCar.API.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -32,7 +32,9 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("Cedula")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(11)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(11)");
 
                     b.Property<bool>("Estado")
                         .HasColumnType("bit");
@@ -42,9 +44,30 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("TipoPersona")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("TipoTarjeta")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("UltimosDigitosTarjeta")
+                        .HasMaxLength(4)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("NoTarjetaCR");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Cedula")
+                        .IsUnique();
 
                     b.ToTable("Clientes");
                 });
@@ -59,7 +82,9 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("Cedula")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(11)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(11)");
 
                     b.Property<bool>("Estado")
                         .HasColumnType("bit");
@@ -69,25 +94,36 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PorcientoComision")
-                        .HasColumnType("int");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
+                    b.Property<int>("PorcientoComision")
+                        .HasColumnType("int");
+
                     b.Property<string>("TandaLabor")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("Usuario")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Cedula")
+                        .IsUnique();
+
+                    b.HasIndex("Usuario")
+                        .IsUnique();
 
                     b.ToTable("Empleados");
                 });
@@ -102,7 +138,9 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("CantidadCombustible")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<bool>("Estado")
                         .HasColumnType("bit");
@@ -145,6 +183,12 @@ namespace RentCar.API.Migrations
 
                     b.HasKey("IdTransaccion");
 
+                    b.HasIndex("IdCliente");
+
+                    b.HasIndex("IdEmpleadoInspeccion");
+
+                    b.HasIndex("IdVehiculo");
+
                     b.ToTable("Inspecciones");
                 });
 
@@ -166,8 +210,7 @@ namespace RentCar.API.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
-                    b.HasKey("Id")
-                        .HasName("PK__Marcas__3214EC0715E99AF7");
+                    b.HasKey("Id");
 
                     b.ToTable("Marcas");
                 });
@@ -193,8 +236,7 @@ namespace RentCar.API.Migrations
                     b.Property<int?>("IdMarca")
                         .HasColumnType("int");
 
-                    b.HasKey("Id")
-                        .HasName("PK__Modelos__3214EC073EC5E5C6");
+                    b.HasKey("Id");
 
                     b.HasIndex("IdMarca");
 
@@ -214,11 +256,15 @@ namespace RentCar.API.Migrations
 
                     b.Property<string>("Comentario")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Estado")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<DateTime?>("FechaDevolucion")
                         .HasColumnType("datetime2");
@@ -235,13 +281,35 @@ namespace RentCar.API.Migrations
                     b.Property<int>("IdVehiculo")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("Itbis")
+                        .HasColumnType("decimal(18, 2)");
+
                     b.Property<decimal>("MontoXdia")
                         .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("MontoXDia");
+                        .HasColumnName("MontoXDia")
+                        .HasJsonPropertyName("montoXDia");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("decimal(18, 2)");
 
                     b.HasKey("NoRenta");
 
-                    b.ToTable("Rentas");
+                    b.HasIndex("IdCliente");
+
+                    b.HasIndex("IdEmpleado");
+
+                    b.HasIndex("IdVehiculo")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Rentas_IdVehiculo_Activa")
+                        .HasFilter("[Estado] = 'Activa'");
+
+                    b.ToTable("Rentas", t =>
+                        {
+                            t.HasCheckConstraint("CK_Rentas_Estado", "[Estado] IN ('Activa', 'Concluida')");
+                        });
                 });
 
             modelBuilder.Entity("RentCar.API.Models.TiposCombustible", b =>
@@ -262,8 +330,7 @@ namespace RentCar.API.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
-                    b.HasKey("Id")
-                        .HasName("PK__TiposCom__3214EC070B4B06BB");
+                    b.HasKey("Id");
 
                     b.ToTable("TiposCombustibles");
                 });
@@ -286,8 +353,7 @@ namespace RentCar.API.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
-                    b.HasKey("Id")
-                        .HasName("PK__TiposVeh__3214EC079E7BF2EF");
+                    b.HasKey("Id");
 
                     b.ToTable("TiposVehiculos");
                 });
@@ -301,23 +367,101 @@ namespace RentCar.API.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Descripcion")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<bool>("Estado")
-                        .HasColumnType("bit");
+                    b.Property<bool?>("Estado")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("EstadoOperacion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("Disponible");
+
+                    b.Property<int?>("IdCombustible")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdMarca")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdModelo")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdTipoCombustible")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdTipoVehiculo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImagenUrl")
+                        .HasMaxLength(300)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(300)");
 
                     b.Property<string>("NoChasis")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(17)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(17)");
+
+                    b.Property<string>("NoMotor")
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("NoPlaca")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(7)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(7)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Vehiculos");
+                    b.HasIndex("IdMarca");
+
+                    b.HasIndex("IdModelo");
+
+                    b.HasIndex("IdTipoCombustible");
+
+                    b.HasIndex("IdTipoVehiculo");
+
+                    b.HasIndex("NoChasis")
+                        .IsUnique()
+                        .HasFilter("[NoChasis] IS NOT NULL");
+
+                    b.HasIndex("NoPlaca")
+                        .IsUnique()
+                        .HasFilter("[NoPlaca] IS NOT NULL");
+
+                    b.ToTable("Vehiculos", t =>
+                        {
+                            t.HasCheckConstraint("CK_Vehiculos_EstadoOperacion", "[EstadoOperacion] IN ('Disponible', 'Rentado', 'NoDisponible')");
+                        });
+                });
+
+            modelBuilder.Entity("RentCar.API.Models.Inspeccione", b =>
+                {
+                    b.HasOne("RentCar.API.Models.Cliente", null)
+                        .WithMany()
+                        .HasForeignKey("IdCliente")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RentCar.API.Models.Empleado", null)
+                        .WithMany()
+                        .HasForeignKey("IdEmpleadoInspeccion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RentCar.API.Models.Vehiculo", null)
+                        .WithMany()
+                        .HasForeignKey("IdVehiculo")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("RentCar.API.Models.Modelo", b =>
@@ -325,9 +469,53 @@ namespace RentCar.API.Migrations
                     b.HasOne("RentCar.API.Models.Marca", "IdMarcaNavigation")
                         .WithMany("Modelos")
                         .HasForeignKey("IdMarca")
-                        .HasConstraintName("FK__Modelos__IdMarca__628FA481");
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("IdMarcaNavigation");
+                });
+
+            modelBuilder.Entity("RentCar.API.Models.Renta", b =>
+                {
+                    b.HasOne("RentCar.API.Models.Cliente", null)
+                        .WithMany()
+                        .HasForeignKey("IdCliente")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RentCar.API.Models.Empleado", null)
+                        .WithMany()
+                        .HasForeignKey("IdEmpleado")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RentCar.API.Models.Vehiculo", null)
+                        .WithMany()
+                        .HasForeignKey("IdVehiculo")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RentCar.API.Models.Vehiculo", b =>
+                {
+                    b.HasOne("RentCar.API.Models.Marca", null)
+                        .WithMany()
+                        .HasForeignKey("IdMarca")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RentCar.API.Models.Modelo", null)
+                        .WithMany()
+                        .HasForeignKey("IdModelo")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RentCar.API.Models.TiposCombustible", null)
+                        .WithMany()
+                        .HasForeignKey("IdTipoCombustible")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RentCar.API.Models.TiposVehiculo", null)
+                        .WithMany()
+                        .HasForeignKey("IdTipoVehiculo")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("RentCar.API.Models.Marca", b =>
