@@ -1,4 +1,3 @@
-﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,19 +10,15 @@ namespace RentCar.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Solo agregamos la nueva columna a la tabla Empleados existente
-            migrationBuilder.AddColumn<string>(
-                name: "Usuario",
-                table: "Empleados",
-                type: "nvarchar(max)",
-                nullable: false,
-                defaultValue: "");
+            // v1.2.1: idempotente. En bases nuevas la columna ya la crea EsquemaBase;
+            // en bases históricas se agrega como en la versión original.
+            migrationBuilder.Sql(SqlIdempotente.AgregarColumna(
+                "Empleados", "Usuario", "nvarchar(max) NOT NULL CONSTRAINT [DF_Empleados_Usuario] DEFAULT N''"));
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Solo removemos la columna en caso de querer revertir el proceso
             migrationBuilder.DropColumn(
                 name: "Usuario",
                 table: "Empleados");

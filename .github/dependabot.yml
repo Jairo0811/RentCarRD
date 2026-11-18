@@ -1,7 +1,9 @@
 version: 2
 updates:
   - package-ecosystem: nuget
-    directory: /RentCar.API/RentCar.API
+    directories:
+      - /RentCar.API/RentCar.API
+      - /RentCar.API/RentCar.API.Tests
     schedule:
       interval: weekly
     # Portfolio freeze: disable routine version updates; security updates remain available.

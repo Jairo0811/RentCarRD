@@ -1,118 +1,94 @@
-<div class="container mt-4">
-  <h2>Gestión de Modelos</h2>
-  <hr />
+<section class="container mt-4" aria-labelledby="modelos-titulo">
+  <h1 class="h3 fw-bold text-secondary mb-4" id="modelos-titulo">Modelos</h1>
 
-  <div class="card mb-4">
-    <div
-      class="card-header text-white"
-      [ngClass]="modoEdicion ? 'bg-warning' : 'bg-primary'"
-    >
-      {{ modoEdicion ? 'Editar Modelo' : 'Nuevo Modelo' }}
-    </div>
-
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-5">
-          <label class="form-label">Descripción del Modelo</label>
-
+  <form class="card shadow-sm border-0 mb-4 bg-light" (ngSubmit)="guardarModelo()">
+    <div class="card-body p-4">
+      <h2 class="h6 fw-bold mb-3">{{ modoEdicion ? 'Editar modelo' : 'Nuevo modelo' }}</h2>
+      <div class="row align-items-end g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-bold" for="modelo-descripcion">Descripción del modelo</label>
           <input
             type="text"
             class="form-control"
+            id="modelo-descripcion"
+            name="descripcion"
+            maxlength="100"
+            required
             [(ngModel)]="modeloActual.descripcion"
             placeholder="Ej. Civic, Corolla..."
           />
         </div>
 
-        <div class="col-md-5">
-          <label class="form-label">Marca</label>
-
-          <select
-            class="form-select"
-            [(ngModel)]="modeloActual.idMarca"
-          >
-            <option [ngValue]="0" disabled>
-              Seleccione una marca...
-            </option>
-
-            <option
-              *ngFor="let marca of listaMarcas"
-              [ngValue]="marca.id"
-            >
-              {{ marca.descripcion }}
-            </option>
+        <div class="col-md-3">
+          <label class="form-label fw-bold" for="modelo-marca">Marca</label>
+          <select class="form-select" id="modelo-marca" name="idMarca" required [(ngModel)]="modeloActual.idMarca">
+            <option [ngValue]="null" disabled>Seleccione una marca…</option>
+            @for (marca of marcasSeleccionables; track marca.id) {
+              <option [ngValue]="marca.id">{{ marca.descripcion }}{{ marca.estado ? '' : ' (inactiva)' }}</option>
+            }
           </select>
         </div>
 
-        <div class="col-md-2 d-flex align-items-end gap-2">
-          <button
-            class="btn w-100"
-            [ngClass]="modoEdicion ? 'btn-warning' : 'btn-success'"
-            (click)="guardarModelo()"
-          >
-            {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
-          </button>
+        <div class="col-md-2">
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" role="switch" id="modelo-estado" name="estado" [(ngModel)]="modeloActual.estado" />
+            <label class="form-check-label" for="modelo-estado">{{ modeloActual.estado ? 'Activo' : 'Inactivo' }}</label>
+          </div>
         </div>
 
-        <div class="col-12 text-end" *ngIf="modoEdicion">
-          <button
-            class="btn btn-secondary"
-            (click)="cancelarEdicion()"
-          >
-            Cancelar edición
+        <div class="col-md-3 d-flex gap-2">
+          <button type="submit" class="btn fw-bold flex-fill" [class.btn-warning]="modoEdicion" [class.btn-primary]="!modoEdicion" [disabled]="guardando">
+            @if (guardando) {
+              <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            }
+            {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
           </button>
+          @if (modoEdicion) {
+            <button type="button" class="btn btn-secondary fw-bold flex-fill" (click)="cancelarEdicion()">Cancelar</button>
+          }
         </div>
       </div>
     </div>
+  </form>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <caption class="visually-hidden">Modelos registrados</caption>
+        <thead class="table-dark">
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Descripción</th>
+            <th scope="col">Marca</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando) {
+            <tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cargando…</td></tr>
+          } @else if (errorCarga) {
+            <tr><td colspan="5" class="text-center py-4 text-danger" role="alert">{{ errorCarga }} <button type="button" class="btn btn-link btn-sm" (click)="cargar()">Reintentar</button></td></tr>
+          } @else {
+            @for (modelo of listaModelos; track modelo.id) {
+              <tr>
+                <td>{{ modelo.id }}</td>
+                <td>{{ modelo.descripcion }}</td>
+                <td>{{ obtenerNombreMarca(modelo.idMarca) }}</td>
+                <td>
+                  <span class="badge" [class.bg-success]="modelo.estado" [class.bg-secondary]="!modelo.estado">{{ modelo.estado ? 'Activo' : 'Inactivo' }}</span>
+                </td>
+                <td class="text-center text-nowrap">
+                  <button type="button" class="btn btn-warning btn-sm fw-bold me-1" (click)="editarModelo(modelo)" [attr.aria-label]="'Editar ' + modelo.descripcion">✏️ Editar</button>
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminarModelo(modelo)" [attr.aria-label]="'Eliminar ' + modelo.descripcion">🗑️ Eliminar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="text-center py-4 text-muted">No hay modelos registrados.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
-
-  <div class="table-responsive">
-    <table class="table table-striped table-hover mt-3 align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th>ID</th>
-          <th>Descripción</th>
-          <th>Marca</th>
-          <th>Estado</th>
-          <th class="text-center">Acciones</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr *ngFor="let modelo of listaModelos">
-          <td>{{ modelo.id }}</td>
-          <td>{{ modelo.descripcion }}</td>
-          <td>{{ obtenerNombreMarca(modelo.idMarca) }}</td>
-          <td>
-            <span
-              class="badge"
-              [ngClass]="modelo.estado ? 'bg-success' : 'bg-danger'"
-            >
-              {{ modelo.estado ? 'Activo' : 'Inactivo' }}
-            </span>
-          </td>
-          <td class="text-center">
-            <button
-              class="btn btn-warning btn-sm me-2"
-              (click)="editarModelo(modelo)"
-            >
-              ✏️ Editar
-            </button>
-
-            <button
-              class="btn btn-danger btn-sm"
-              (click)="eliminarModelo(modelo.id)"
-            >
-              🗑️ Eliminar
-            </button>
-          </td>
-        </tr>
-
-        <tr *ngIf="listaModelos.length === 0">
-          <td colspan="5" class="text-center">
-            No hay modelos registrados.
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+</section>

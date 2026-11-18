@@ -5,7 +5,7 @@
       Gestión de Vehículos
     </h2>
 
-    <button
+    <button type="button"
       *ngIf="rolActual === 'admin'"
       class="btn fw-bold shadow-sm"
       [ngClass]="mostrarFormulario ? 'btn-outline-danger' : 'btn-success'"
@@ -28,8 +28,8 @@
     <div class="card-body p-4">
       <div class="row g-3">
         <div class="col-md-12">
-          <label class="form-label text-muted small fw-bold">Descripción General</label>
-          <input
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-1">Descripción General</label>
+          <input id="vehiculo-campo-1"
             [(ngModel)]="nuevoVehiculo.descripcion"
             placeholder="Ej. Toyota Corolla 2024"
             class="form-control form-control-lg"
@@ -37,8 +37,8 @@
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Marca</label>
-          <select
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-2">Marca</label>
+          <select id="vehiculo-campo-2"
             [(ngModel)]="nuevoVehiculo.idMarca"
             (change)="cambiarMarca()"
             class="form-select form-select-lg"
@@ -51,8 +51,8 @@
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Modelo</label>
-          <select [(ngModel)]="nuevoVehiculo.idModelo" class="form-select form-select-lg">
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-3">Modelo</label>
+          <select id="vehiculo-campo-3" [(ngModel)]="nuevoVehiculo.idModelo" class="form-select form-select-lg">
             <option [ngValue]="null">Seleccione...</option>
             <option *ngFor="let mo of modelosFiltrados" [ngValue]="mo.id">
               {{ mo.descripcion }}
@@ -61,8 +61,8 @@
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Tipo de Vehículo</label>
-          <select [(ngModel)]="nuevoVehiculo.idTipoVehiculo" class="form-select form-select-lg">
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-4">Tipo de Vehículo</label>
+          <select id="vehiculo-campo-4" [(ngModel)]="nuevoVehiculo.idTipoVehiculo" class="form-select form-select-lg">
             <option [ngValue]="null">Seleccione...</option>
             <option *ngFor="let t of tiposVehiculos" [ngValue]="t.id">
               {{ t.descripcion }}
@@ -71,8 +71,8 @@
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Tipo de Combustible</label>
-          <select [(ngModel)]="nuevoVehiculo.idTipoCombustible" class="form-select form-select-lg">
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-5">Tipo de Combustible</label>
+          <select id="vehiculo-campo-5" [(ngModel)]="nuevoVehiculo.idTipoCombustible" class="form-select form-select-lg">
             <option [ngValue]="null">Seleccione...</option>
             <option *ngFor="let c of tiposCombustibles" [ngValue]="c.id">
               {{ c.descripcion }}
@@ -81,8 +81,8 @@
         </div>
 
         <div class="col-md-4">
-          <label class="form-label text-muted small fw-bold">Número de Placa</label>
-          <input
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-6">Número de Placa</label>
+          <input id="vehiculo-campo-6"
             [(ngModel)]="nuevoVehiculo.noPlaca"
             (input)="onPlacaInput()"
             placeholder="Ej. A123456"
@@ -96,8 +96,8 @@
         </div>
 
         <div class="col-md-4">
-          <label class="form-label text-muted small fw-bold">Número de Chasis</label>
-          <input
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-7">Número de Chasis</label>
+          <input id="vehiculo-campo-7"
             [(ngModel)]="nuevoVehiculo.noChasis"
             (input)="onChasisInput()"
             placeholder="Máximo 17 caracteres"
@@ -110,8 +110,8 @@
         </div>
 
         <div class="col-md-4">
-          <label class="form-label text-muted small fw-bold">Número de Motor</label>
-          <input
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-8">Número de Motor</label>
+          <input id="vehiculo-campo-8"
             [(ngModel)]="nuevoVehiculo.noMotor"
             (input)="onMotorInput()"
             placeholder="Motor"
@@ -122,8 +122,8 @@
         </div>
 
         <div class="col-md-6">
-          <label class="form-label text-muted small fw-bold">Foto del Vehículo</label>
-          <input
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-9">Foto del Vehículo</label>
+          <input id="vehiculo-campo-9"
             type="file"
             accept="image/png, image/jpeg, image/jpg, image/webp"
             class="form-control form-control-lg"
@@ -145,14 +145,16 @@
         </div>
 
         <div class="col-md-3">
-          <label class="form-label text-muted small fw-bold">Estado</label>
-          <select
+          <label class="form-label text-muted small fw-bold" for="vehiculo-campo-10">Estado</label>
+          <select id="vehiculo-campo-10"
             [(ngModel)]="nuevoVehiculo.estadoOperacion"
             class="form-select form-select-lg"
             [disabled]="modoEdicion && obtenerEstadoOperacion(nuevoVehiculo) !== 'Disponible'"
           >
             <option value="Disponible">Disponible</option>
-            <option value="Rentado">Rentado</option>
+            @if (obtenerEstadoOperacion(nuevoVehiculo) === 'Rentado') {
+              <option value="Rentado">Rentado (asignado por una renta)</option>
+            }
             <option value="NoDisponible">No disponible</option>
           </select>
           <small
@@ -165,13 +167,18 @@
       </div>
 
       <div class="mt-4 d-flex justify-content-end gap-2">
-        <button *ngIf="modoEdicion" class="btn btn-secondary btn-lg" (click)="cancelar()">
+        <button type="button" *ngIf="modoEdicion" class="btn btn-secondary btn-lg" (click)="cancelar()">
           Cancelar
         </button>
         <button
+          type="button"
           (click)="guardarVehiculo()"
           class="btn btn-primary btn-lg px-5 fw-bold shadow-sm"
+          [disabled]="guardando"
         >
+          @if (guardando) {
+            <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+          }
           {{ modoEdicion ? 'Actualizar Vehículo' : 'Guardar Vehículo' }}
         </button>
       </div>
@@ -195,8 +202,8 @@
         </div>
 
         <div class="col-md-3">
-          <label class="form-label fw-bold text-muted small">Estado</label>
-          <select [(ngModel)]="filtroEstado" class="form-select form-select-lg">
+          <label class="form-label fw-bold text-muted small" for="vehiculo-campo-11">Estado</label>
+          <select id="vehiculo-campo-11" [(ngModel)]="filtroEstado" class="form-select form-select-lg">
             <option value="todos">Todos</option>
             <option value="disponibles">Disponibles</option>
             <option value="rentados">Rentados</option>
@@ -294,8 +301,8 @@
           class="card-footer bg-white d-flex justify-content-end gap-2"
           *ngIf="rolActual === 'admin'"
         >
-          <button class="btn btn-warning btn-sm" (click)="editar(v)">✏️ Editar</button>
-          <button class="btn btn-danger btn-sm" (click)="eliminar(v.id)">🗑 Eliminar</button>
+          <button type="button" class="btn btn-warning btn-sm" (click)="editar(v)">✏️ Editar</button>
+          <button type="button" class="btn btn-danger btn-sm" (click)="eliminar(v)">🗑 Eliminar</button>
         </div>
       </div>
     </div>
@@ -307,7 +314,7 @@
       <div class="p-5 bg-white rounded-3 shadow-sm text-muted">
         <h4 class="fw-bold">No se encontraron coincidencias</h4>
         <p>Prueba con otro término de búsqueda o cambia el filtro de estado.</p>
-        <button class="btn btn-outline-primary" (click)="limpiarFiltros()">Limpiar filtros</button>
+        <button type="button" class="btn btn-outline-primary" (click)="limpiarFiltros()">Limpiar filtros</button>
       </div>
     </div>
 

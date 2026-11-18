@@ -1,22 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { TipoCombustible } from '../components/tipos-combustibles/tipos-combustibles';
-import { environment } from '../../environments/environment';
+import { Catalogo } from '../interfaces/modelos';
+import { CatalogoApi } from './catalogo.service';
 
 @Injectable({ providedIn: 'root' })
-export class TipoCombustibleService {
-  private readonly apiUrl = `${environment.apiBaseUrl}/api/TiposCombustibles`;
-
-  constructor(private http: HttpClient) { }
-
-  getCombustibles(): Observable<TipoCombustible[]> {
-    return this.http.get<TipoCombustible[]>(this.apiUrl);
+export class TipoCombustibleService extends CatalogoApi {
+  constructor(http: HttpClient) {
+    super(http, 'TiposCombustibles');
   }
-  crearCombustible(combustible: TipoCombustible): Observable<TipoCombustible> {
-    return this.http.post<TipoCombustible>(this.apiUrl, combustible);
-  }
-  deleteCombustible(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+
+  getCombustibles(): Observable<Catalogo[]> {
+    return this.listar();
   }
 }

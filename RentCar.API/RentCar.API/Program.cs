@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RentCar.API.Auth;
+using RentCar.API.Domain;
+using RentCar.API.Infrastructure;
 using RentCar.API.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +22,10 @@ if (string.IsNullOrWhiteSpace(connectionString))
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<DbExceptionHandler>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IFechaNegocio, FechaNegocio>();
+builder.Services.AddSingleton<AlmacenImagenesVehiculos>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
@@ -73,6 +79,40 @@ builder.Services
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
         };
+
+        // El token por sí solo no basta: en cada solicitud se comprueba que el empleado
+        // siga existiendo, esté activo y conserve el rol firmado. Un empleado inactivado
+        // pierde el acceso de inmediato aunque su JWT aún no haya expirado.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var empleadoId = context.Principal?.EmpleadoId();
+                if (empleadoId is null)
+                {
+                    context.Fail("El token no identifica a un empleado.");
+                    return;
+                }
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<RentCarDbContext>();
+                var empleado = await db.Empleados
+                    .AsNoTracking()
+                    .Where(e => e.Id == empleadoId)
+                    .Select(e => new { e.Estado, e.Usuario })
+                    .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
+
+                if (empleado is null || !empleado.Estado)
+                {
+                    context.Fail("El empleado no existe o está inactivo.");
+                    return;
+                }
+
+                if (!context.Principal!.IsInRole(Roles.ParaUsuario(empleado.Usuario)))
+                {
+                    context.Fail("El rol del token ya no corresponde al empleado.");
+                }
+            }
+        };
     });
 
 builder.Services.AddAuthorization(options =>
@@ -99,6 +139,10 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 
+// Valores por defecto de v1.2; configurables solo para el entorno de pruebas automatizadas.
+var limiteGlobal = builder.Configuration.GetValue("RateLimiting:GlobalPermitLimit", 120);
+var limiteAutenticacion = builder.Configuration.GetValue("RateLimiting:AuthPermitLimit", 8);
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -108,7 +152,7 @@ builder.Services.AddRateLimiter(options =>
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 120,
+                PermitLimit = limiteGlobal,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0,
                 AutoReplenishment = true
@@ -119,7 +163,7 @@ builder.Services.AddRateLimiter(options =>
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 8,
+                PermitLimit = limiteAutenticacion,
                 Window = TimeSpan.FromMinutes(10),
                 QueueLimit = 0,
                 AutoReplenishment = true
@@ -147,7 +191,9 @@ if (builder.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 
 // Inicialización opcional y de una sola vez del administrador.
 // Defina RENTCARRD_BOOTSTRAP_ADMIN_PASSWORD únicamente para el primer arranque.
-using (var scope = app.Services.CreateScope())
+// - Si existe "admin" sin PasswordHash, se le asigna la contraseña.
+// - Si no existe ningún "admin" (instalación nueva), se crea con la cédula indicada en
+//   RENTCARRD_BOOTSTRAP_ADMIN_CEDULA. Nunca sobrescribe una contraseña existente.
 {
     var bootstrapPassword = builder.Configuration["RENTCARRD_BOOTSTRAP_ADMIN_PASSWORD"];
     if (!string.IsNullOrWhiteSpace(bootstrapPassword))
@@ -158,11 +204,36 @@ using (var scope = app.Services.CreateScope())
                 "La contraseña bootstrap debe tener al menos 12 caracteres.");
         }
 
+        await using var scope = app.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<RentCarDbContext>();
-        var admin = await db.Empleados.SingleOrDefaultAsync(e => e.Usuario == "admin");
-        if (admin is not null && string.IsNullOrWhiteSpace(admin.PasswordHash))
+        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<Empleado>>();
+        var admin = await db.Empleados.SingleOrDefaultAsync(e => e.Usuario == Roles.UsuarioAdministrador);
+
+        if (admin is null)
         {
-            var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<Empleado>>();
+            var cedula = DocumentosDominicanos.SoloDigitos(builder.Configuration["RENTCARRD_BOOTSTRAP_ADMIN_CEDULA"]);
+            if (!DocumentosDominicanos.CedulaValida(cedula))
+            {
+                throw new InvalidOperationException(
+                    "Para crear el administrador inicial defina RENTCARRD_BOOTSTRAP_ADMIN_CEDULA con una cédula válida.");
+            }
+
+            admin = new Empleado
+            {
+                Nombre = "Administrador General",
+                Cedula = cedula,
+                TandaLabor = "Matutina",
+                PorcientoComision = 0,
+                FechaIngreso = DateTime.Today,
+                Estado = true,
+                Usuario = Roles.UsuarioAdministrador
+            };
+            admin.PasswordHash = hasher.HashPassword(admin, bootstrapPassword);
+            db.Empleados.Add(admin);
+            await db.SaveChangesAsync();
+        }
+        else if (string.IsNullOrWhiteSpace(admin.PasswordHash))
+        {
             admin.PasswordHash = hasher.HashPassword(admin, bootstrapPassword);
             await db.SaveChangesAsync();
         }

@@ -1,0 +1,14 @@
+{
+  "$comment": "Excepciones temporales de npm audit. Solo se admiten advisories sin versión corregida publicada, que afecten exclusivamente al toolchain de desarrollo. scripts/audit-gate.mjs falla si una excepción vence, toca producción o carece de justificación.",
+  "exceptions": [
+    {
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "severity": "high",
+      "scope": "devDependencies: @angular/build, @angular/cli, vite, vitest, sass/@parcel/watcher, tinyglobby, fdir, node-gyp. No forma parte del bundle servido al navegador (npm audit --omit=dev = 0).",
+      "reason": "ReDoS con extglobs repetidos (afecta <=4.0.7). En la fecha de revisión 4.0.7 es la última versión publicada de picomatch: no existe parche ni versión de Angular CLI/Vite/Vitest que lo evite. Los patrones glob que procesa el toolchain provienen de la configuración del repositorio (angular.json, tsconfig, vitest), no de entradas de usuarios. Se revisará al publicarse picomatch >4.0.7.",
+      "addedOn": "2026-11-17",
+      "reviewBy": "2027-01-31"
+    }
+  ]
+}

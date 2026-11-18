@@ -2,53 +2,70 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { Cliente, TipoPersona } from '../interfaces/modelos';
 
-@Injectable({
-  providedIn: 'root',
-})
+export interface ValidacionDocumento {
+  documento: string;
+  documentoFormateado: string;
+  tipoPersona: TipoPersona;
+  tipoDocumento: string;
+  esValida: boolean;
+  existe: boolean;
+  nombreCliente: string | null;
+  fuente: string;
+  mensaje: string;
+}
+
+/** Campos que la API acepta para un cliente (método de pago simulado: marca + 4 dígitos). */
+export type ClienteRequest = Omit<Cliente, 'id'>;
+
+@Injectable({ providedIn: 'root' })
 export class ClienteService {
   private readonly apiUrl = `${environment.apiBaseUrl}/api/Clientes`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
-  getClientes(): Observable<any> {
-    return this.http.get(this.apiUrl);
+  getClientes(): Observable<Cliente[]> {
+    return this.http.get<Cliente[]>(this.apiUrl);
   }
 
-  getCliente(id: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/${id}`);
+  getCliente(id: number): Observable<Cliente> {
+    return this.http.get<Cliente>(`${this.apiUrl}/${id}`);
   }
 
-  crearCliente(cliente: any): Observable<any> {
-    return this.http.post(this.apiUrl, cliente);
+  crearCliente(cliente: Cliente): Observable<Cliente> {
+    return this.http.post<Cliente>(this.apiUrl, ClienteService.cuerpo(cliente));
   }
 
-  actualizarCliente(cliente: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${cliente.id}`, cliente);
+  actualizarCliente(cliente: Cliente): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${cliente.id}`, ClienteService.cuerpo(cliente));
   }
 
-  eliminarCliente(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+  eliminarCliente(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  validarDocumento(
-    documento: string,
-    tipoPersona: string,
-    idCliente?: number
-  ): Observable<any> {
+  validarDocumento(documento: string, tipoPersona: TipoPersona, idCliente?: number): Observable<ValidacionDocumento> {
     let params = new HttpParams().set('tipoPersona', tipoPersona);
-
     if (idCliente) {
       params = params.set('idCliente', idCliente);
     }
-
-    return this.http.get(
-      `${this.apiUrl}/validar-documento/${documento}`,
-      { params }
-    );
+    return this.http.get<ValidacionDocumento>(`${this.apiUrl}/validar-documento/${encodeURIComponent(documento)}`, { params });
   }
 
-  validarCedula(cedula: string, idCliente?: number): Observable<any> {
-    return this.validarDocumento(cedula, 'Fisica', idCliente);
+  /**
+   * Lista blanca de campos enviados: aunque el objeto del formulario tuviera propiedades
+   * adicionales (p. ej. restos de versiones anteriores), nunca viajan a la API.
+   */
+  static cuerpo(cliente: Cliente): ClienteRequest {
+    return {
+      nombre: cliente.nombre,
+      cedula: cliente.cedula,
+      tipoPersona: cliente.tipoPersona,
+      limiteCredito: Number(cliente.limiteCredito) || 0,
+      estado: cliente.estado,
+      tipoTarjeta: cliente.tipoTarjeta || null,
+      ultimosDigitosTarjeta: cliente.ultimosDigitosTarjeta || null,
+    };
   }
 }

@@ -1,943 +1,281 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
-import { RentaService } from '../../services/renta.service';
-import { VehiculoService } from '../../services/vehiculo.service';
+import { Catalogo, Cliente, Modelo, Renta, Vehiculo, estadoOperativo } from '../../interfaces/modelos';
 import { ClienteService } from '../../services/cliente.service';
-import { EmpleadoService } from '../../services/empleado.service';
 import { MarcaService } from '../../services/marca.service';
 import { ModeloService } from '../../services/modelo.service';
+import { RentaService } from '../../services/renta.service';
+import { VehiculoService } from '../../services/vehiculo.service';
+import { confirmar, mensajeError, notificar } from '../../shared/alertas';
+import { cargarLogoBase64, generarContratoPdf, nombreArchivoContrato } from '../../shared/contrato-pdf';
+import { fechaLocalISO, formatearFecha } from '../../shared/fechas';
+import { Desglose, calcularDesglose, desgloseRenta } from '../../shared/montos';
 
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+export interface FormularioRenta {
+  idVehiculo: number | null;
+  idCliente: number | null;
+  fechaRenta: string;
+  montoXDia: number | null;
+  cantidadDias: number | null;
+  comentario: string;
+}
 
+export const DIAS_MAXIMOS = 365;
+export const TARIFA_MAXIMA = 1_000_000;
+
+/**
+ * Rentas y devoluciones (Admin y Empleado).
+ *
+ * - Solo consulta endpoints permitidos a ambos roles: rentas, vehículos, clientes, marcas y
+ *   modelos. El nombre del empleado responsable llega en cada renta (`nombreEmpleado`), por lo
+ *   que no se consulta el listado administrativo de empleados (403 para Empleado).
+ * - No envía `idEmpleado`: la API atribuye la renta al empleado autenticado (JWT).
+ * - Los importes mostrados en el formulario son una vista previa con la misma fórmula que el
+ *   servidor; los valores definitivos son los que devuelve la API.
+ */
 @Component({
   selector: 'app-rentas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, CurrencyPipe],
   templateUrl: './rentas.html',
-  styleUrl: './rentas.css'
+  styleUrl: './rentas.css',
 })
 export class Rentas implements OnInit {
-  private readonly tasaItbis = 0.18;
+  private readonly rentaService = inject(RentaService);
+  private readonly vehiculoService = inject(VehiculoService);
+  private readonly clienteService = inject(ClienteService);
+  private readonly marcaService = inject(MarcaService);
+  private readonly modeloService = inject(ModeloService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  rentas: any[] = [];
-  vehiculos: any[] = [];
-  vehiculosDisponibles: any[] = [];
-  clientes: any[] = [];
-  empleados: any[] = [];
-  marcas: any[] = [];
-  modelos: any[] = [];
+  readonly diasMaximos = DIAS_MAXIMOS;
+
+  rentas: Renta[] = [];
+  vehiculos: Vehiculo[] = [];
+  vehiculosDisponibles: Vehiculo[] = [];
+  clientes: Cliente[] = [];
+  clientesActivos: Cliente[] = [];
+  marcas: Catalogo[] = [];
+  modelos: Modelo[] = [];
 
   mostrarFormulario = false;
+  cargando = true;
+  errorCarga = '';
+  guardando = false;
+  /** Rentas con una devolución o un PDF en curso (evita doble procesamiento por doble clic). */
+  readonly procesando = new Set<number>();
 
-  nuevaRenta: any = this.crearRentaVacia();
-
-  empresa = {
-    nombre: 'RentCarRD',
-    subtitulo: 'Alquiler de Vehículos',
-    rnc: '1-31-98765-4',
-    direccion:
-      'Av. Winston Churchill #45, Santo Domingo, República Dominicana',
-    telefono: '(809) 555-2026',
-    correo: 'info@rentcarrd.com'
-  };
-
-  constructor(
-    private rentaService: RentaService,
-    private vehiculoService: VehiculoService,
-    private clienteService: ClienteService,
-    private empleadoService: EmpleadoService,
-    private marcaService: MarcaService,
-    private modeloService: ModeloService,
-    private cdr: ChangeDetectorRef
-  ) {}
+  nuevaRenta: FormularioRenta = this.crearRentaVacia();
 
   ngOnInit(): void {
-    setTimeout(() => this.cargarDatos(), 0);
+    this.cargarDatos();
   }
 
-  obtenerIdEmpleadoActual(): number {
-    if (
-      typeof window === 'undefined' ||
-      typeof localStorage === 'undefined'
-    ) {
-      return 1;
-    }
-
-    return Number(localStorage.getItem('idEmpleado') || 1);
-  }
-
-  obtenerNombreUsuarioActual(): string {
-    if (
-      typeof window === 'undefined' ||
-      typeof localStorage === 'undefined'
-    ) {
-      return 'Administrador General';
-    }
-
-    return (
-      localStorage.getItem('nombreUsuario') ||
-      'Administrador General'
-    );
-  }
-
-  crearRentaVacia(): any {
+  crearRentaVacia(): FormularioRenta {
     return {
-      idEmpleado: this.obtenerIdEmpleadoActual(),
-      idVehiculo: 0,
-      idCliente: 0,
-      fechaRenta: new Date().toISOString().split('T')[0],
-      fechaDevolucion: null,
-      montoXDia: 0,
+      idVehiculo: null,
+      idCliente: null,
+      fechaRenta: fechaLocalISO(),
+      montoXDia: null,
       cantidadDias: 1,
-      subtotal: 0,
-      itbis: 0,
-      total: 0,
       comentario: '',
-      estado: 'Activa'
     };
   }
 
   cargarDatos(): void {
+    this.cargando = true;
+    this.errorCarga = '';
     forkJoin({
       rentas: this.rentaService.getRentas(),
       vehiculos: this.vehiculoService.getVehiculos(),
       clientes: this.clienteService.getClientes(),
-      empleados: this.empleadoService.getEmpleados(),
       marcas: this.marcaService.getMarcas(),
-      modelos: this.modeloService.getModelos()
+      modelos: this.modeloService.getModelos(),
     }).subscribe({
-      next: ({
-        rentas,
-        vehiculos,
-        clientes,
-        empleados,
-        marcas,
-        modelos
-      }: any) => {
+      next: ({ rentas, vehiculos, clientes, marcas, modelos }) => {
         this.rentas = [...rentas];
         this.vehiculos = [...vehiculos];
         this.clientes = [...clientes];
-        this.empleados = [...empleados];
+        this.clientesActivos = clientes.filter((cliente) => cliente.estado);
         this.marcas = [...marcas];
         this.modelos = [...modelos];
 
-        const idsVehiculosRentados = new Set(
-          this.rentas.map((renta: any) =>
-            Number(renta.idVehiculo)
-          )
+        // Regla académica: un vehículo que ya tuvo una renta no vuelve a ofrecerse.
+        const vehiculosConRenta = new Set(rentas.map((renta) => renta.idVehiculo));
+        this.vehiculosDisponibles = vehiculos.filter(
+          (vehiculo) => estadoOperativo(vehiculo) === 'Disponible' && !vehiculosConRenta.has(Number(vehiculo.id)),
         );
 
-        this.vehiculosDisponibles =
-          this.vehiculos.filter((vehiculo: any) =>
-            this.obtenerEstadoOperacionVehiculo(vehiculo) ===
-              'Disponible' &&
-            !idsVehiculosRentados.has(Number(vehiculo.id))
-          );
-
-        this.cdr.detectChanges();
+        this.cargando = false;
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error(
-          'Error cargando datos de rentas',
-          err
-        );
-      }
+      error: (error: unknown) => {
+        this.cargando = false;
+        this.errorCarga = mensajeError(error, 'No se pudieron cargar los datos de rentas.');
+        this.cdr.markForCheck();
+      },
     });
   }
 
-  obtenerVehiculoRenta(renta: any): any | null {
-    const idVehiculo = Number(
-      renta?.idVehiculo ??
-      renta?.idvehiculo ??
-      renta?.vehiculo?.id ??
-      renta?.idVehiculoNavigation?.id ??
-      0
-    );
+  abrirFormulario(): void {
+    this.nuevaRenta = this.crearRentaVacia();
+    this.mostrarFormulario = true;
+  }
 
-    if (idVehiculo <= 0) {
-      return (
-        renta?.vehiculo ??
-        renta?.idVehiculoNavigation ??
-        null
-      );
+  /** Devuelve el mensaje de validación o null si la renta puede enviarse. */
+  validarFormulario(): string | null {
+    const { idVehiculo, idCliente, montoXDia, cantidadDias, fechaRenta } = this.nuevaRenta;
+    if (!idVehiculo || !idCliente) return 'Selecciona un vehículo y un cliente válidos.';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaRenta ?? '')) return 'Indica una fecha de renta válida.';
+
+    const monto = Number(montoXDia);
+    const dias = Number(cantidadDias);
+    if (!Number.isFinite(monto) || monto <= 0 || monto > TARIFA_MAXIMA) {
+      return 'La tarifa por día debe ser mayor que cero y no superar RD$ 1,000,000.';
     }
+    if (!Number.isInteger(dias) || dias < 1 || dias > DIAS_MAXIMOS) {
+      return `La cantidad de días debe ser un número entero entre 1 y ${DIAS_MAXIMOS}.`;
+    }
+    if ((this.nuevaRenta.comentario ?? '').length > 1000) return 'El comentario no puede superar 1000 caracteres.';
 
-    return (
-      this.vehiculos.find(
-        (vehiculo: any) =>
-          Number(vehiculo.id) === idVehiculo
-      ) ??
-      renta?.vehiculo ??
-      renta?.idVehiculoNavigation ??
-      null
-    );
+    if (!this.vehiculosDisponibles.some((vehiculo) => vehiculo.id === idVehiculo)) {
+      return 'El vehículo seleccionado ya no está disponible para renta.';
+    }
+    return null;
   }
 
   guardarRenta(): void {
-    const idVehiculo = Number(
-      this.nuevaRenta.idVehiculo
-    );
+    if (this.guardando) return;
 
-    const idCliente = Number(
-      this.nuevaRenta.idCliente
-    );
-
-    const montoPorDia = Number(
-      this.nuevaRenta.montoXDia
-    );
-
-    const cantidadDias = Number(
-      this.nuevaRenta.cantidadDias
-    );
-
-    if (idVehiculo <= 0 || idCliente <= 0) {
-      alert(
-        'Selecciona un vehículo y un cliente válidos.'
-      );
+    const error = this.validarFormulario();
+    if (error) {
+      void notificar(error, 'warning');
       return;
     }
 
-    if (montoPorDia <= 0 || cantidadDias <= 0) {
-      alert(
-        'El monto por día y la cantidad de días deben ser mayores que cero.'
-      );
-      return;
-    }
-
-    const vehiculoSeleccionado =
-      this.vehiculos.find((vehiculo: any) =>
-        Number(vehiculo.id) === idVehiculo
-      );
-
-    if (!vehiculoSeleccionado) {
-      alert(
-        'No se encontró el vehículo seleccionado.'
-      );
-      return;
-    }
-
-    const fueRentadoAnteriormente =
-      this.rentas.some((renta: any) =>
-        Number(renta.idVehiculo) === idVehiculo
-      );
-
-    if (fueRentadoAnteriormente) {
-      alert(
-        'Este vehículo ya fue rentado anteriormente y no puede volver a rentarse.'
-      );
-
-      this.nuevaRenta.idVehiculo = 0;
-      return;
-    }
-
-    if (
-      this.obtenerEstadoOperacionVehiculo(
-        vehiculoSeleccionado
-      ) !== 'Disponible'
-    ) {
-      alert(
-        'Este vehículo no está disponible para renta.'
-      );
-      return;
-    }
-
-    const subtotal = this.calcularSubtotalValores(
-      montoPorDia,
-      cantidadDias
-    );
-
-    const itbis = this.calcularItbisValor(subtotal);
-    const total = subtotal + itbis;
-
-    const rentaEnviar = {
-      idEmpleado: this.obtenerIdEmpleadoActual(),
-      idVehiculo,
-      idCliente,
-      fechaRenta: this.nuevaRenta.fechaRenta,
-      fechaDevolucion: null,
-      montoXDia: montoPorDia,
-      cantidadDias,
-      subtotal,
-      itbis,
-      total,
-      comentario:
-        this.nuevaRenta.comentario?.trim() || '',
-      estado: 'Activa'
-    };
-
-    this.rentaService.crearRenta(rentaEnviar).subscribe({
-      next: () => {
-        alert('Renta registrada con éxito.');
-
-        this.cancelarFormulario();
-        this.cargarDatos();
-      },
-      error: (err: any) => {
-        console.error(
-          'Error al registrar la renta',
-          err
-        );
-
-        const mensaje =
-          typeof err.error === 'string'
-            ? err.error
-            : err.error?.message ||
-              'Ocurrió un error al registrar la renta.';
-
-        alert(mensaje);
-        this.cargarDatos();
-      }
-    });
+    this.guardando = true;
+    this.rentaService
+      .crearRenta({
+        idVehiculo: Number(this.nuevaRenta.idVehiculo),
+        idCliente: Number(this.nuevaRenta.idCliente),
+        fechaRenta: this.nuevaRenta.fechaRenta,
+        montoXDia: Number(this.nuevaRenta.montoXDia),
+        cantidadDias: Number(this.nuevaRenta.cantidadDias),
+        comentario: this.nuevaRenta.comentario?.trim() ?? '',
+      })
+      .subscribe({
+        next: (renta) => {
+          this.guardando = false;
+          void notificar(`Renta #${renta.noRenta} registrada correctamente.`, 'success');
+          this.cancelarFormulario();
+          this.cargarDatos();
+        },
+        error: (err: unknown) => {
+          this.guardando = false;
+          void notificar(mensajeError(err, 'Ocurrió un error al registrar la renta.'), 'error');
+          // Otro usuario pudo haber rentado el vehículo: se refresca la disponibilidad.
+          this.cargarDatos();
+        },
+      });
   }
 
-  devolverVehiculo(id: number): void {
-    const renta = this.rentas.find((item: any) =>
-      Number(item.noRenta) === Number(id)
+  async devolverVehiculo(renta: Renta): Promise<void> {
+    if (renta.estado === 'Concluida') {
+      void notificar('Esta renta ya fue concluida.', 'info');
+      return;
+    }
+    if (this.procesando.has(renta.noRenta)) return;
+
+    const vehiculo = this.obtenerVehiculoRenta(renta);
+    const confirmado = await confirmar(
+      `Se registrará hoy como fecha real de devolución de la renta #${renta.noRenta}` +
+        (vehiculo ? ` (${vehiculo.descripcion}, placa ${vehiculo.noPlaca})` : '') +
+        '. Por la regla académica, el vehículo no podrá volver a rentarse.',
+      { titulo: '¿Procesar devolución?', textoConfirmar: 'Procesar devolución' },
     );
+    if (!confirmado || this.procesando.has(renta.noRenta)) return;
 
-    if (!renta) {
-      alert(
-        'No se encontró la renta seleccionada.'
-      );
-      return;
-    }
-
-    if (
-      String(renta.estado)
-        .trim()
-        .toLowerCase() === 'concluida'
-    ) {
-      alert('Esta renta ya fue concluida.');
-      return;
-    }
-
-    const confirmar = confirm(
-      '¿Deseas procesar la devolución?\n\n' +
-      'El vehículo quedará fuera de futuras rentas.'
-    );
-
-    if (!confirmar) {
-      return;
-    }
-
-    this.rentaService.devolverRenta(id).subscribe({
-      next: () => {
-        alert(
-          'Vehículo devuelto correctamente. La renta quedó concluida y el vehículo no podrá rentarse nuevamente.'
+    this.procesando.add(renta.noRenta);
+    this.rentaService.devolverRenta(renta.noRenta).subscribe({
+      next: (respuesta) => {
+        this.procesando.delete(renta.noRenta);
+        void notificar(
+          `Vehículo devuelto correctamente el ${formatearFecha(respuesta.fechaDevolucion)}. La renta quedó concluida.`,
+          'success',
         );
-
         this.cargarDatos();
       },
-      error: (err: any) => {
-        console.error(
-          'Error al procesar la devolución',
-          err
-        );
-
-        const mensaje =
-          typeof err.error === 'string'
-            ? err.error
-            : err.error?.message ||
-              'No fue posible procesar la devolución.';
-
-        alert(mensaje);
-      }
+      error: (err: unknown) => {
+        this.procesando.delete(renta.noRenta);
+        void notificar(mensajeError(err, 'No fue posible procesar la devolución.'), 'error');
+        this.cargarDatos();
+      },
     });
   }
 
   cancelarFormulario(): void {
     this.mostrarFormulario = false;
     this.nuevaRenta = this.crearRentaVacia();
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
-  vehiculoDisponible(idVehiculo: number): boolean {
-    const vehiculo = this.vehiculos.find(
-      (item: any) =>
-        Number(item.id) === Number(idVehiculo)
-    );
-
-    return (
-      this.obtenerEstadoOperacionVehiculo(vehiculo) ===
-      'Disponible'
-    );
+  obtenerVehiculoRenta(renta: Pick<Renta, 'idVehiculo'>): Vehiculo | undefined {
+    return this.vehiculos.find((vehiculo) => vehiculo.id === renta.idVehiculo);
   }
 
-  obtenerEstadoOperacionVehiculo(
-    vehiculo: any
-  ): string {
-    const estado = String(
-      vehiculo?.estadoOperacion ?? ''
-    ).trim();
+  obtenerNombreCliente(idCliente: number): string {
+    return this.clientes.find((cliente) => cliente.id === idCliente)?.nombre ?? `Cliente #${idCliente}`;
+  }
 
-    if (
-      estado === 'Disponible' ||
-      estado === 'Rentado' ||
-      estado === 'NoDisponible'
-    ) {
-      return estado;
+  obtenerNombreMarca(idMarca: number | null | undefined): string {
+    return this.marcas.find((marca) => marca.id === Number(idMarca))?.descripcion ?? 'N/A';
+  }
+
+  obtenerNombreModelo(idModelo: number | null | undefined): string {
+    return this.modelos.find((modelo) => modelo.id === Number(idModelo))?.descripcion ?? 'N/A';
+  }
+
+  /** Vista previa del formulario (misma fórmula y redondeo que la API). */
+  get desgloseFormulario(): Desglose {
+    return calcularDesglose(this.nuevaRenta.montoXDia, this.nuevaRenta.cantidadDias);
+  }
+
+  /** Importes persistidos de una renta registrada. */
+  desglose(renta: Renta): Desglose {
+    return desgloseRenta(renta);
+  }
+
+  fecha(valor: string | null | undefined, vacio = 'Pendiente'): string {
+    return formatearFecha(valor, vacio);
+  }
+
+  /** Atrasada: activa y con la fecha prevista ya vencida (solo informativo). */
+  estaAtrasada(renta: Renta): boolean {
+    return renta.estado === 'Activa' && !!renta.fechaDevolucionPrevista && renta.fechaDevolucionPrevista.slice(0, 10) < fechaLocalISO();
+  }
+
+  async imprimirContrato(renta: Renta): Promise<void> {
+    if (this.procesando.has(renta.noRenta)) return;
+    this.procesando.add(renta.noRenta);
+    try {
+      const vehiculo = this.obtenerVehiculoRenta(renta);
+      const doc = generarContratoPdf({
+        renta,
+        cliente: this.clientes.find((cliente) => cliente.id === renta.idCliente),
+        vehiculo,
+        marca: this.obtenerNombreMarca(vehiculo?.idMarca),
+        modelo: this.obtenerNombreModelo(vehiculo?.idModelo),
+        logoBase64: await cargarLogoBase64(),
+      });
+      doc.save(nombreArchivoContrato(renta.noRenta));
+    } catch {
+      void notificar('No se pudo generar el contrato en PDF.', 'error');
+    } finally {
+      this.procesando.delete(renta.noRenta);
+      this.cdr.markForCheck();
     }
-
-    return vehiculo?.estado === true
-      ? 'Disponible'
-      : 'Rentado';
-  }
-
-  formatearFecha(
-    fecha: string | Date | null | undefined
-  ): string {
-    if (!fecha) {
-      return 'Pendiente';
-    }
-
-    const valor = new Date(fecha);
-
-    if (Number.isNaN(valor.getTime())) {
-      return 'Pendiente';
-    }
-
-    return valor.toLocaleDateString('es-DO');
-  }
-
-  obtenerMontoDia(renta: any): number {
-    return Number(
-      renta?.montoXDia ??
-      renta?.montoXdia ??
-      0
-    );
-  }
-
-  calcularSubtotalValores(
-    montoXDia: number,
-    cantidadDias: number
-  ): number {
-    return Number(montoXDia || 0) *
-      Number(cantidadDias || 0);
-  }
-
-  calcularItbisValor(subtotal: number): number {
-    return Number(
-      (Number(subtotal || 0) * this.tasaItbis)
-        .toFixed(2)
-    );
-  }
-
-  obtenerSubtotal(renta: any): number {
-    const subtotalGuardado = Number(
-      renta?.subtotal ?? 0
-    );
-
-    if (subtotalGuardado > 0) {
-      return subtotalGuardado;
-    }
-
-    return this.calcularSubtotalValores(
-      this.obtenerMontoDia(renta),
-      Number(renta?.cantidadDias ?? 0)
-    );
-  }
-
-  obtenerItbis(renta: any): number {
-    const itbisGuardado = Number(
-      renta?.itbis ?? 0
-    );
-
-    if (itbisGuardado > 0) {
-      return itbisGuardado;
-    }
-
-    return this.calcularItbisValor(
-      this.obtenerSubtotal(renta)
-    );
-  }
-
- obtenerTotal(renta: any): number {
-  const subtotal = this.obtenerSubtotal(renta);
-  const itbis = this.obtenerItbis(renta);
-  const totalCalculado = subtotal + itbis;
-
-  const totalGuardado = Number(
-    renta?.total ?? 0
-  );
-
-  const tieneDesglosePersistido =
-    Number(renta?.subtotal ?? 0) > 0 &&
-    Number(renta?.itbis ?? 0) > 0;
-
-  if (
-    tieneDesglosePersistido &&
-    totalGuardado >= totalCalculado
-  ) {
-    return totalGuardado;
-  }
-
-  return Number(totalCalculado.toFixed(2));
-}
-
-  obtenerSubtotalFormulario(): number {
-    return this.calcularSubtotalValores(
-      Number(this.nuevaRenta.montoXDia || 0),
-      Number(this.nuevaRenta.cantidadDias || 0)
-    );
-  }
-
-  obtenerItbisFormulario(): number {
-    return this.calcularItbisValor(
-      this.obtenerSubtotalFormulario()
-    );
-  }
-
-  obtenerTotalFormulario(): number {
-    return (
-      this.obtenerSubtotalFormulario() +
-      this.obtenerItbisFormulario()
-    );
-  }
-
-  formatoRD(valor: number): string {
-    return `RD$ ${Number(valor || 0)
-      .toLocaleString('es-DO', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })}`;
-  }
-
-  obtenerNombreMarca(idMarca: number): string {
-    const marca = this.marcas.find(
-      (item: any) =>
-        Number(item.id) === Number(idMarca)
-    );
-
-    return marca ? marca.descripcion : 'N/A';
-  }
-
-  obtenerNombreModelo(idModelo: number): string {
-    const modelo = this.modelos.find(
-      (item: any) =>
-        Number(item.id) === Number(idModelo)
-    );
-
-    return modelo ? modelo.descripcion : 'N/A';
-  }
-
-  obtenerEmpleadoDeRenta(renta: any): string {
-    const idEmpleadoRenta = Number(
-      renta.idEmpleado ??
-      renta.idempleado ??
-      renta.idEmpleadoNavigation?.id ??
-      renta.empleado?.id ??
-      0
-    );
-
-    const empleado = this.empleados.find(
-      (item: any) =>
-        Number(item.id) === idEmpleadoRenta ||
-        Number(item.idEmpleado) === idEmpleadoRenta
-    );
-
-    return (
-      empleado?.nombre ||
-      renta.empleado?.nombre ||
-      renta.idEmpleadoNavigation?.nombre ||
-      this.obtenerNombreUsuarioActual()
-    );
-  }
-
-  cargarLogoBase64(): Promise<string | null> {
-    return fetch('images/logo-rentcarrd.png')
-      .then((response) => response.blob())
-      .then(
-        (blob) =>
-          new Promise<string>((resolve) => {
-            const reader = new FileReader();
-
-            reader.onloadend = () =>
-              resolve(reader.result as string);
-
-            reader.readAsDataURL(blob);
-          })
-      )
-      .catch(() => null);
-  }
-
-  imprimirFactura(noRenta: number): void {
-    forkJoin({
-      rentas: this.rentaService.getRentas(),
-      vehiculos: this.vehiculoService.getVehiculos(),
-      clientes: this.clienteService.getClientes(),
-      empleados: this.empleadoService.getEmpleados(),
-      marcas: this.marcaService.getMarcas(),
-      modelos: this.modeloService.getModelos()
-    }).subscribe({
-      next: async ({
-        rentas,
-        vehiculos,
-        clientes,
-        empleados,
-        marcas,
-        modelos
-      }: any) => {
-        this.rentas = [...rentas];
-        this.vehiculos = [...vehiculos];
-        this.clientes = [...clientes];
-        this.empleados = [...empleados];
-        this.marcas = [...marcas];
-        this.modelos = [...modelos];
-
-        const renta = this.rentas.find(
-          (item: any) =>
-            Number(item.noRenta) === Number(noRenta)
-        );
-
-        if (!renta) {
-          alert('No se encontró la renta.');
-          return;
-        }
-
-        const cliente = this.clientes.find(
-          (item: any) =>
-            Number(item.id) ===
-            Number(renta.idCliente)
-        );
-
-        const vehiculo = this.vehiculos.find(
-          (item: any) =>
-            Number(item.id) ===
-            Number(renta.idVehiculo)
-        );
-
-        const nombreRepresentante =
-          this.obtenerEmpleadoDeRenta(renta);
-
-        const marca = vehiculo
-          ? this.obtenerNombreMarca(vehiculo.idMarca)
-          : 'N/A';
-
-        const modelo = vehiculo
-          ? this.obtenerNombreModelo(
-              vehiculo.idModelo
-            )
-          : 'N/A';
-
-        const montoDiario =
-          this.obtenerMontoDia(renta);
-
-        const dias = Number(
-          renta.cantidadDias ?? 0
-        );
-
-        const subtotal =
-          this.obtenerSubtotal(renta);
-
-        const itbis =
-          this.obtenerItbis(renta);
-
-        const total =
-          this.obtenerTotal(renta);
-
-        const limiteCredito = Number(
-          cliente?.limiteCredito ?? 0
-        );
-
-        const logoBase64 =
-          await this.cargarLogoBase64();
-
-        const doc = new jsPDF();
-
-        if (logoBase64) {
-          doc.addImage(
-            logoBase64,
-            'PNG',
-            14,
-            10,
-            28,
-            28
-          );
-        }
-
-        doc.setFontSize(20);
-        doc.setTextColor(25, 66, 120);
-        doc.text(this.empresa.nombre, 48, 18);
-
-        doc.setFontSize(10);
-        doc.setTextColor(90, 90, 90);
-        doc.text(this.empresa.subtitulo, 48, 24);
-        doc.text(`RNC: ${this.empresa.rnc}`, 48, 30);
-        doc.text(this.empresa.direccion, 48, 36);
-
-        doc.setFontSize(9);
-        doc.text(
-          `Tel.: ${this.empresa.telefono}`,
-          145,
-          24
-        );
-
-        doc.text(
-          `Correo: ${this.empresa.correo}`,
-          145,
-          30
-        );
-
-        doc.setDrawColor(25, 66, 120);
-        doc.setLineWidth(0.8);
-        doc.line(14, 44, 196, 44);
-
-        doc.setFontSize(16);
-        doc.setTextColor(0, 0, 0);
-
-        doc.text(
-          'Contrato de Renta de Vehículo',
-          105,
-          55,
-          { align: 'center' }
-        );
-
-        autoTable(doc, {
-          startY: 62,
-          theme: 'grid',
-          styles: {
-            fontSize: 9
-          },
-          headStyles: {
-            fillColor: [25, 66, 120],
-            textColor: 255
-          },
-          head: [[
-            'No. Factura',
-            'Fecha Renta',
-            'Fecha Devolución',
-            'Estado',
-            'Empleado'
-          ]],
-          body: [[
-            `#${renta.noRenta}`,
-            this.formatearFecha(renta.fechaRenta),
-            this.formatearFecha(
-              renta.fechaDevolucion
-            ),
-            renta.estado,
-            nombreRepresentante
-          ]]
-        });
-
-        autoTable(doc, {
-          startY:
-            (doc as any).lastAutoTable.finalY + 8,
-          theme: 'grid',
-          styles: {
-            fontSize: 9,
-            cellPadding: 3
-          },
-          headStyles: {
-            fillColor: [33, 37, 41],
-            textColor: 255
-          },
-          head: [[
-            'Datos del Cliente',
-            'Datos del Vehículo'
-          ]],
-          body: [[
-            `Nombre: ${cliente?.nombre ?? 'N/A'}\n` +
-            `Cédula: ${cliente?.cedula ?? 'N/A'}\n` +
-            `Tipo Persona: ${
-              cliente?.tipoPersona ??
-              cliente?.TipoPersona ??
-              'Fisica'
-            }\n` +
-            `Límite de Crédito: ${
-              this.formatoRD(limiteCredito)
-            }`,
-
-            `Vehículo: ${
-              vehiculo?.descripcion ?? 'N/A'
-            }\n` +
-            `Marca: ${marca}\n` +
-            `Modelo: ${modelo}\n` +
-            `Placa: ${
-              vehiculo?.noPlaca ?? 'N/A'
-            }`
-          ]]
-        });
-
-        autoTable(doc, {
-          startY:
-            (doc as any).lastAutoTable.finalY + 10,
-          theme: 'striped',
-          styles: {
-            fontSize: 10
-          },
-          headStyles: {
-            fillColor: [25, 66, 120],
-            textColor: 255
-          },
-          head: [[
-            'Concepto',
-            'Cantidad',
-            'Tarifa por Día',
-            'Subtotal'
-          ]],
-          body: [[
-            'Renta de Vehículo',
-            `${dias} días`,
-            this.formatoRD(montoDiario),
-            this.formatoRD(subtotal)
-          ]]
-        });
-
-        const yResumen =
-          (doc as any).lastAutoTable.finalY + 10;
-
-        autoTable(doc, {
-          startY: yResumen,
-          margin: {
-            left: 110
-          },
-          tableWidth: 86,
-          theme: 'grid',
-          styles: {
-            fontSize: 10,
-            halign: 'right'
-          },
-          headStyles: {
-            fillColor: [33, 37, 41],
-            textColor: 255
-          },
-          body: [
-            [
-              'Subtotal',
-              this.formatoRD(subtotal)
-            ],
-            [
-              'ITBIS (18%)',
-              this.formatoRD(itbis)
-            ],
-            [
-              'TOTAL A PAGAR',
-              this.formatoRD(total)
-            ]
-          ],
-          columnStyles: {
-            0: {
-              fontStyle: 'bold',
-              halign: 'left'
-            },
-            1: {
-              halign: 'right'
-            }
-          },
-          didParseCell: (data: any) => {
-            if (data.row.index === 2) {
-              data.cell.styles.fillColor = [
-                39,
-                174,
-                96
-              ];
-
-              data.cell.styles.textColor = [
-                255,
-                255,
-                255
-              ];
-
-              data.cell.styles.fontStyle = 'bold';
-            }
-          }
-        });
-
-        const yFinal =
-          (doc as any).lastAutoTable.finalY;
-
-        if (renta.comentario) {
-          doc.setFontSize(9);
-          doc.setTextColor(80, 80, 80);
-
-          doc.text(
-            'Comentario:',
-            14,
-            yFinal + 12
-          );
-
-          doc.text(
-            String(renta.comentario),
-            14,
-            yFinal + 18
-          );
-        }
-
-        const yFirmas = Math.max(
-          yFinal + 42,
-          220
-        );
-
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(10);
-
-        doc.text(
-          '______________________________',
-          20,
-          yFirmas
-        );
-
-        doc.text(
-          'Firma del Cliente',
-          42,
-          yFirmas + 6
-        );
-
-        doc.text(
-          cliente?.nombre ?? 'Cliente',
-          42,
-          yFirmas + 12
-        );
-
-        doc.text(
-          '______________________________',
-          120,
-          yFirmas
-        );
-
-        doc.text(
-          'Firma del Representante',
-          138,
-          yFirmas + 6
-        );
-
-        doc.text(
-          nombreRepresentante,
-          137,
-          yFirmas + 12
-        );
-
-        doc.setFontSize(8);
-        doc.setTextColor(120, 120, 120);
-
-        doc.text(
-          `Generado por Francis Jairo Matías Rosario - RentCarRD | ${new Date().toLocaleString('es-DO')}`,
-          105,
-          285,
-          { align: 'center' }
-        );
-
-        doc.save(
-          `Contrato_Renta_${String(
-            renta.noRenta
-          ).padStart(3, '0')}.pdf`
-        );
-      },
-      error: (err: any) => {
-        console.error(
-          'Error generando factura',
-          err
-        );
-
-        alert(
-          'No se pudo generar la factura.'
-        );
-      }
-    });
   }
 }

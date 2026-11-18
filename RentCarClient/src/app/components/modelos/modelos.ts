@@ -1,185 +1,141 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ModeloService } from '../../services/modelo.service';
+import { Observable, forkJoin } from 'rxjs';
+import { Catalogo, Modelo } from '../../interfaces/modelos';
 import { MarcaService } from '../../services/marca.service';
+import { ModeloService } from '../../services/modelo.service';
+import { confirmar, mensajeError, notificar } from '../../shared/alertas';
 
-export interface Modelo {
-  id?: number;
-  idMarca: number;
-  descripcion: string;
-  estado: boolean;
-}
-
-export interface Marca {
-  id?: number;
-  descripcion: string;
-  estado: boolean;
-}
-
+/**
+ * Modelos de vehículo vinculados a una marca.
+ * Admin y Empleado los gestionan (permisos de v1.2); la API valida que la marca exista,
+ * que la descripción no se repita dentro de la marca y que no se elimine un modelo en uso.
+ */
 @Component({
   selector: 'app-modelos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './modelos.html',
-  styleUrl: './modelos.css'
+  styleUrl: './modelos.css',
 })
 export class ModelosComponent implements OnInit {
+  private readonly modeloService = inject(ModeloService);
+  private readonly marcaService = inject(MarcaService);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   listaModelos: Modelo[] = [];
-  listaMarcas: Marca[] = [];
+  listaMarcas: Catalogo[] = [];
   modeloActual: Modelo = this.crearModeloVacio();
   modoEdicion = false;
-
-  constructor(
-    private modeloService: ModeloService,
-    private marcaService: MarcaService,
-    private cdr: ChangeDetectorRef
-  ) {}
+  cargando = true;
+  guardando = false;
+  errorCarga = '';
 
   ngOnInit(): void {
-    setTimeout(() => {
-      this.cargarModelos();
-      this.cargarMarcas();
-    }, 0);
+    this.cargar();
+  }
+
+  /** Marcas activas para el selector (al editar se conserva la marca actual aunque esté inactiva). */
+  get marcasSeleccionables(): Catalogo[] {
+    return this.listaMarcas.filter((marca) => marca.estado || marca.id === this.modeloActual.idMarca);
+  }
+
+  cargar(): void {
+    this.cargando = true;
+    this.errorCarga = '';
+    forkJoin({ modelos: this.modeloService.getModelos(), marcas: this.marcaService.getMarcas() }).subscribe({
+      next: ({ modelos, marcas }) => {
+        this.listaModelos = [...modelos];
+        this.listaMarcas = [...marcas];
+        this.cargando = false;
+        this.cdr.markForCheck();
+      },
+      error: (error: unknown) => {
+        this.cargando = false;
+        this.errorCarga = mensajeError(error, 'No se pudieron cargar los modelos.');
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   crearModeloVacio(): Modelo {
-    return {
-      idMarca: 0,
-      descripcion: '',
-      estado: true
-    };
-  }
-
-  cargarModelos(): void {
-    this.modeloService.getModelos().subscribe({
-      next: (data: Modelo[]) => {
-        this.listaModelos = [...data];
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error al cargar modelos', err);
-        alert('No se pudieron cargar los modelos.');
-      }
-    });
-  }
-
-  cargarMarcas(): void {
-    this.marcaService.getMarcas().subscribe({
-      next: (data: Marca[]) => {
-        this.listaMarcas = data.filter(
-          (marca: Marca) => marca.estado
-        );
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error al cargar marcas', err);
-        alert('No se pudieron cargar las marcas.');
-      }
-    });
+    return { idMarca: null, descripcion: '', estado: true };
   }
 
   guardarModelo(): void {
-    const descripcion = this.modeloActual.descripcion?.trim();
+    const descripcion = this.modeloActual.descripcion?.trim() ?? '';
     const idMarca = Number(this.modeloActual.idMarca);
 
-    if (!descripcion || idMarca <= 0) {
-      alert(
-        'Por favor completa la descripción y selecciona una marca.'
-      );
+    if (!descripcion || !Number.isInteger(idMarca) || idMarca <= 0) {
+      void notificar('Completa la descripción y selecciona una marca.', 'warning');
       return;
     }
 
     const existeDuplicado = this.listaModelos.some(
-      (modelo: Modelo) =>
-        modelo.descripcion.trim().toLowerCase() ===
-          descripcion.toLowerCase() &&
+      (modelo) =>
+        modelo.descripcion?.trim().toLowerCase() === descripcion.toLowerCase() &&
         Number(modelo.idMarca) === idMarca &&
-        Number(modelo.id) !== Number(this.modeloActual.id)
+        modelo.id !== this.modeloActual.id,
     );
-
     if (existeDuplicado) {
-      alert(
-        'Ya existe un modelo con esa descripción para la marca seleccionada.'
-      );
+      void notificar('Ya existe un modelo con esa descripción para la marca seleccionada.', 'warning');
       return;
     }
 
-    const modeloEnviar: Modelo = {
-      ...this.modeloActual,
-      descripcion,
-      idMarca
-    };
+    if (this.guardando) return;
+    this.guardando = true;
 
-    if (this.modoEdicion && modeloEnviar.id) {
-      this.modeloService.actualizarModelo(modeloEnviar).subscribe({
-        next: () => {
-          alert('Modelo actualizado correctamente.');
-          this.cancelarEdicion();
-          this.cargarModelos();
-        },
-        error: (err: any) => {
-          console.error('Error al actualizar el modelo', err);
-          alert('No se pudo actualizar el modelo.');
-        }
-      });
+    const modelo: Modelo = { ...this.modeloActual, descripcion, idMarca };
+    const editando = this.modoEdicion && !!modelo.id;
+    const operacion: Observable<unknown> = editando ? this.modeloService.actualizarModelo(modelo) : this.modeloService.crearModelo(modelo);
 
-      return;
-    }
-
-    this.modeloService.createModelo(modeloEnviar).subscribe({
+    operacion.subscribe({
       next: () => {
-        alert('Modelo guardado con éxito.');
+        this.guardando = false;
+        void notificar(editando ? 'Modelo actualizado correctamente.' : 'Modelo guardado correctamente.', 'success');
         this.cancelarEdicion();
-        this.cargarModelos();
+        this.cargar();
       },
-      error: (err: any) => {
-        console.error('Error al guardar el modelo', err);
-        alert('No se pudo guardar el modelo.');
-      }
+      error: (error: unknown) => {
+        this.guardando = false;
+        void notificar(mensajeError(error, 'No se pudo guardar el modelo.'), 'error');
+        this.cdr.markForCheck();
+      },
     });
   }
 
   editarModelo(modelo: Modelo): void {
     this.modeloActual = { ...modelo };
     this.modoEdicion = true;
-    this.cdr.detectChanges();
   }
 
   cancelarEdicion(): void {
     this.modeloActual = this.crearModeloVacio();
     this.modoEdicion = false;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
   }
 
-  eliminarModelo(id: number | undefined): void {
-    if (!id) {
-      return;
-    }
+  async eliminarModelo(modelo: Modelo): Promise<void> {
+    if (!modelo.id) return;
 
-    if (!confirm('¿Estás seguro de eliminar este modelo?')) {
-      return;
-    }
+    const confirmado = await confirmar(`Se eliminará el modelo "${modelo.descripcion}". Esta acción no se puede deshacer.`, {
+      titulo: '¿Eliminar modelo?',
+      textoConfirmar: 'Eliminar',
+      peligroso: true,
+    });
+    if (!confirmado) return;
 
-    this.modeloService.deleteModelo(id).subscribe({
+    this.modeloService.eliminarModelo(modelo.id).subscribe({
       next: () => {
-        this.cargarModelos();
-        this.cdr.detectChanges();
+        void notificar('Modelo eliminado correctamente.', 'success');
+        this.cargar();
       },
-      error: (err: any) => {
-        console.error('Error al eliminar', err);
-        alert(
-          'No se pudo eliminar el modelo. Puede estar relacionado con un vehículo.'
-        );
-      }
+      error: (error: unknown) =>
+        void notificar(mensajeError(error, 'No se pudo eliminar el modelo. Puede estar relacionado con un vehículo.'), 'error'),
     });
   }
 
-  obtenerNombreMarca(idMarca: number): string {
-    const marca = this.listaMarcas.find(
-      (item: Marca) => Number(item.id) === Number(idMarca)
-    );
-
-    return marca ? marca.descripcion : 'N/A';
+  obtenerNombreMarca(idMarca: number | null): string {
+    return this.listaMarcas.find((marca) => marca.id === Number(idMarca))?.descripcion ?? 'N/A';
   }
 }

@@ -1,241 +1,162 @@
-<div class="container-fluid mt-4">
-  <!-- Encabezado -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
+<section class="container-fluid mt-4" aria-labelledby="reportes-titulo">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div>
-      <h2 class="fw-bold text-primary">📊 Reporte General de Rentas</h2>
-
-      <p class="text-muted mb-0">
-        Consulta, filtra y exporta la información financiera de las rentas.
-      </p>
+      <h1 class="h3 fw-bold text-primary" id="reportes-titulo">📊 Reporte General de Rentas</h1>
+      <p class="text-muted mb-0">Consulta, filtra y exporta los importes contratados de las rentas.</p>
     </div>
 
-    <div class="d-flex gap-2">
-      <button class="btn btn-outline-secondary" (click)="limpiarFiltros()">Limpiar filtros</button>
-
-      <button class="btn btn-danger" (click)="imprimirReporte()">📄 Exportar PDF</button>
-
-      <button class="btn btn-success" (click)="exportarExcel()">📗 Exportar Excel</button>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="limpiarFiltros()">Limpiar filtros</button>
+      <button type="button" class="btn btn-danger" (click)="imprimirReporte()" [disabled]="exportando || cargando">📄 Exportar PDF</button>
+      <button type="button" class="btn btn-success" (click)="exportarExcel()" [disabled]="exportando || cargando">📗 Exportar Excel</button>
     </div>
   </div>
 
-  <!-- Tarjetas -->
-
-  <div class="row mb-4">
-    <div class="col-md-2">
-      <div class="card shadow-sm border-0">
-        <div class="card-body text-center">
-          <h6 class="text-muted">Rentas</h6>
-
-          <h2 class="fw-bold">
-            {{ rentasFiltradas.length }}
-          </h2>
-        </div>
-      </div>
+  @if (errorCarga) {
+    <div class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+      <span>{{ errorCarga }}</span>
+      <button type="button" class="btn btn-sm btn-outline-danger" (click)="cargarDatos()">Reintentar</button>
     </div>
+  }
 
-    <div class="col-md-2">
-      <div class="card shadow-sm border-0">
-        <div class="card-body text-center">
-          <h6 class="text-muted">Activas</h6>
-
-          <h2 class="text-warning fw-bold">
-            {{ cantidadRentasActivas }}
-          </h2>
-        </div>
-      </div>
+  <div class="row g-3 mb-4" aria-live="polite">
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="card shadow-sm border-0 h-100"><div class="card-body text-center">
+        <h2 class="h6 text-muted">Rentas</h2>
+        <p class="h2 fw-bold mb-0">{{ resumen.cantidad }}</p>
+      </div></div>
     </div>
-
-    <div class="col-md-2">
-      <div class="card shadow-sm border-0">
-        <div class="card-body text-center">
-          <h6 class="text-muted">Concluidas</h6>
-
-          <h2 class="text-success fw-bold">
-            {{ cantidadRentasConcluidas }}
-          </h2>
-        </div>
-      </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="card shadow-sm border-0 h-100"><div class="card-body text-center">
+        <h2 class="h6 text-muted">Activas</h2>
+        <p class="h2 fw-bold mb-0 texto-ambar">{{ resumen.activas }}</p>
+      </div></div>
     </div>
-
-    <div class="col-md-2">
-      <div class="card shadow-sm border-0">
-        <div class="card-body text-center">
-          <h6 class="text-muted">Subtotal</h6>
-
-          <h5 class="fw-bold text-secondary">
-            {{ totalSubtotalGenerado | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
-          </h5>
-        </div>
-      </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="card shadow-sm border-0 h-100"><div class="card-body text-center">
+        <h2 class="h6 text-muted">Concluidas</h2>
+        <p class="h2 fw-bold mb-0 text-success">{{ resumen.concluidas }}</p>
+      </div></div>
     </div>
-
-    <div class="col-md-2">
-      <div class="card shadow-sm border-0">
-        <div class="card-body text-center">
-          <h6 class="text-muted">ITBIS (18%)</h6>
-
-          <h5 class="fw-bold text-warning">
-            {{ totalItbisGenerado | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
-          </h5>
-        </div>
-      </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="card shadow-sm border-0 h-100"><div class="card-body text-center">
+        <h2 class="h6 text-muted">Subtotal</h2>
+        <p class="h5 fw-bold mb-0 text-secondary">{{ resumen.subtotal | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</p>
+      </div></div>
     </div>
-
-    <div class="col-md-2">
-      <div class="card shadow-sm border-success">
-        <div class="card-body text-center">
-          <h6 class="text-success">Total General</h6>
-
-          <h4 class="fw-bold text-success">
-            {{ totalMontoGenerado | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
-          </h4>
-        </div>
-      </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="card shadow-sm border-0 h-100"><div class="card-body text-center">
+        <h2 class="h6 text-muted">ITBIS (18%)</h2>
+        <p class="h5 fw-bold mb-0 texto-ambar">{{ resumen.itbis | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</p>
+      </div></div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="card shadow-sm border-success h-100"><div class="card-body text-center">
+        <h2 class="h6 text-success">Total contratado</h2>
+        <p class="h4 fw-bold mb-0 text-success">{{ resumen.total | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</p>
+      </div></div>
     </div>
   </div>
 
-  <!-- Filtros -->
-
-  <div class="card shadow-sm mb-4">
+  <form class="card shadow-sm mb-4" (submit)="$event.preventDefault()" aria-labelledby="filtros-titulo">
     <div class="card-header bg-light">
-      <strong> 🔍 Filtros </strong>
+      <h2 class="h6 mb-0 fw-bold" id="filtros-titulo">🔍 Filtros</h2>
     </div>
-
     <div class="card-body">
       <div class="row g-3">
-        <div class="col-md-2">
-          <label class="form-label"> Desde </label>
-
-          <input type="date" class="form-control" [(ngModel)]="filtroFechaDesde" />
+        <div class="col-sm-6 col-md-2">
+          <label class="form-label" for="filtro-desde">Desde</label>
+          <input type="date" id="filtro-desde" name="desde" class="form-control" [(ngModel)]="filtros.desde" [class.is-invalid]="rangoInvalido" />
         </div>
-
-        <div class="col-md-2">
-          <label class="form-label"> Hasta </label>
-
-          <input type="date" class="form-control" [(ngModel)]="filtroFechaHasta" />
+        <div class="col-sm-6 col-md-2">
+          <label class="form-label" for="filtro-hasta">Hasta</label>
+          <input type="date" id="filtro-hasta" name="hasta" class="form-control" [(ngModel)]="filtros.hasta" [class.is-invalid]="rangoInvalido" aria-describedby="filtro-rango" />
         </div>
-
         <div class="col-md-3">
-          <label class="form-label"> Cliente </label>
-
-          <select class="form-select" [(ngModel)]="filtroCliente">
-            <option value="">Todos</option>
-
-            <option *ngFor="let c of clientes" [value]="c.id">
-              {{ c.nombre }}
-            </option>
+          <label class="form-label" for="filtro-cliente">Cliente</label>
+          <select id="filtro-cliente" name="idCliente" class="form-select" [(ngModel)]="filtros.idCliente">
+            <option [ngValue]="null">Todos</option>
+            @for (c of clientes; track c.id) {
+              <option [ngValue]="c.id">{{ c.nombre }}</option>
+            }
           </select>
         </div>
-
         <div class="col-md-3">
-          <label class="form-label"> Vehículo </label>
-
-          <select class="form-select" [(ngModel)]="filtroVehiculo">
-            <option value="">Todos</option>
-
-            <option *ngFor="let v of vehiculos" [value]="v.id">
-              {{ v.descripcion }}
-            </option>
+          <label class="form-label" for="filtro-vehiculo">Vehículo</label>
+          <select id="filtro-vehiculo" name="idVehiculo" class="form-select" [(ngModel)]="filtros.idVehiculo">
+            <option [ngValue]="null">Todos</option>
+            @for (v of vehiculos; track v.id) {
+              <option [ngValue]="v.id">{{ v.descripcion }} - {{ v.noPlaca }}</option>
+            }
           </select>
         </div>
-
         <div class="col-md-2">
-          <label class="form-label"> Estado </label>
-
-          <select class="form-select" [(ngModel)]="filtroEstado">
+          <label class="form-label" for="filtro-estado">Estado</label>
+          <select id="filtro-estado" name="estado" class="form-select" [(ngModel)]="filtros.estado">
             <option value="">Todos</option>
-
-            <option>Activa</option>
-
-            <option>Concluida</option>
+            <option value="Activa">Activa</option>
+            <option value="Concluida">Concluida</option>
           </select>
         </div>
       </div>
+      @if (rangoInvalido) {
+        <p id="filtro-rango" class="text-danger small fw-bold mt-2 mb-0" role="alert">La fecha "desde" no puede ser posterior a la fecha "hasta".</p>
+      }
     </div>
-  </div>
-
-  <!-- Tabla -->
+  </form>
 
   <div class="card shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
+        <caption class="visually-hidden">Rentas que cumplen los filtros</caption>
         <thead class="table-dark">
           <tr>
-            <th>#</th>
-
-            <th>Fecha</th>
-
-            <th>Cliente</th>
-
-            <th>Vehículo</th>
-
-            <th>Días</th>
-
-            <th>Tarifa</th>
-
-            <th>Subtotal</th>
-
-            <th>ITBIS (18%)</th>
-
-            <th>Total</th>
-
-            <th>Estado</th>
+            <th scope="col">#</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Dev. prevista</th>
+            <th scope="col">Dev. real</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Vehículo</th>
+            <th scope="col">Días</th>
+            <th scope="col">Tarifa</th>
+            <th scope="col">Subtotal</th>
+            <th scope="col">ITBIS (18%)</th>
+            <th scope="col">Total</th>
+            <th scope="col">Estado</th>
           </tr>
         </thead>
-
         <tbody>
-          <tr *ngFor="let r of rentasFiltradas">
-            <td>
-              {{ r.noRenta }}
-            </td>
-
-            <td>
-              {{ r.fechaRenta | date: 'dd/MM/yyyy' }}
-            </td>
-
-            <td>
-              {{ obtenerCliente(r.idCliente) }}
-            </td>
-
-            <td>
-              {{ obtenerVehiculo(r.idVehiculo) }}
-            </td>
-
-            <td>
-              {{ r.cantidadDias }}
-            </td>
-
-            <td>
-              {{ obtenerMontoDia(r) | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
-            </td>
-
-            <td class="fw-bold">
-              {{ obtenerSubtotal(r) | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
-            </td>
-
-            <td class="text-warning fw-bold">
-              {{ obtenerItbis(r) | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
-            </td>
-
-            <td class="text-success fw-bold">
-              {{ obtenerTotal(r) | currency: 'DOP' : 'RD$ ' : '1.2-2' }}
-            </td>
-
-            <td>
-              <span
-                class="badge"
-                [ngClass]="r.estado == 'Activa' ? 'bg-warning text-dark' : 'bg-success'"
-              >
-                {{ r.estado }}
-              </span>
-            </td>
-          </tr>
-
-          <tr *ngIf="rentasFiltradas.length == 0">
-            <td colspan="10" class="text-center py-5">No existen registros.</td>
-          </tr>
+          @if (cargando) {
+            <tr><td colspan="12" class="text-center py-5"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cargando…</td></tr>
+          } @else {
+            @for (r of rentasFiltradas; track r.noRenta) {
+              <tr>
+                <td>{{ r.noRenta }}</td>
+                <td>{{ fecha(r.fechaRenta, 'N/D') }}</td>
+                <td>{{ fecha(r.fechaDevolucionPrevista, 'N/D') }}</td>
+                <td>{{ fecha(r.fechaDevolucion) }}</td>
+                <td>{{ obtenerCliente(r.idCliente) }}</td>
+                <td>{{ obtenerVehiculo(r.idVehiculo) }}</td>
+                <td>{{ r.cantidadDias }}</td>
+                <td>{{ r.montoXDia | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</td>
+                <td class="fw-bold">{{ desglose(r).subtotal | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</td>
+                <td class="texto-ambar fw-bold">{{ desglose(r).itbis | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</td>
+                <td class="text-success fw-bold">{{ desglose(r).total | currency: 'DOP' : 'RD$ ' : '1.2-2' }}</td>
+                <td>
+                  <span class="badge" [class.bg-warning]="r.estado === 'Activa'" [class.text-dark]="r.estado === 'Activa'" [class.bg-success]="r.estado !== 'Activa'">{{ r.estado }}</span>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="12" class="text-center py-5 text-muted">No existen registros con los filtros seleccionados.</td></tr>
+            }
+          }
         </tbody>
       </table>
     </div>
   </div>
-</div>
+
+  <p class="small text-muted mt-3 mb-0">
+    Los importes son los pactados en cada contrato (subtotal + ITBIS académico del 18 %); RentCarRD no registra cobros.
+    {{ empresa.aviso }}
+  </p>
+</section>

@@ -1,6 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 
 import { VehiculoService } from '../../services/vehiculo.service';
 import { MarcaService } from '../../services/marca.service';
@@ -8,6 +9,9 @@ import { ModeloService } from '../../services/modelo.service';
 import { TipoVehiculoService } from '../../services/tipo-vehiculo.service';
 import { TipoCombustibleService } from '../../services/tipo-combustible.service';
 import { environment } from '../../../environments/environment';
+import { confirmar, mensajeError, notificar } from '../../shared/alertas';
+import { AuthService } from '../../services/auth.service';
+import { Catalogo, EstadoVehiculo, Modelo, Vehiculo, estadoOperativo } from '../../interfaces/modelos';
 
 @Component({
   selector: 'app-vehiculos',
@@ -18,12 +22,15 @@ import { environment } from '../../../environments/environment';
 })
 export class Vehiculos implements OnInit {
   readonly apiBaseUrl = environment.apiBaseUrl;
+  private readonly auth = inject(AuthService);
 
-  vehiculos: any[] = [];
-  marcas: any[] = [];
-  modelos: any[] = [];
-  tiposVehiculos: any[] = [];
-  tiposCombustibles: any[] = [];
+  vehiculos: Vehiculo[] = [];
+  marcas: Catalogo[] = [];
+  modelos: Modelo[] = [];
+  tiposVehiculos: Catalogo[] = [];
+  tiposCombustibles: Catalogo[] = [];
+  guardando = false;
+  cargando = true;
 
   mostrarFormulario = false;
   modoEdicion = false;
@@ -34,7 +41,7 @@ export class Vehiculos implements OnInit {
   terminoBusqueda = '';
   filtroEstado = 'todos';
 
-  nuevoVehiculo: any = this.crearVehiculoVacio();
+  nuevoVehiculo: Vehiculo = this.crearVehiculoVacio();
 
   constructor(
     private vehiculoService: VehiculoService,
@@ -45,8 +52,9 @@ export class Vehiculos implements OnInit {
     private cdr: ChangeDetectorRef
   ) {}
 
+  /** Rol tomado del JWT de la sesión (la API aplica la autorización real). */
   get rolActual(): string | null {
-    return localStorage.getItem('rolUsuario');
+    return this.auth.rol();
   }
 
   ngOnInit(): void {
@@ -56,9 +64,8 @@ export class Vehiculos implements OnInit {
     }, 0);
   }
 
-  crearVehiculoVacio(): any {
+  crearVehiculoVacio(): Vehiculo {
     return {
-      id: 0,
       descripcion: '',
       noPlaca: '',
       noChasis: '',
@@ -70,68 +77,63 @@ export class Vehiculos implements OnInit {
       idCombustible: null,
       estado: true,
       estadoOperacion: 'Disponible',
-      imagenUrl: ''
+      imagenUrl: null
     };
   }
 
   cargarCatalogos(): void {
     this.marcaService.getMarcas().subscribe({
-      next: (data: any[]) => {
+      next: (data) => {
         this.marcas = [...data];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error cargando marcas', err);
-      }
+      error: (err: unknown) => void notificar(mensajeError(err, 'No se pudieron cargar las marcas.'), 'error')
     });
 
     this.modeloService.getModelos().subscribe({
-      next: (data: any[]) => {
+      next: (data) => {
         this.modelos = [...data];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error cargando modelos', err);
-      }
+      error: (err: unknown) => void notificar(mensajeError(err, 'No se pudieron cargar los modelos.'), 'error')
     });
 
     this.tipoVehiculoService.getTipos().subscribe({
-      next: (data: any[]) => {
+      next: (data) => {
         this.tiposVehiculos = [...data];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error cargando tipos de vehículos', err);
-      }
+      error: (err: unknown) => void notificar(mensajeError(err, 'No se pudieron cargar los tipos de vehículo.'), 'error')
     });
 
     this.tipoCombustibleService.getCombustibles().subscribe({
-      next: (data: any[]) => {
+      next: (data) => {
         this.tiposCombustibles = [...data];
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error cargando combustibles', err);
-      }
+      error: (err: unknown) => void notificar(mensajeError(err, 'No se pudieron cargar los tipos de combustible.'), 'error')
     });
   }
 
   cargarVehiculos(): void {
     this.vehiculoService.getVehiculos().subscribe({
-      next: (data: any[]) => {
+      next: (data) => {
         this.vehiculos = [...data];
-        this.cdr.detectChanges();
+        this.cargando = false;
+        this.cdr.markForCheck();
       },
-      error: (err: any) => {
-        console.error('Error al cargar vehículos', err);
+      error: (err: unknown) => {
+        this.cargando = false;
+        void notificar(mensajeError(err, 'No se pudieron cargar los vehículos.'), 'error');
+        this.cdr.markForCheck();
       }
     });
   }
 
-  get vehiculosFiltrados(): any[] {
+  get vehiculosFiltrados(): Vehiculo[] {
     const termino = this.normalizarTexto(this.terminoBusqueda);
 
-    return this.vehiculos.filter((vehiculo: any) => {
+    return this.vehiculos.filter((vehiculo) => {
       const coincideEstado = this.coincideConEstado(vehiculo);
 
       if (!coincideEstado) {
@@ -159,7 +161,7 @@ export class Vehiculos implements OnInit {
         combustible,
         estado
       ]
-        .map((valor: any) => this.normalizarTexto(valor))
+        .map((valor) => this.normalizarTexto(valor))
         .join(' ');
 
       return contenidoBuscable.includes(termino);
@@ -168,19 +170,19 @@ export class Vehiculos implements OnInit {
 
   get cantidadDisponibles(): number {
     return this.vehiculos.filter(
-      (vehiculo: any) => this.obtenerEstadoOperacion(vehiculo) === 'Disponible'
+      (vehiculo) => this.obtenerEstadoOperacion(vehiculo) === 'Disponible'
     ).length;
   }
 
   get cantidadRentados(): number {
     return this.vehiculos.filter(
-      (vehiculo: any) => this.obtenerEstadoOperacion(vehiculo) === 'Rentado'
+      (vehiculo) => this.obtenerEstadoOperacion(vehiculo) === 'Rentado'
     ).length;
   }
 
   get cantidadNoDisponibles(): number {
     return this.vehiculos.filter(
-      (vehiculo: any) => this.obtenerEstadoOperacion(vehiculo) === 'NoDisponible'
+      (vehiculo) => this.obtenerEstadoOperacion(vehiculo) === 'NoDisponible'
     ).length;
   }
 
@@ -189,7 +191,7 @@ export class Vehiculos implements OnInit {
     this.filtroEstado = 'todos';
   }
 
-  private coincideConEstado(vehiculo: any): boolean {
+  private coincideConEstado(vehiculo: Vehiculo): boolean {
     switch (this.filtroEstado) {
       case 'disponibles':
         return this.obtenerEstadoOperacion(vehiculo) === 'Disponible';
@@ -202,7 +204,7 @@ export class Vehiculos implements OnInit {
     }
   }
 
-  private normalizarTexto(valor: any): string {
+  private normalizarTexto(valor: unknown): string {
     return String(valor ?? '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
@@ -210,22 +212,16 @@ export class Vehiculos implements OnInit {
       .toLowerCase();
   }
 
-  obtenerEstadoOperacion(vehiculo: any): string {
-    const estadoOperacion = String(vehiculo?.estadoOperacion ?? '').trim();
-
-    if (estadoOperacion === 'Disponible' || estadoOperacion === 'Rentado' || estadoOperacion === 'NoDisponible') {
-      return estadoOperacion;
-    }
-
-    return vehiculo?.estado === true ? 'Disponible' : 'Rentado';
+  obtenerEstadoOperacion(vehiculo: Vehiculo): EstadoVehiculo {
+    return estadoOperativo(vehiculo);
   }
 
-  obtenerTextoEstado(vehiculo: any): string {
+  obtenerTextoEstado(vehiculo: Vehiculo): string {
     const estado = this.obtenerEstadoOperacion(vehiculo);
     return estado === 'NoDisponible' ? 'No disponible' : estado;
   }
 
-  obtenerClaseEstado(vehiculo: any): string {
+  obtenerClaseEstado(vehiculo: Vehiculo): string {
     const estado = this.obtenerEstadoOperacion(vehiculo);
 
     switch (estado) {
@@ -250,20 +246,20 @@ export class Vehiculos implements OnInit {
     this.nuevoVehiculo.noMotor = this.limpiarAlfanumerico(this.nuevoVehiculo.noMotor, 50);
   }
 
-  private limpiarAlfanumerico(valor: string, maximo: number): string {
+  private limpiarAlfanumerico(valor: string | null | undefined, maximo: number): string {
     return String(valor ?? '')
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '')
       .slice(0, maximo);
   }
 
-  get modelosFiltrados(): any[] {
+  get modelosFiltrados(): Modelo[] {
     if (!this.nuevoVehiculo.idMarca) {
       return this.modelos;
     }
 
     return this.modelos.filter(
-      (modelo: any) => Number(modelo.idMarca) === Number(this.nuevoVehiculo.idMarca)
+      (modelo) => Number(modelo.idMarca) === Number(this.nuevoVehiculo.idMarca)
     );
   }
 
@@ -287,7 +283,7 @@ export class Vehiculos implements OnInit {
     const extensionValida = extensionesPermitidas.some(extension => nombreArchivo.endsWith(extension));
 
     if (!tiposPermitidos.includes(archivo.type) || !extensionValida) {
-      alert('Formato de imagen no permitido. Utiliza JPG, JPEG, PNG o WEBP.');
+      void notificar('Formato de imagen no permitido. Utiliza JPG, JPEG, PNG o WEBP.', 'warning');
       input.value = '';
       this.imagenSeleccionada = null;
       this.imagenPreview = null;
@@ -296,7 +292,7 @@ export class Vehiculos implements OnInit {
 
     const tamanoMaximo = 5 * 1024 * 1024;
     if (archivo.size > tamanoMaximo) {
-      alert('La imagen no puede superar los 5 MB.');
+      void notificar('La imagen no puede superar los 5 MB.', 'warning');
       input.value = '';
       this.imagenSeleccionada = null;
       this.imagenPreview = null;
@@ -308,11 +304,11 @@ export class Vehiculos implements OnInit {
 
     reader.onload = () => {
       this.imagenPreview = reader.result as string;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     };
 
     reader.onerror = () => {
-      alert('No fue posible leer la imagen seleccionada.');
+      notificar('No fue posible leer la imagen seleccionada.');
       input.value = '';
       this.imagenSeleccionada = null;
       this.imagenPreview = null;
@@ -322,8 +318,9 @@ export class Vehiculos implements OnInit {
   }
 
   guardarVehiculo(): void {
-    if (!this.nuevoVehiculo.descripcion || !this.nuevoVehiculo.noPlaca) {
-      alert('Por favor, completa la descripción y la placa.');
+    if (this.guardando) return;
+    if (!this.nuevoVehiculo.descripcion?.trim() || !this.nuevoVehiculo.noPlaca) {
+      void notificar('Completa la descripción y la placa.', 'warning');
       return;
     }
 
@@ -332,99 +329,81 @@ export class Vehiculos implements OnInit {
     this.onMotorInput();
 
     if (!/^[A-Z0-9]{6,7}$/.test(this.nuevoVehiculo.noPlaca)) {
-      alert('La placa debe contener entre 6 y 7 caracteres alfanuméricos.');
+      void notificar('La placa debe contener entre 6 y 7 caracteres alfanuméricos.', 'warning');
       return;
     }
 
     if (this.nuevoVehiculo.noChasis && !/^[A-Z0-9]{1,17}$/.test(this.nuevoVehiculo.noChasis)) {
-      alert('El chasis solo puede contener letras y números y debe tener un máximo de 17 caracteres.');
+      void notificar('El chasis solo puede contener letras y números y debe tener un máximo de 17 caracteres.', 'warning');
       return;
     }
 
     if (!this.nuevoVehiculo.idMarca || !this.nuevoVehiculo.idModelo || !this.nuevoVehiculo.idTipoVehiculo || !this.nuevoVehiculo.idTipoCombustible) {
-      alert('Selecciona marca, modelo, tipo de vehículo y combustible.');
+      void notificar('Selecciona marca, modelo, tipo de vehículo y combustible.', 'warning');
       return;
     }
 
-    const vehiculoEnviar = {
+    const vehiculoEnviar: Vehiculo = {
       ...this.nuevoVehiculo,
+      descripcion: this.nuevoVehiculo.descripcion.trim(),
       idMarca: Number(this.nuevoVehiculo.idMarca),
       idModelo: Number(this.nuevoVehiculo.idModelo),
       idTipoVehiculo: Number(this.nuevoVehiculo.idTipoVehiculo),
       idTipoCombustible: Number(this.nuevoVehiculo.idTipoCombustible),
-      idCombustible: Number(this.nuevoVehiculo.idTipoCombustible),
-      estadoOperacion:
-        this.nuevoVehiculo.estadoOperacion ||
-        (this.nuevoVehiculo.estado === true ? 'Disponible' : 'Rentado')
+      estadoOperacion: this.obtenerEstadoOperacion(this.nuevoVehiculo),
     };
 
-    if (this.modoEdicion) {
-      this.vehiculoService.actualizarVehiculo(vehiculoEnviar).subscribe({
-        next: () => {
-          if (this.imagenSeleccionada && vehiculoEnviar.id) {
-            this.subirImagenVehiculo(vehiculoEnviar.id);
-          } else {
-            alert('Vehículo actualizado correctamente.');
-            this.cancelar();
-            this.cargarVehiculos();
-          }
-        },
-        error: (err: any) => {
-          console.error('Error al actualizar vehículo:', err);
-          alert(typeof err.error === 'string' ? err.error : 'Error al actualizar. Revisa la consola.');
-        }
-      });
-      return;
-    }
+    this.guardando = true;
+    const editando = this.modoEdicion && !!vehiculoEnviar.id;
+    const operacion: Observable<Vehiculo | void> = editando
+      ? this.vehiculoService.actualizarVehiculo(vehiculoEnviar)
+      : this.vehiculoService.crearVehiculo(vehiculoEnviar);
 
-    this.vehiculoService.crearVehiculo(vehiculoEnviar).subscribe({
-      next: (vehiculoCreado: any) => {
-        const idVehiculo = vehiculoCreado.id;
-
+    operacion.subscribe({
+      next: (creado) => {
+        const idVehiculo = editando ? vehiculoEnviar.id : (creado as Vehiculo | undefined)?.id;
         if (this.imagenSeleccionada && idVehiculo) {
           this.subirImagenVehiculo(idVehiculo);
-        } else {
-          alert('Vehículo guardado correctamente.');
-          this.cancelar();
-          this.cargarVehiculos();
+          return;
         }
+        this.guardando = false;
+        void notificar(editando ? 'Vehículo actualizado correctamente.' : 'Vehículo guardado correctamente.', 'success');
+        this.cancelar();
+        this.cargarVehiculos();
       },
-      error: (err: any) => {
-        console.error('Error al guardar vehículo:', err);
-        alert(typeof err.error === 'string' ? err.error : 'Error al guardar. Revisa la conexión.');
+      error: (err: unknown) => {
+        this.guardando = false;
+        void notificar(mensajeError(err, editando ? 'No se pudo actualizar el vehículo.' : 'No se pudo guardar el vehículo.'), 'error');
+        this.cdr.markForCheck();
       }
     });
   }
 
   subirImagenVehiculo(idVehiculo: number): void {
     if (!this.imagenSeleccionada) {
+      this.guardando = false;
       return;
     }
 
     this.vehiculoService.subirImagen(idVehiculo, this.imagenSeleccionada).subscribe({
       next: () => {
-        alert('Vehículo e imagen guardados correctamente.');
+        this.guardando = false;
+        void notificar('Vehículo e imagen guardados correctamente.', 'success');
         this.cancelar();
         this.cargarVehiculos();
       },
-      error: (err: any) => {
-        console.error('Error al subir imagen:', err);
-
-        const mensaje =
-          typeof err?.error === 'string'
-            ? err.error
-            : err?.error?.message || err?.error?.title || 'El vehículo se guardó, pero no fue posible subir la imagen.';
-
-        alert(mensaje);
+      error: (err: unknown) => {
+        this.guardando = false;
+        void notificar(mensajeError(err, 'El vehículo se guardó, pero no fue posible subir la imagen.'), 'error');
         this.imagenSeleccionada = null;
         this.imagenPreview = null;
         this.cargarVehiculos();
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     });
   }
 
-  editar(vehiculo: any): void {
+  editar(vehiculo: Vehiculo): void {
     this.nuevoVehiculo = { ...vehiculo };
 
     if (!this.nuevoVehiculo.idTipoCombustible && this.nuevoVehiculo.idCombustible) {
@@ -436,23 +415,26 @@ export class Vehiculos implements OnInit {
     this.imagenSeleccionada = null;
     this.imagenPreview = null;
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    this.cdr.detectChanges();
+    window.scrollTo({ top: 0 });
+    this.cdr.markForCheck();
   }
 
-  eliminar(id?: number): void {
-    if (!id) return;
-    if (!confirm('¿Deseas eliminar este vehículo?')) return;
+  async eliminar(vehiculo: Vehiculo): Promise<void> {
+    if (!vehiculo.id) return;
+    const confirmado = await confirmar(`Se eliminará el vehículo "${vehiculo.descripcion}" (placa ${vehiculo.noPlaca}). Esta acción no se puede deshacer.`, {
+      titulo: '¿Eliminar vehículo?',
+      textoConfirmar: 'Eliminar',
+      peligroso: true,
+    });
+    if (!confirmado) return;
 
-    this.vehiculoService.eliminarVehiculo(id).subscribe({
+    this.vehiculoService.eliminarVehiculo(vehiculo.id).subscribe({
       next: () => {
-        alert('Vehículo eliminado correctamente.');
+        void notificar('Vehículo eliminado correctamente.', 'success');
         this.cargarVehiculos();
       },
-      error: (err: any) => {
-        console.error('Error al eliminar vehículo:', err);
-        alert('No se pudo eliminar el vehículo. Puede estar relacionado con una renta o inspección.');
-      }
+      error: (err: unknown) =>
+        void notificar(mensajeError(err, 'No se pudo eliminar el vehículo. Puede estar relacionado con una renta o inspección.'), 'error')
     });
   }
 
@@ -462,27 +444,28 @@ export class Vehiculos implements OnInit {
     this.imagenPreview = null;
     this.modoEdicion = false;
     this.mostrarFormulario = false;
-    this.cdr.detectChanges();
+    this.guardando = false;
+    this.cdr.markForCheck();
   }
 
-  obtenerMarca(idMarca: number): string {
-    const marca = this.marcas.find((item: any) => Number(item.id) === Number(idMarca));
+  obtenerMarca(idMarca: number | null): string {
+    const marca = this.marcas.find((item) => Number(item.id) === Number(idMarca));
     return marca ? marca.descripcion : 'N/A';
   }
 
-  obtenerModelo(idModelo: number): string {
-    const modelo = this.modelos.find((item: any) => Number(item.id) === Number(idModelo));
+  obtenerModelo(idModelo: number | null): string {
+    const modelo = this.modelos.find((item) => Number(item.id) === Number(idModelo));
     return modelo ? modelo.descripcion : 'N/A';
   }
 
-  obtenerTipoVehiculo(idTipoVehiculo: number): string {
-    const tipo = this.tiposVehiculos.find((item: any) => Number(item.id) === Number(idTipoVehiculo));
+  obtenerTipoVehiculo(idTipoVehiculo: number | null): string {
+    const tipo = this.tiposVehiculos.find((item) => Number(item.id) === Number(idTipoVehiculo));
     return tipo ? tipo.descripcion : 'N/A';
   }
 
-  obtenerCombustible(vehiculo: any): string {
+  obtenerCombustible(vehiculo: Vehiculo): string {
     const id = vehiculo.idTipoCombustible ?? vehiculo.idCombustible;
-    const combustible = this.tiposCombustibles.find((item: any) => Number(item.id) === Number(id));
+    const combustible = this.tiposCombustibles.find((item) => Number(item.id) === Number(id));
     return combustible ? combustible.descripcion : 'N/A';
   }
 }

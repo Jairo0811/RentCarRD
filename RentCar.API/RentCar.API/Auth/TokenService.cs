@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using RentCar.API.Domain;
 
 namespace RentCar.API.Auth;
 
@@ -20,7 +21,7 @@ public sealed class TokenService(IOptions<JwtOptions> options)
             new(ClaimTypes.Name, nombre),
             new(ClaimTypes.Role, rol)
         };
-        if (empleadoId.HasValue) claims.Add(new Claim("empleado_id", empleadoId.Value.ToString()));
+        if (empleadoId.HasValue) claims.Add(new Claim(ClaimsRentCar.EmpleadoId, empleadoId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
 
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key)),

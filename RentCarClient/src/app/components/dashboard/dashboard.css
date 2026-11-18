@@ -24,7 +24,7 @@
   gap: 0.5rem;
   align-items: center;
   background: #eaf2ff;
-  color: #0d6efd;
+  color: #0a58ca; /* contraste AA sobre el fondo azul claro */
   padding: 0.45rem 0.9rem;
   border-radius: 999px;
   font-weight: 700;
@@ -44,7 +44,8 @@
   margin-bottom: 0.4rem;
 }
 
-.hero-left h2 {
+.hero-left h2,
+.hero-left .hero-brand {
   font-weight: 900;
   font-size: 2rem;
 }
@@ -79,7 +80,7 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1.25rem;
   margin-bottom: 1.25rem;
 }
@@ -135,6 +136,11 @@
   color: #dc3545;
 }
 
+.neutral .stat-icon {
+  background: #eef0f3;
+  color: #495057;
+}
+
 .info .stat-icon {
   background: #e8f8fb;
   color: #0dcaf0;
@@ -177,6 +183,15 @@
 
 .danger-fill {
   background: #dc3545;
+}
+
+.neutral-fill {
+  background: #6c757d;
+}
+
+/* Ámbar oscuro: text-warning (#ffc107) no alcanza contraste AA sobre blanco. */
+.texto-activas {
+  color: #8a5a00;
 }
 
 .stat-card small {
@@ -360,6 +375,19 @@
   margin-bottom: 0;
   color: #6b7280;
   font-weight: 700;
+}
+
+/* Los elementos de grid no deben ensancharse por tablas o textos largos (desbordaba en móvil). */
+.stats-grid > *,
+.content-grid > *,
+.bottom-grid > * {
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 992px) {

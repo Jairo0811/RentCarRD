@@ -11,21 +11,32 @@ import { LoginComponent } from './components/login/login';
 import { DashboardComponent } from './components/dashboard/dashboard';
 import { InspeccionComponent } from './components/inspeccion/inspeccion';
 import { ReportesComponent } from './components/reportes/reportes';
-import { authGuard } from './services/auth.guard';
+import { authGuard, inicioGuard, loginGuard } from './services/auth.guard';
+
+/**
+ * Permisos de navegación (coinciden con la API):
+ * - Admin: todos los módulos.
+ * - Empleado: rentas y devoluciones, clientes y consulta de catálogos.
+ */
+const soloAdmin = { roles: ['admin'] };
+const adminYEmpleado = { roles: ['admin', 'empleado'] };
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '', pathMatch: 'full', canActivate: [inicioGuard], children: [] },
+  { path: 'login', component: LoginComponent, canActivate: [loginGuard], title: 'Iniciar sesión · RentCarRD' },
 
-  { path: 'login', component: LoginComponent },
-  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
-  { path: 'vehiculos', component: Vehiculos, canActivate: [authGuard] },
-  { path: 'clientes', component: ClientesComponent, canActivate: [authGuard] },
-  { path: 'rentas', component: Rentas, canActivate: [authGuard] },
-  { path: 'marcas', component: MarcasComponent, canActivate: [authGuard] },
-  { path: 'modelos', component: ModelosComponent, canActivate: [authGuard] },
-  { path: 'tipos-vehiculos', component: TiposVehiculosComponent, canActivate: [authGuard] },
-  { path: 'tipos-combustibles', component: TiposCombustiblesComponent, canActivate: [authGuard] },
-  { path: 'empleados', component: EmpleadosComponent, canActivate: [authGuard] },
-  { path: 'inspeccion', component: InspeccionComponent, canActivate: [authGuard] },
-  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard] }
+  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard], data: soloAdmin, title: 'Dashboard · RentCarRD' },
+  { path: 'empleados', component: EmpleadosComponent, canActivate: [authGuard], data: soloAdmin, title: 'Empleados · RentCarRD' },
+  { path: 'vehiculos', component: Vehiculos, canActivate: [authGuard], data: soloAdmin, title: 'Vehículos · RentCarRD' },
+  { path: 'inspeccion', component: InspeccionComponent, canActivate: [authGuard], data: soloAdmin, title: 'Inspección · RentCarRD' },
+  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard], data: soloAdmin, title: 'Reportes · RentCarRD' },
+
+  { path: 'rentas', component: Rentas, canActivate: [authGuard], data: adminYEmpleado, title: 'Rentas · RentCarRD' },
+  { path: 'clientes', component: ClientesComponent, canActivate: [authGuard], data: adminYEmpleado, title: 'Clientes · RentCarRD' },
+  { path: 'marcas', component: MarcasComponent, canActivate: [authGuard], data: adminYEmpleado, title: 'Marcas · RentCarRD' },
+  { path: 'modelos', component: ModelosComponent, canActivate: [authGuard], data: adminYEmpleado, title: 'Modelos · RentCarRD' },
+  { path: 'tipos-vehiculos', component: TiposVehiculosComponent, canActivate: [authGuard], data: adminYEmpleado, title: 'Tipos de vehículos · RentCarRD' },
+  { path: 'tipos-combustibles', component: TiposCombustiblesComponent, canActivate: [authGuard], data: adminYEmpleado, title: 'Tipos de combustible · RentCarRD' },
+
+  { path: '**', redirectTo: '' },
 ];

@@ -1,0 +1,4 @@
+/* text-warning (#ffc107) sobre fondo blanco no alcanza el contraste AA; se usa un ámbar oscuro. */
+.texto-itbis {
+  color: #8a5a00;
+}

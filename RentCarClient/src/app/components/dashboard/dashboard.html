@@ -4,7 +4,7 @@
     <div class="hero-content">
       <div class="hero-left">
         <div class="hero-badge">
-          <i class="bi bi-speedometer2"></i>
+          <i class="bi bi-speedometer2" aria-hidden="true"></i>
           Panel Ejecutivo
         </div>
 
@@ -14,9 +14,9 @@
           Sistema de Gestión de Rentas de Vehículos
         </p>
 
-        <h2>
+        <p class="hero-brand h2" aria-label="RentCarRD">
           <span class="brand-blue">RentCar</span><span class="brand-red">RD</span>
-        </h2>
+        </p>
 
         <p class="hero-date">
           {{ fechaActual() }}
@@ -25,66 +25,88 @@
 
       <div class="hero-right">
         <div class="hero-circle">
-          <i class="bi bi-car-front-fill"></i>
+          <i class="bi bi-car-front-fill" aria-hidden="true"></i>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="stats-grid">
+  @if (errorCarga) {
+    <div class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+      <span>{{ errorCarga }}</span>
+      <button type="button" class="btn btn-sm btn-outline-danger" (click)="cargarDashboard()">Reintentar</button>
+    </div>
+  }
+
+  <section class="stats-grid" aria-label="Indicadores de la flota" [attr.aria-busy]="cargando">
 
     <div class="stat-card primary">
       <div class="stat-header">
-        <div class="stat-icon">
+        <div class="stat-icon" aria-hidden="true">
           <i class="bi bi-car-front-fill"></i>
         </div>
         <span>Flota</span>
       </div>
-      <h3>{{ totalVehiculos }}</h3>
+      <h3>{{ flota.total }}</h3>
       <p>Vehículos registrados</p>
-      <a routerLink="/vehiculos">Ver vehículos <i class="bi bi-arrow-right"></i></a>
+      <a routerLink="/vehiculos">Ver vehículos <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
     </div>
 
     <div class="stat-card success">
       <div class="stat-header">
-        <div class="stat-icon">
+        <div class="stat-icon" aria-hidden="true">
           <i class="bi bi-check-circle-fill"></i>
         </div>
-        <span>Disponibilidad</span>
+        <span>Disponibles</span>
       </div>
-      <h3>{{ vehiculosDisponibles }}</h3>
-      <p>Vehículos disponibles</p>
-      <div class="progress-line">
-        <div class="progress-fill success-fill" [style.width.%]="porcentajeDisponibles()"></div>
+      <h3>{{ flota.disponibles }}</h3>
+      <p>Listos para rentar</p>
+      <div class="progress-line" role="progressbar" aria-label="Porcentaje de vehículos disponibles" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="porcentaje(flota.disponibles)">
+        <div class="progress-fill success-fill" [style.width.%]="porcentaje(flota.disponibles)"></div>
       </div>
-      <small>{{ porcentajeDisponibles() }}% de la flota</small>
+      <small>{{ porcentaje(flota.disponibles) }}% de la flota</small>
     </div>
 
     <div class="stat-card danger">
       <div class="stat-header">
-        <div class="stat-icon">
+        <div class="stat-icon" aria-hidden="true">
           <i class="bi bi-key-fill"></i>
         </div>
         <span>Rentados</span>
       </div>
-      <h3>{{ vehiculosRentados }}</h3>
-      <p>Vehículos en renta</p>
-      <div class="progress-line">
-        <div class="progress-fill danger-fill" [style.width.%]="porcentajeRentados()"></div>
+      <h3>{{ flota.rentados }}</h3>
+      <p>Con renta activa</p>
+      <div class="progress-line" role="progressbar" aria-label="Porcentaje de vehículos rentados" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="porcentaje(flota.rentados)">
+        <div class="progress-fill danger-fill" [style.width.%]="porcentaje(flota.rentados)"></div>
       </div>
-      <small>{{ porcentajeRentados() }}% de la flota</small>
+      <small>{{ porcentaje(flota.rentados) }}% de la flota</small>
+    </div>
+
+    <div class="stat-card neutral">
+      <div class="stat-header">
+        <div class="stat-icon" aria-hidden="true">
+          <i class="bi bi-slash-circle-fill"></i>
+        </div>
+        <span>No disponibles</span>
+      </div>
+      <h3>{{ flota.noDisponibles }}</h3>
+      <p>Devueltos o fuera de servicio</p>
+      <div class="progress-line" role="progressbar" aria-label="Porcentaje de vehículos no disponibles" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="porcentaje(flota.noDisponibles)">
+        <div class="progress-fill neutral-fill" [style.width.%]="porcentaje(flota.noDisponibles)"></div>
+      </div>
+      <small>{{ porcentaje(flota.noDisponibles) }}% de la flota</small>
     </div>
 
     <div class="stat-card info">
       <div class="stat-header">
-        <div class="stat-icon">
+        <div class="stat-icon" aria-hidden="true">
           <i class="bi bi-people-fill"></i>
         </div>
         <span>Clientes</span>
       </div>
       <h3>{{ totalClientes }}</h3>
       <p>Clientes registrados</p>
-      <a routerLink="/clientes">Ver clientes <i class="bi bi-arrow-right"></i></a>
+      <a routerLink="/clientes">Ver clientes <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
     </div>
 
   </section>
@@ -94,7 +116,7 @@
     <div class="panel-card">
       <div class="panel-header">
         <div>
-          <h4>Estado Operativo</h4>
+          <h2 class="h4">Estado Operativo</h2>
           <p>Resumen general de rentas e inspecciones</p>
         </div>
         <i class="bi bi-activity"></i>
@@ -102,12 +124,12 @@
 
       <div class="mini-stats">
         <div>
-          <span class="mini-number text-warning">{{ rentasActivas }}</span>
+          <span class="mini-number texto-activas">{{ rentasIndicadores.activas }}</span>
           <p>Rentas activas</p>
         </div>
 
         <div>
-          <span class="mini-number text-success">{{ rentasConcluidas }}</span>
+          <span class="mini-number text-success">{{ rentasIndicadores.concluidas }}</span>
           <p>Rentas concluidas</p>
         </div>
 
@@ -118,15 +140,20 @@
       </div>
 
       <div class="finance-box">
-        <span>Ingresos acumulados</span>
-        <h3>{{ formatoRD(ingresosTotales) }}</h3>
+        <span>Importe contratado (con ITBIS 18%)</span>
+        <h3>{{ formatoRD(rentasIndicadores.contratado.total) }}</h3>
+        <small class="d-block">
+          Subtotal {{ formatoRD(rentasIndicadores.contratado.subtotal) }} · ITBIS {{ formatoRD(rentasIndicadores.contratado.itbis) }}
+        </small>
+        <small class="d-block">De rentas concluidas: {{ formatoRD(rentasIndicadores.contratadoConcluidas.total) }}</small>
+        <small class="d-block fst-italic mt-1">Suma de contratos registrados; RentCarRD no registra cobros.</small>
       </div>
     </div>
 
     <div class="panel-card">
       <div class="panel-header">
         <div>
-          <h4>Accesos Rápidos</h4>
+          <h2 class="h4">Accesos Rápidos</h2>
           <p>Operaciones frecuentes del sistema</p>
         </div>
         <i class="bi bi-lightning-charge-fill"></i>
@@ -162,7 +189,7 @@
     <div class="panel-card large-panel">
       <div class="panel-header">
         <div>
-          <h4>Últimas Rentas</h4>
+          <h2 class="h4">Últimas Rentas</h2>
           <p>Contratos recientes registrados en el sistema</p>
         </div>
         <a routerLink="/rentas" class="small-link">Ver todas</a>
@@ -170,35 +197,33 @@
 
       <div class="table-responsive">
         <table class="table dashboard-table align-middle">
+          <caption class="visually-hidden">Últimas cinco rentas</caption>
           <thead>
             <tr>
-              <th>No.</th>
-              <th>Cliente</th>
-              <th>Vehículo</th>
-              <th>Estado</th>
-              <th>Total</th>
+              <th scope="col">No.</th>
+              <th scope="col">Cliente</th>
+              <th scope="col">Vehículo</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Total contrato</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr *ngFor="let renta of ultimasRentas">
-              <td class="fw-bold">#{{ renta.noRenta }}</td>
-              <td>{{ obtenerCliente(renta.idCliente) }}</td>
-              <td>{{ obtenerVehiculo(renta.idVehiculo) }}</td>
-              <td>
-                <span class="badge rounded-pill"
-                  [ngClass]="renta.estado === 'Activa' || renta.estado === 'Abierta' ? 'text-bg-warning' : 'text-bg-success'">
-                  {{ renta.estado }}
-                </span>
-              </td>
-              <td class="fw-bold text-success">{{ formatoRD(obtenerTotal(renta)) }}</td>
-            </tr>
-
-            <tr *ngIf="ultimasRentas.length === 0">
-              <td colspan="5" class="text-center text-muted py-4">
-                No hay rentas registradas.
-              </td>
-            </tr>
+            @for (renta of ultimasRentas; track renta.noRenta) {
+              <tr>
+                <td class="fw-bold">#{{ renta.noRenta }}</td>
+                <td>{{ obtenerCliente(renta.idCliente) }}</td>
+                <td>{{ obtenerVehiculo(renta.idVehiculo) }}</td>
+                <td>
+                  <span class="badge rounded-pill" [class.text-bg-warning]="renta.estado === 'Activa'" [class.text-bg-success]="renta.estado !== 'Activa'">{{ renta.estado }}</span>
+                </td>
+                <td class="fw-bold text-success">{{ formatoRD(totalRenta(renta)) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">{{ cargando ? 'Cargando…' : 'No hay rentas registradas.' }}</td>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
@@ -207,33 +232,35 @@
     <div class="panel-card">
       <div class="panel-header">
         <div>
-          <h4>Vehículos Recientes</h4>
+          <h2 class="h4">Vehículos Recientes</h2>
           <p>Últimos vehículos agregados</p>
         </div>
       </div>
 
       <div class="recent-cars">
-        <div class="recent-car" *ngFor="let v of vehiculosRecientes">
-          <div class="car-thumb">
-            <img *ngIf="v.imagenUrl" [src]="apiBaseUrl + v.imagenUrl" alt="Vehículo">
-            <span *ngIf="!v.imagenUrl">
-              <i class="bi bi-car-front-fill"></i>
+        @for (v of vehiculosRecientes; track v.id) {
+          <div class="recent-car">
+            <div class="car-thumb">
+              @if (v.imagenUrl) {
+                <img [src]="apiBaseUrl + v.imagenUrl" [alt]="'Foto de ' + v.descripcion" loading="lazy" />
+              } @else {
+                <span aria-hidden="true"><i class="bi bi-car-front-fill"></i></span>
+              }
+            </div>
+            <div class="car-info">
+              <h3 class="h6">{{ v.descripcion }}</h3>
+              <p>{{ v.noPlaca || 'Sin placa' }}</p>
+            </div>
+            <span class="badge rounded-pill"
+              [class.text-bg-success]="estadoOperativo(v) === 'Disponible'"
+              [class.text-bg-danger]="estadoOperativo(v) === 'Rentado'"
+              [class.text-bg-secondary]="estadoOperativo(v) === 'NoDisponible'">
+              {{ etiquetaEstado(estadoOperativo(v)) }}
             </span>
           </div>
-
-          <div class="car-info">
-            <h6>{{ v.descripcion }}</h6>
-            <p>{{ v.noPlaca || 'Sin placa' }}</p>
-          </div>
-
-          <span class="badge rounded-pill" [ngClass]="v.estado ? 'text-bg-success' : 'text-bg-danger'">
-            {{ v.estado ? 'Disponible' : 'Rentado' }}
-          </span>
-        </div>
-
-        <div *ngIf="vehiculosRecientes.length === 0" class="text-center text-muted py-4">
-          No hay vehículos registrados.
-        </div>
+        } @empty {
+          <div class="text-center text-muted py-4">{{ cargando ? 'Cargando…' : 'No hay vehículos registrados.' }}</div>
+        }
       </div>
     </div>
 

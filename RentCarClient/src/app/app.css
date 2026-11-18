@@ -1,0 +1,13 @@
+.navbar .btn-link.nav-link {
+  text-decoration: none;
+  border: 0;
+}
+
+.usuario-actual {
+  max-width: 14rem;
+}
+
+:host ::ng-deep .dropdown-item.active,
+:host ::ng-deep .dropdown-item:active {
+  background-color: var(--bs-primary);
+}
