@@ -23,6 +23,14 @@
 
 .table-responsive {
   border-radius: var(--rentcar-radio);
+  /* Contiene los <caption class="visually-hidden"> (absolutos) dentro del área con scroll:
+     sin esto ensanchan la página en móviles. */
+  position: relative;
+}
+
+/* Variante clara de los colores de marca para fondos oscuros (contraste AA). */
+.texto-azul-claro {
+  color: #6ea8fe;
 }
 
 /* Movimiento reducido para quien lo solicita en su sistema operativo. */

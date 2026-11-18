@@ -24,7 +24,7 @@
   gap: 0.5rem;
   align-items: center;
   background: #eaf2ff;
-  color: #0d6efd;
+  color: #0a58ca; /* contraste AA sobre el fondo azul claro */
   padding: 0.45rem 0.9rem;
   border-radius: 999px;
   font-weight: 700;
@@ -375,6 +375,13 @@
   margin-bottom: 0;
   color: #6b7280;
   font-weight: 700;
+}
+
+/* Los elementos de grid no deben ensancharse por tablas o textos largos (desbordaba en móvil). */
+.stats-grid > *,
+.content-grid > *,
+.bottom-grid > * {
+  min-width: 0;
 }
 
 @media (max-width: 1200px) {
