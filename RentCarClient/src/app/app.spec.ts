@@ -42,7 +42,10 @@ describe('App (navegación y cierre de sesión)', () => {
     guardarSesion('Admin', 1, 30, 'Administrador General');
     const { html } = renderizar();
 
-    expect(html.querySelector('.navbar-brand')?.textContent?.replace(/\s/g, '')).toBe('RentCarRD');
+    const logo = html.querySelector<HTMLImageElement>('.navbar-brand img');
+    expect(logo?.getAttribute('src')).toBe('/images/logo-navbar.png');
+    expect(logo?.alt).toContain('RentCarRD');
+    expect(html.querySelector('.navbar-brand')?.textContent?.trim()).toBe('');
     const enlaces = Array.from(html.querySelectorAll('a[href]')).map((a) => a.getAttribute('href'));
     expect(enlaces).toEqual(expect.arrayContaining(['/dashboard', '/empleados', '/vehiculos', '/inspeccion', '/reportes', '/rentas', '/clientes']));
     expect(html.textContent).toContain('Administrador General · Admin');
