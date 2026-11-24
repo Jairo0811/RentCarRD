@@ -11,3 +11,13 @@
 :host ::ng-deep .dropdown-item:active {
   background-color: var(--bs-primary);
 }
+
+/* Logo de la barra: placa blanca para conservar los colores de la marca sobre el fondo oscuro. */
+.logo-navbar {
+  display: block;
+  height: 44px;
+  width: auto;
+  padding: 0.2rem 0.45rem;
+  background: #fff;
+  border-radius: 0.5rem;
+}

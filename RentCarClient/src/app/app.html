@@ -3,8 +3,8 @@
 @if (mostrarNavegacion()) {
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow" aria-label="Navegación principal">
     <div class="container">
-      <a class="navbar-brand fw-bold d-flex align-items-center gap-1" [routerLink]="auth.inicio()" (click)="cerrarMenu()">
-        <span class="text-primary">RentCar</span><span class="text-danger">RD</span>
+      <a class="navbar-brand py-0 d-flex align-items-center" [routerLink]="auth.inicio()" (click)="cerrarMenu()">
+        <img src="/images/logo-navbar.png" alt="RentCarRD — ir al inicio" class="logo-navbar" width="87" height="48" />
       </a>
 
       <button
